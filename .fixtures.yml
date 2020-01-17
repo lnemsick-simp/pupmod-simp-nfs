@@ -7,6 +7,9 @@ fixtures:
     augeasproviders_ssh: https://github.com/simp/augeasproviders_ssh
     autofs: https://github.com/simp/pupmod-simp-autofs
     concat: https://github.com/simp/puppetlabs-concat
+    firewalld:
+      repo: https://github.com/simp/pupmod-voxpupuli-firewalld
+      ref: v4.1.0
     haveged: https://github.com/simp/pupmod-simp-haveged
     iptables: https://github.com/simp/pupmod-simp-iptables
     krb5: https://github.com/simp/pupmod-simp-krb5

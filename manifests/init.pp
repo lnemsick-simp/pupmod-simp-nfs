@@ -93,8 +93,11 @@
 # @param stunnel_socket_options
 #   Additional socket options to set for stunnel connections
 #
-# @author Trevor Vaughan <tvaughan@onyxpoint.com>
-# @author Kendall Moore <kendall.moore@onyxpoint.com>
+# @param stunnel_systemd_deps
+#
+# @param stunnel_wantedby
+#
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs (
   Boolean              $is_server              = false,
@@ -138,43 +141,43 @@ class nfs (
     $_stunnel_socket_options = $stunnel_socket_options
   }
 
-  include '::nfs::service_names'
-  include '::nfs::install'
+  include 'nfs::service_names'
+  include 'nfs::install'
 
   if $kerberos {
-    include '::krb5'
+    include 'krb5'
 
     if ($::operatingsystem in ['RedHat', 'CentOS', 'OracleLinux']) {
       if (versioncmp($::operatingsystemmajrelease,'6') > 0) {
         # This is here because the SELinux rules for directory includes in krb5
         # are broken.
 
-        include '::nfs::selinux_hotfix'
+        include 'nfs::selinux_hotfix'
 
-        Class['::nfs::selinux_hotfix'] -> Class['::nfs::install']
+        Class['nfs::selinux_hotfix'] -> Class['nfs::install']
       }
     }
 
     if $keytab_on_puppet {
-      include '::krb5::keytab'
+      include 'krb5::keytab'
     }
   }
 
   if $ensure_latest_lvm2 {
-    include '::nfs::lvm2'
+    include 'nfs::lvm2'
 
     Class['nfs::lvm2'] -> Class['nfs::install']
   }
 
   if $is_client {
-    include '::nfs::client'
+    include 'nfs::client'
 
     Class['nfs::install'] -> Class['nfs::client']
   }
 
   if $is_server {
 
-    include '::nfs::server'
+    include 'nfs::server'
 
     Class['nfs::install'] -> Class['nfs::server']
 

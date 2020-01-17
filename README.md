@@ -253,6 +253,8 @@ Please reference the [SIMP documentation](https://simp.readthedocs.io/en/stable/
 
 ## Reference
 
+Please refer to the [REFERENCE.md](./REFERENCE.md).
+
 ## Limitations
 
 SIMP Puppet modules are generally intended for use on Red Hat Enterprise Linux
