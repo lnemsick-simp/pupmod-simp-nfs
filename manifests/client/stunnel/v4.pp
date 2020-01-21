@@ -27,12 +27,8 @@ define nfs::client::stunnel::v4 (
     fail('$name must be a Simplib::Host::Port => `<host>:<port>`')
   }
 
-  if $stunnel_systemd_deps and ($facts['os']['release']['major'] > '6') {
-    $_stunnel_wantedby = ['remote-fs-pre.target']
-  }
-  else {
-    $_stunnel_wantedby = undef
-  }
+#FIXME use $stunnel_wantedby if set otherwise default?  or have this set as the default?
+  $_stunnel_wantedby = ['remote-fs-pre.target']
 
   $_target_parts = split($name, ':')
 

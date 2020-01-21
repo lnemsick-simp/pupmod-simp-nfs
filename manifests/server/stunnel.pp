@@ -46,23 +46,18 @@ class nfs::server::stunnel (
   Boolean          $stunnel_systemd_deps   = $nfs::stunnel_systemd_deps,
   Array[String]    $stunnel_wantedby       = $nfs::stunnel_wantedby
 ) {
-  include '::nfs::service_names'
+  include 'nfs::service_names'
 
-  if $stunnel_systemd_deps and ($facts['os']['release']['major'] > '6') {
-    $_stunnel_wantedby = [
-      $nfs::service_names::nfs_lock,
-      $nfs::service_names::nfs_mountd,
-      $nfs::service_names::nfs_rquotad,
-      $nfs::service_names::nfs_server,
-      $nfs::service_names::rpcbind,
-      $nfs::service_names::rpcidmapd,
-      $nfs::service_names::rpcgssd,
-      $nfs::service_names::rpcsvcgssd,
-    ]
-  }
-  else {
-    $_stunnel_wantedby = undef
-  }
+  $_stunnel_wantedby = [
+    $nfs::service_names::nfs_lock,
+    $nfs::service_names::nfs_mountd,
+    $nfs::service_names::nfs_rquotad,
+    $nfs::service_names::nfs_server,
+    $nfs::service_names::rpcbind,
+    $nfs::service_names::rpcidmapd,
+    $nfs::service_names::rpcgssd,
+    $nfs::service_names::gssproxy,
+  ]
 
   if $version == 4 {
     stunnel::instance { 'nfs':

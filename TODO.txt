@@ -1,0 +1,354 @@
+MODULE DONE
+- FIXED Figure out solution for sunrpc_tuning initV service exist at all?
+   -YES Under the management of sysctl, and RHEL docs say to use sysctl or the
+    file shown in the sunrpc_tuning script...
+    https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html-single/kernel_administration_guide/index#displaying_information_about_a_module
+    Should use sysctl Puppet resource
+
+MODULE TODO
+- README.md
+  - has hiera() functions...not sure we are still using them
+  - has simp_options::kerberos <-- doesn't exist?
+  - is the kerberos discussion still correct? Thought there was a test for it.
+- fix problem with stunnel_systemd_deps and stunnel_wantedby
+- regenerate REFERENCE.md
+- Notify nfs-utils.service when config files change
+- Start nfs-client.target on client?
+- Move lockd configuration out of /etc/modprobe.d/nfs.conf to /etc/modprobe.d/lockd.conf
+  - Why not use sysctl resource?
+- rpc.quotad
+  - on NFS server only
+  - Install quota-rpc on el8 and enable service if quotad args are specified
+  - Create /etc/sysconfig/rpc-rquotad file and remove any such config from /etc/sysconfig/nfs
+- gssproxy.service has wrong Before (old name nfs-secure.service, nfs-secure-server.service ->
+  rpc-gssd.service). Will have to handle with an override or in Puppet.
+
+- testing
+  - NFSv3
+  - NFSv4
+  - include svckill and see what would be killed, in order to ensure we have all the
+    processes set up appropriately
+  - parameters set are being used
+    - sysctl settings are adequate, even after reboot
+    - /etc/modules.d/(lockd|nfs).conf not needed?
+  - server still works with client when custom config such as lockd
+    - verify server config item list is correct and client config it list is correct,
+      i.e., when server config is customized, we haven't missed a corresponding client
+      config that would be have to be set
+
+NFSv2 not supported RHEL8
+  https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/managing_file_systems/mounting-nfs-shares_managing-file-systemsto
+
+QUESTIONS
+- Should we manage nfsmount.conf with the module?
+  - looks like client mount config
+  - How does this affect compliance validation?  Do options here not get reported
+    when the security scans are done?
+- Does gss-use-proxy work in nfs.conf on el7?
+  NO. Not compiled into exectuable rpc.gssd:
+        strings /usr/sbin/rpc.gssd | grep use  <-- does not contain gss-use-proxy
+    - In el8 that executable reads the config and then exports
+      GSS_USE_PROXY for the proxymech_v1 plugin (man gssproxy-mech)
+    - In el7 need to export in /etc/sysconfig/nfs where it will turn around and be
+      written to /run/sysconfig/nfs-utils.
+- Why does server only configure idmapd if the server AND NVSv3?  man page seems to reference NFSv4
+  ... or is it for integration with other than NFSv4 mapping dameon?
+- Is export logic with seboolean required
+- Is the funky logic with the rpc.idmapd service required?
+- Do we have to do all the service notifies in the current code
+  - Config file notify nfs-utils?  Is that sufficient?  Will it under the hood notify
+    nfs-server.service and nfs-client.target?
+- Do we need to load the nfs kernel module, or will that be done for us automatically?
+  - If we need to load it, do we need to persist the loading of it in /etc/modules or
+    a config file in /etc/modules-load.d/?
+  - Not loaded by default when no nfs services are being run.
+- Does nfs-utils require any other sysconfig files
+  - el8 no - no systemd services/targets/mounts source files or have any command line arguments
+  - el7
+    - nfs-blkmap.service uses $BLKMAPDARGS and sources /run/sysconfig/nfs-utils
+    - nfs-idmapd.service uses $RPCIDMAPDARGS and sources /run/sysconfig/nfs-utils
+    - nfs-mountd.service uses $RPCMOUNTDARGS and sources /run/sysconfig/nfs-utils
+    - nfs-server.service uses $RPCNFSDARGS and sources /run/sysconfig/nfs-utils
+    - rpc-gssd.service uses $GSSDARGS and sources /run/sysconfig/nfs-utils
+    - rpc-statd-notify.service uses $SMNOTIFYARGS and sources /run/sysconfig/nfs-utils
+    - rpc-statd.service uses $STATDARGS and sources /run/sysconfig/nfs-utils
+    - /run/sysconfig/nfs-utils is generated from /etc/sysconfig/nfs
+      - massages some individual switches
+        ...
+        mkdir -p /run/sysconfig
+        {
+        echo RPCNFSDARGS=\"$nfsdargs\"
+        echo RPCMOUNTDARGS=\"$RPCMOUNTDOPTS\"
+        echo STATDARGS=\"$STATDARG\"
+        echo SMNOTIFYARGS=\"$SMNOTIFYARGS\"
+        echo RPCIDMAPDARGS=\"$RPCIDMAPDARGS\"
+        echo GSSDARGS=\"$RPCGSSDARGS\"
+        echo BLKMAPDARGS=\"$BLKMAPDARGS\"
+        echo GSS_USE_PROXY=\"$GSS_USE_PROXY\"
+        } > /run/sysconfig/nfs-utils
+
+
+
+
+
+- Why are we not running nfs-idmapd.service on the client?  Man page says it services
+  server or client requests using upcalls, which mean local userspace function calls.
+- Do we need to handle pNFS (nfs-blkmap.service)?
+- Do we need to handle RDMA?
+  - Install the rdma-core package:
+    # yum install rdma-core
+  - To enable automatic loading of NFSoRDMA server modules, add the SVCRDMA_LOAD=yes
+    option on a new line in the /etc/rdma/rdma.conf configuration file.
+  - The rdma=20049 option in the [nfsd] section of the /etc/nfs.conf file specifies the port
+    number on which the NFSoRDMA service listens for clients. The RFC 5667 standard specifies
+    that servers must listen on port 20049 when providing NFSv4 services over RDMA.
+  - The /etc/rdma/rdma.conf file contains a line that sets the XPRTRDMA_LOAD=yes option by
+    default, which requests the rdma service to load the NFSoRDMA client module.
+  - Restart the nfs-server service:
+    # systemctl restart nfs-server
+- Do we need to do anything with gssproxy?
+  - EL8 has some sort of config... how do we use this?
+  - Should we (are we) managing /etc/gssproxy/gssproxy.conf
+  - Do we need to manage /etc/gssproxy/24-nfs-server.conf from nfs-utils RPM
+  - Do we need to manage /etc/gssproxy/99-nfs-client.conf from gssproxy RPM
+
+- What does the nfs::secure_nfs=true do? How does it relate to Kerberos?
+  looks like secure_nfs=true can go hand-in-hand with kerberos.  SIMP doesn't have to
+  manage those credentials, but can manage those credentials with the krb5 module.
+- Is there a case in which a nfs server would not be a nfs client? Do we fully support that?
+- Is modprobe required?
+- Is the sysctl fs.nfs.nfs_callback_tcpport and /etc/modprobe.d/nfs.conf still required?
+  - https://wiki.archlinux.org/index.php/Kernel_module#Automatic_module_loading_with_systemd
+  - Why were these set? (to get through firewalls or stunnel?)
+  - RPM no longer delivers a sample file for /etc/modprobe.d/nfs.conf (as of nfs-utils 1.2.6-10)
+  - Does this file still work?
+  - Should we still use it
+  - Why does the sysctl resource fail if the parameter is not yet available?  Will it still
+    write out the config so that it will be picked up when the kernel module is loaded and
+    available?  Will it have to wait until the next puppet run?
+- Why are we not setting fs.nfs.nlm_tcpport and fs.nfs.nlm_udpport?
+  Is that necessary with nfs.conf? Shouldn't it be in lockd.conf?
+  What about /etc/modprobe.d/lockd.conf?
+   ****LOCKD configuration has been moved to  /etc/modprobe.d/lockd.conf
+   https://bugzilla.redhat.com/show_bug.cgi?id=1264387 indicates that this is the way to
+   configure.  Don't understand how that differs from nfs.conf
+
+      cat /etc/modprobe.d/lockd.conf
+      #
+      # Set the NFS lock manager grace period. n is measured in seconds. 
+      #options lockd nlm_grace_period=90
+      #
+      # Set the TCP port that the NFS lock manager should use. 
+      # port must be a valid TCP port value (1-65535).
+      #options lockd nlm_tcpport
+      #
+      # Set the UDP port that the NFS lock manager should use.
+      # port must be a valid UDP port value (1-65535).
+      #options lockd nlm_udpport
+      #
+      # Set the maximum number of outstanding connections 
+      #options lockd nlm_max_connections=1024
+      #
+      # Set the default time value for the NFS lock manager
+      # in seconds. Default is 10 secs (min 3 max 20)
+      #options lockd nlm_timeout=10
+      #
+      # Choose whether to record the caller_name or IP address
+      # this peer in the local rpc.statd's database.
+      #options lockd nsm_use_hostnames=0
+
+  modinfo lockd
+    el8
+parm:           nsm_use_hostnames:bool
+parm:           nlm_max_connections:uint
+
+    el7
+parm:           nsm_use_hostnames:bool
+parm:           nlm_max_connections:uint
+
+
+  modinfo nfs
+    el8
+parm:           callback_tcpport:portnr
+NEW parm:           callback_nr_threads:Number of threads that will be assigned to the NFSv4 callback channels. (ushort)
+parm:           nfs_idmap_cache_timeout:int
+parm:           nfs4_disable_idmapping:Turn off NFSv4 idmapping when using 'sec=sys' (bool)
+parm:           max_session_slots:Maximum number of outstanding NFSv4.1 requests the client will negotiate (ushort)
+NEW parm:           max_session_cb_slots:Maximum number of parallel NFSv4.1 callbacks the client will process for a given server (ushort)
+parm:           send_implementation_id:Send implementation ID with NFSv4.1 exchange_id (ushort)
+parm:           nfs4_unique_id:nfs_client_id4 uniquifier string (string)
+parm:           recover_lost_locks:If the server reports that a lock might be lost, try to recover it risking data corruption. (bool)
+parm:           enable_ino64:bool
+parm:           nfs_access_max_cachesize:NFS access maximum total cache length (ulong)
+
+
+    el7
+parm:           callback_tcpport:portnr
+parm:           nfs_idmap_cache_timeout:int
+parm:           nfs4_disable_idmapping:Turn off NFSv4 idmapping when using 'sec=sys' (bool)
+parm:           max_session_slots:Maximum number of outstanding NFSv4.1 requests the client will negotiate (ushort)
+parm:           send_implementation_id:Send implementation ID with NFSv4.1 exchange_id (ushort)
+parm:           nfs4_unique_id:nfs_client_id4 uniquifier string (string)
+parm:           recover_lost_locks:If the server reports that a lock might be lost, try to recover it risking data corruption. (bool)
+parm:           enable_ino64:bool
+parm:           nfs_access_max_cachesize:NFS access maximum total cache length (ulong)
+
+To see what a setting is
+sysctl fs.nfs.nsm_use_hostnames
+or
+cat /sys/module/lockd/nsm_use_hostnames
+
+
+
+TODO
+- Is lvm2 workaround (lvm2.pp) still required?
+  lvm = The  Logical  Volume Manager (LVM) provides tools to create virtual block devices
+        from physical devices.
+- init.pp
+  - why svckill for nfs-idmap instead of nfs-idmapd?
+    - both services are included in old nfs-utils RPM, but nfs-idmap is old name
+      (link) of nfs-idmpad
+    - how does svckill handle nfs-idmap/nfs-idmapd?  Both are static
+      svckill ignores systemctl list-unit-files -t service that return static
+  - why isn't svckill list in service_name.pp?
+- server and client will have different config files
+  - what if a server and client are on the same machine?
+  - Do we still need some sort of concat type behavior
+
+  may be easier to have same file and only add configuration if server?
+
+
+7.4.1708  nfs-utils-1.3.0-0.48.el7   <-- earliest version have to support
+7.latest nfs-utils-1.3.0-0.65
+
+common
+- install nfs-utils and nfs4-acl-tools
+- ensure latest lvm2 package
+- svckill ignores
+  - 'nfs-idmap'
+  - 'nfs-secure'
+  - 'nfs-mountd'
+  - 'nfs-rquotad'
+- create config file with following settings
+      MOUNTD_NFS_V1=yes           el6 only?
+      MOUNTD_NFS_V2=no            [nfsd] vers2
+      MOUNTD_NFS_V3=no            [nfsd] vers3
+      RPCNFSDARGS=                use [nfsd]
+      RPCNFSDCOUNT=               [nfsd] threads
+      NFSD_V4_GRACE=              [nfsd] grace-time
+      MOUNTD_PORT=                [mountd] port
+      STATD_PORT=                 [statd] port
+      STATD_OUTGOING_PORT=        [statd] outgoing-port
+      SECURE_NFS=yes              el6 only?
+
+
+server
+- all common actions
+- all client setup actions (unless not client)
+- ensure rpc-statd.service is running
+- ensure rpcbind.service is running
+- server setup actions
+  - add following settings to config file
+      RQUOTAD=                   el6 only?
+      RQUOTAD_PORT=              el6 only?
+      RPCRQUOTADOPTS=             /etc/sysconfig/rpc-rquotad
+      LOCKD_ARG=                 some other file?
+      LOCKD_TCPPORT=             [lockd] port
+      LOCKD_UDPPORT=             [lockd] outgoing-port
+      NFSD_MODULE="noload"       el6 only or some other file?
+      RPCMOUNTDOPTS=             OBE, use [mountd] and [nfsd]
+      STATDARG=                  OBE< use [statd] and [lockd]
+      STATD_HA_CALLOUT=          [statd] ha-callout
+      RPCIDMAPDARGS=             use [idmap]
+      RPCGSSDARGS=               use [gssd] and [general] pipefs-directory
+      RPCSVCGSSDARGS=            el6 ony or some other file?
+  - create concat for /etc/exports that notifies exportfs exec
+  - create exec that runs /usr/sbin/exportfs -ra
+  - opens up firewall for client TCP and UDP ports
+  - ensure nfs-server.service is running
+  - creates /etc/init.d/sunrpc_tuning file (initV service script)
+  - ensures sunrpc_tuning service is running
+  - creates sysctl for sunrpc.tcp_slot_table_entries and sunrpc.udp_slot_table_entries
+
+
+client
+- all common actions
+- client setup actions
+  - create /etc/exports file (unless also a server)
+  - exec that runs /sbin/modprobe nfs
+  - sets syctl fs.nfs.nfs_callback_tcpport
+  - creates /etc/modprobe.d/nfs.conf with options nfs callback_tcpport set
+- ensure rpcbind.service is stopped
+
+NO  systemctl restart nfs-client.target  <-- works to regenerate /run/sysconfig/nfs-utils and restart
+NO systemctl restart nfs-config.service  <-- regenerates but doesn't restart
+
+*** Puppet notify for config changes should be nfs-utils service!!!
+YES systemctl restart nfs-utils  <-- on NFS server: regenerates config  and restarts nfs
+                                     services needed by client and server BUT NOT nfs-server
+                                     service!
+                                     on NFS client: regenerates config...doesn't appear to restart
+                                     the services, but I don't the services running to begin with
+
+
+###########################################
+SERVICE and KERNEL MODULE NOTES
+https://www.thegeekdiary.com/beginners-guide-to-nfs-in-centos-rhel/
+Service             Use
+nfs-blkmap.service  clients using pNFS (parallel NFS)
+nfs-idmapd.service  clients and server when mapping required (servers not on the same
+                    domain); requires /etc/idmapd.conf
+nfs-mountd.service  server; implements server side of mount requests from clients NFSv3;
+                    used to set up exports NFSv4
+nfs-server.service  server; corresponds to rpc.nfsd
+nfs-utils.service   clients and server; use when config file changes
+rpc-gssd.service
+rpc-statd-notify.service
+rpc-statd.service   server; not NFSv4; used to notify clients when server has restarted
+rpc-rquotad.service
+rpcbind.service     clients and server?; NFSv3
+
+Kernel Modules
+lockd               client and server; NFSV3; kernel threads  started when NFS server is run
+                    and NFS file system is mounted
+nfsd                server; NFS server kernel module
+
+Section     Use
+general     clients and server; blkmapd(8), rpc.idmapd(8), and rpc.gssd(8)
+nfsdcltrack server; nfsdcltrack(8)
+nfsd        server; rpc.nfsd(8) rpc.mountd.
+mountd      server, rpc.mountd(8)
+statd       clients and server; rpc.statd(8)
+lockd       clients and server; rpc.statd(8)
+sm-notify   clients and server; sm-notify(8)
+gssd        clients? and server; rpc.gssd(8)
+exportfs    server; Only debug= is recognized.
+
+proc-fs-nfsd.mount does the actually loading of the lockd module
+
+
+systemctl start nfs-server with default configuration
+lsmod | grep nfs
+nfsd                  425984  11
+auth_rpcgss            73728  1 nfsd
+nfs_acl                16384  1 nfsd
+lockd                 118784  1 nfsd
+grace                  16384  2 nfsd,lockd
+sunrpc                434176  17 nfsd,auth_rpcgss,lockd,nfs_acl
+  Do the nfsv4 kernel modules only start up if you have mounted a file system with nfsv4?
+  Pretty sure nfs turns on the ones needed
+
+nfs-blkmap.service       inactive dead  <-- expected
+nfs-client.target        active running
+nfs-idmapd.service       active running
+nfs-mountd.service       active running
+nfs-server.service       active running
+nfs-utils.service        static, inactive dead  <-- expected
+proc-fs-nfsd.mount       active running
+rpc-gssd.service         static, inactive dead, start condition failed (/etc/krb5.keytab)  <--expected
+rpc-statd-notify.service static, inactive dead <-- expected
+rpc-statd.service        active running
+rpc_pipefs.target        active running
+
+
+

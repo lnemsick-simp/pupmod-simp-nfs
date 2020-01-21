@@ -59,7 +59,7 @@ To be applied to all nodes, in ``default.yaml``:
 
 ``` yaml
 nfs::server: "your.server.fqdn"
-nfs::server::trusted_nets: "%{alias('trusted_nets')}"
+nfs::server::trusted_nets: "%{alias('simp_options::trusted_nets')}"
 nfs::simp_iptables: true
 ```
 
@@ -91,7 +91,7 @@ path:
 ``` puppet
 class site::nfs_server (
   $kerberos = simplib::lookup('simp_options::kerberos', { 'default_value' => false, 'value_type' => Boolean }),
-  $trusted_nets = defined('$::trusted_nets') ? { true => $::trusted_nets, default => hiera('trusted_nets') }
+  $trusted_nets = defined('$simp_options::trusted_nets') ? { true => $simp_options::trusted_nets, default => hiera('simp_options::trusted_nets') }
   ){
   include '::nfs'
 
@@ -101,7 +101,7 @@ class site::nfs_server (
     $security = 'sys'
   }
 
-  include '::nfs'
+  include 'nfs'
 
   $security = $kerberos ? { true => 'krb5p', false => 'sys' }
 
@@ -189,7 +189,7 @@ classes:
 
 Add the following entry to both your ``site::nfs_server`` and
 ``site::nfs_client`` manifests replacing ``<class_name>`` with the correct
-class name (either ``nfs_sever`` or ``nfs_client``)
+class name (either ``nfs_server`` or ``nfs_client``)
 
 ```puppet
 Class['krb5::keytab'] -> Class['site::<class_name>']
@@ -256,6 +256,9 @@ Please reference the [SIMP documentation](https://simp.readthedocs.io/en/stable/
 Please refer to the [REFERENCE.md](./REFERENCE.md).
 
 ## Limitations
+
+- Manage rdma config file and package install?
+- Not managing pNFS service (nfs-blkmap.service).  Will need to add service and svckill::ignore resources for it.
 
 SIMP Puppet modules are generally intended for use on Red Hat Enterprise Linux
 and compatible distributions, such as CentOS. Please see the [`metadata.json` file](./metadata.json)

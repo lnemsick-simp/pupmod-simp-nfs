@@ -15,23 +15,20 @@
 # @param nfsv3
 #   Use NFSv3 for connections
 #
-# @param mountd_nfs_v1
-#   Act as an ``NFSv1`` server
-#
-#   * Due to current issues in RHEL/CentOS this must be set to ``yes`` to
-#     properly unmount
-#
 # @param mountd_nfs_v2
 #   Act as an ``NFSv2`` server
 #
 # @param mountd_nfs_v3
 #   Act as an ``NFSv3`` server
 #
-# @param rquotad
-#   The path to the ``rquotad`` executable
-#
 # @param rquotad_port
-#   The port upon which ``rquotad`` should listen
+#   The port upon which ``rquotad`` on the NFS server should listen
+#
+# @param rpcrquotadopts
+#   Options that should be passed to ``rquotad`` at start time.
+#
+#   * **NOTE::** $rquotad_port will be automatically added to this string
+#     via the `-p` option.
 #
 # @param lockd_tcpport
 #   The TCP port upon which ``lockd`` should listen
@@ -103,11 +100,10 @@ class nfs (
   Boolean              $is_server              = false,
   Boolean              $is_client              = true,
   Boolean              $nfsv3                  = false,
-  Boolean              $mountd_nfs_v1          = true,
   Boolean              $mountd_nfs_v2          = false,
   Boolean              $mountd_nfs_v3          = false,
-  Stdlib::Absolutepath $rquotad                = '/usr/sbin/rpc.rquotad',
   Simplib::Port        $rquotad_port           = 875,
+  Optional[String]     $rpcrquotadopts         = undef,
   Simplib::Port        $lockd_tcpport          = 32803,
   Simplib::Port        $lockd_udpport          = 32769,
   String               $rpcnfsdargs            = '-N 2',
@@ -130,6 +126,9 @@ class nfs (
 ) {
 
   simplib::assert_metadata($module_name)
+  if (versioncmp($facts['os']['release']['full'], '7.4') < 0) {
+    warning("This version of simp-nfs may not work with ${facts['os']['name]} ${facts['os']['release']['full']}. Use simp-nfs version < 7.0.0 instead")
+  }
 
   if $stunnel_tcp_nodelay {
     $_stunnel_socket_options = $stunnel_socket_options + [
@@ -147,16 +146,10 @@ class nfs (
   if $kerberos {
     include 'krb5'
 
-    if ($::operatingsystem in ['RedHat', 'CentOS', 'OracleLinux']) {
-      if (versioncmp($::operatingsystemmajrelease,'6') > 0) {
-        # This is here because the SELinux rules for directory includes in krb5
-        # are broken.
-
-        include 'nfs::selinux_hotfix'
-
-        Class['nfs::selinux_hotfix'] -> Class['nfs::install']
-      }
-    }
+    # This is here because the SELinux rules for directory includes in krb5
+    # are broken.
+    include 'nfs::selinux_hotfix'
+    Class['nfs::selinux_hotfix'] -> Class['nfs::install']
 
     if $keytab_on_puppet {
       include 'krb5::keytab'

@@ -62,7 +62,7 @@ class nfs::client (
   sysctl { 'fs.nfs.nfs_callback_tcpport':
     ensure => 'present',
     val    => $callback_port,
-    silent => true
+    silent => true #ignore the activation failure of a yet-to-be-activated sysctl value
   }
 
   file { '/etc/modprobe.d/nfs.conf':

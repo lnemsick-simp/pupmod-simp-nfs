@@ -128,17 +128,15 @@ define nfs::server::export (
     content => template("${module_name}/server/export.erb")
   }
 
-  # We have to do this if we have a 'sec=sys' situation on EL7+
+  # We have to do this if we have a 'sec=sys' situation
   if ('sys' in $sec) {
-    if ($facts['os']['name'] in ['RedHat','CentOS','OracleLinux']) {
-      if ($facts['os']['release']['major'] > '6') and $facts['selinux'] {
-        ensure_resource('selboolean', 'nfsd_anon_write',
-          {
-            persistent => true,
-            value      => 'on'
-          }
-        )
-      }
+    if $facts['selinux'] {
+      ensure_resource('selboolean', 'nfsd_anon_write',
+        {
+          persistent => true,
+          value      => 'on'
+        }
+      )
     }
   }
 }

@@ -117,7 +117,7 @@ define nfs::client::mount (
     ),'/', '__', 'G'
   )
 
-  include '::nfs::client'
+  include 'nfs::client'
 
   if $nfs_version == 'nfs4' {
     $_nfs_options = "port=${port},${options},sec=${sec}"
@@ -144,7 +144,7 @@ define nfs::client::mount (
   }
 
   if $autofs {
-    include '::autofs'
+    include 'autofs'
 
     Class['nfs::install'] -> Class['::autofs::install']
 

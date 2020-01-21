@@ -13,8 +13,6 @@
 # @param nfsv3
 #   Serve out ``NFSv3`` shares
 #
-# @param rpcrquotadopts
-#   Options that should be passed to ``rquotad`` at start time
 #
 # @param lockd_arg
 #   Options that should be passed to ``lockd`` at start time
@@ -35,7 +33,7 @@
 #   The path to an application that should be used for ``statd`` HA
 #
 # @param rpcidmapdargs
-#   Artibrary arguments to pass to ``idmapd`` at start time
+#   Arbibrary arguments to pass to ``idmapd`` at start time
 #
 # @param rpcgssdargs
 #   Arbitrary arguments to pass to ``gssd`` at start time
@@ -80,7 +78,6 @@
 class nfs::server (
   Simplib::Netlist               $trusted_nets                  = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] }),
   Boolean                        $nfsv3                         = $::nfs::nfsv3,
-  Optional[String]               $rpcrquotadopts                = undef,
   Optional[String]               $lockd_arg                     = undef,
   Optional[String]               $nfsd_module                   = undef,
   Optional[String]               $rpcmountdopts                 = undef,
@@ -88,6 +85,7 @@ class nfs::server (
   Optional[Stdlib::Absolutepath] $statd_ha_callout              = undef,
   Optional[String]               $rpcidmapdargs                 = undef,
   Optional[String]               $rpcgssdargs                   = undef,
+#FIXME this should be gss_use_proxy and default to true
   Optional[String]               $rpcsvcgssdargs                = undef,
   Integer[1]                     $sunrpc_udp_slot_table_entries = 128,
   Integer[1]                     $sunrpc_tcp_slot_table_entries = 128,
@@ -103,7 +101,7 @@ class nfs::server (
   }
 
   if $stunnel {
-    contain '::nfs::server::stunnel'
+    contain 'nfs::server::stunnel'
 
     # This is here due to some bug where allowing things through regularly
     # isn't working correctly.
@@ -112,7 +110,7 @@ class nfs::server (
     }
   }
 
-  if $nfsv3 { include '::nfs::idmapd' }
+  if $nfsv3 { include 'nfs::idmapd' }
 
   concat::fragment { 'nfs_init_server':
     target  => '/etc/sysconfig/nfs',
@@ -146,16 +144,6 @@ class nfs::server (
   }
 
   Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::nfs_server]
-
-  # Plopping this in place so that NFS starts with the proper number of slot
-  # entries upon reboot.
-  file { '/etc/init.d/sunrpc_tuning':
-    ensure  => 'file',
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0754',
-    content => template("${module_name}/server/sunrpc_tuning.erb")
-  }
 
   # $stunnel_port_override is a value that is set by the stunnel overlay.
   if $stunnel and $::nfs::server::stunnel::stunnel_port_override {
@@ -205,14 +193,6 @@ class nfs::server (
     }
   }
 
-  service { 'sunrpc_tuning':
-    enable  => true,
-    require => [
-      File['/etc/init.d/sunrpc_tuning'],
-      Service[$::nfs::service_names::nfs_server]
-    ]
-  }
-
   if $tcpwrappers {
     tcpwrappers::allow { [
       'mountd',
@@ -225,31 +205,32 @@ class nfs::server (
     }
   }
 
+  # Ensure NFS starts with the proper number of slot entries.
   sysctl { 'sunrpc.tcp_slot_table_entries':
-    ensure => 'present',
-    val    => $sunrpc_tcp_slot_table_entries,
-    silent => true,
-    notify => Service[$::nfs::service_names::nfs_server]
+    ensure  => 'present',
+    val     => $sunrpc_tcp_slot_table_entries,
+    silent  => true,
+    comment => 'Managed by simp-nfs Puppet module',
+    notify  => Service[$::nfs::service_names::nfs_server]
   }
 
   sysctl { 'sunrpc.udp_slot_table_entries':
-    ensure => 'present',
-    val    => $sunrpc_udp_slot_table_entries,
-    silent => true,
-    notify => Service[$::nfs::service_names::nfs_server]
+    ensure  => 'present',
+    val     => $sunrpc_udp_slot_table_entries,
+    silent  => true,
+    comment => 'Managed by simp-nfs Puppet module',
+    notify  => Service[$::nfs::service_names::nfs_server]
   }
 
   if $::nfs::secure_nfs {
-    if !empty($::nfs::service_names::rpcsvcgssd) {
-      service { $::nfs::service_names::rpcsvcgssd :
-        ensure     => 'running',
-        enable     => true,
-        hasrestart => true,
-        hasstatus  => true
-      }
-
-      Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::rpcsvcgssd]
+    service { $::nfs::service_names::gssproxy :
+      ensure     => 'running',
+      enable     => true,
+      hasrestart => true,
+      hasstatus  => true
     }
+
+    Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::gssproxy]
 
     Service[$::nfs::service_names::rpcbind] -> Sysctl['sunrpc.tcp_slot_table_entries']
     Service[$::nfs::service_names::rpcbind] -> Sysctl['sunrpc.udp_slot_table_entries']
