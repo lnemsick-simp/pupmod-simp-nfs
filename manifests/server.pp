@@ -91,7 +91,21 @@ class nfs::server (
   Integer[1]                     $sunrpc_tcp_slot_table_entries = 128,
   Boolean                        $firewall                      = $::nfs::firewall,
   Boolean                        $stunnel                       = $::nfs::stunnel,
-  Boolean                        $tcpwrappers                   = $::nfs::tcpwrappers
+  Boolean                        $tcpwrappers                   = $::nfs::tcpwrappers,
+  # Only applies to EL7 and can be used to override command line arguments
+  # for NFS daemon settings that cannot be configured by /etc/nfs.conf.  In EL8,
+  # the daemons do not accept any command line arguments and must be configured
+  # via /etc/nfs.conf!
+  # RPCNFSDARGS=" 8"
+  # RPCMOUNTDARGS=""
+  # STATDARGS=""
+  # SMNOTIFYARGS="" <-- server and client
+  # RPCIDMAPDARGS=""
+  # GSSDARGS=""
+  # BLKMAPDARGS=""
+  # GSS_USE_PROXY="yes"
+  # 
+  Optional[Hash]                 $nfs_sysconfig_settings
 ) inherits ::nfs {
 
   assert_private()

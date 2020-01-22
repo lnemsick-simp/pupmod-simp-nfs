@@ -127,7 +127,7 @@ class nfs (
 
   simplib::assert_metadata($module_name)
   if (versioncmp($facts['os']['release']['full'], '7.4') < 0) {
-    warning("This version of simp-nfs may not work with ${facts['os']['name]} ${facts['os']['release']['full']}. Use simp-nfs version < 7.0.0 instead")
+    warning("This version of simp-nfs may not work with ${facts['os']['name]} ${facts['os']['release']['full']}. Use simp-nfs module version < 7.0.0 instead")
   }
 
   if $stunnel_tcp_nodelay {
@@ -184,7 +184,6 @@ class nfs (
   }
 
   if $secure_nfs {
-    if !empty($::nfs::service_names::rpcgssd) {
       service { $::nfs::service_names::rpcgssd :
         ensure     => 'running',
         enable     => true,
@@ -200,7 +199,6 @@ class nfs (
 
       Concat['/etc/sysconfig/nfs'] -> Service[$::nfs::service_names::rpcgssd]
       Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::rpcgssd]
-    }
   }
 
   if $is_server or $nfsv3 {
@@ -238,9 +236,6 @@ class nfs (
     }
   }
 
-  svckill::ignore { 'nfs-idmap': }
-  svckill::ignore { 'nfs-secure': }
-  svckill::ignore { 'nfs-mountd': }
   svckill::ignore { 'nfs-rquotad': }
 
   concat { '/etc/sysconfig/nfs':

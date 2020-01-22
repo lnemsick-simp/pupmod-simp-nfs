@@ -1,4 +1,4 @@
-MODULE DONE
+  MODULE DONE
 - FIXED Figure out solution for sunrpc_tuning initV service exist at all?
    -YES Under the management of sysctl, and RHEL docs say to use sysctl or the
     file shown in the sunrpc_tuning script...
@@ -40,6 +40,10 @@ NFSv2 not supported RHEL8
   https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/managing_file_systems/mounting-nfs-shares_managing-file-systemsto
 
 QUESTIONS
+- Class['autofs::service'] ~> Service[$::nfs::service_names::rpcbind]
+  is the Wants in the autofs.service insufficient?
+- What should the initial nfs.conf look like?
+  - Should settings be explicit and match defaults?
 - Should we manage nfsmount.conf with the module?
   - looks like client mount config
   - How does this affect compliance validation?  Do options here not get reported
@@ -58,6 +62,8 @@ QUESTIONS
 - Do we have to do all the service notifies in the current code
   - Config file notify nfs-utils?  Is that sufficient?  Will it under the hood notify
     nfs-server.service and nfs-client.target?
+    - NO for nfs-server.  Need to reload the nfs-server.  However, reload is not supported
+      by notify.  So will have to go with full nfs-server restart.
 - Do we need to load the nfs kernel module, or will that be done for us automatically?
   - If we need to load it, do we need to persist the loading of it in /etc/modules or
     a config file in /etc/modules-load.d/?
@@ -127,8 +133,20 @@ QUESTIONS
     write out the config so that it will be picked up when the kernel module is loaded and
     available?  Will it have to wait until the next puppet run?
 - Why are we not setting fs.nfs.nlm_tcpport and fs.nfs.nlm_udpport?
-  Is that necessary with nfs.conf? Shouldn't it be in lockd.conf?
-  What about /etc/modprobe.d/lockd.conf?
+  SOLUTION: fs.nfs.nlm_tcpport and fs.nfs.nlm_udpport are set by values in /etc/nfs.conf
+    - Had to restart nfs-utils and then nfs-server in order to pick up the changes as shown by
+      sysctl -a | grep nlm
+      fs.nfs.nlm_tcpport -> [lockd] port
+      fs.nfs.nlm_udpport -> [lockd] udp-port
+      rpcinfo -p | grep nlockmgr
+
+      Other mappings
+      fs.nfs.nlm_grace_period -> [nfsd] grace-time
+      fs.nfs.nlm_max_connections -> ???
+      fs.nfs.nlm_timeout -> ???
+
+  NOT NECESSARY Is that necessary with nfs.conf? Shouldn't it be in lockd.conf?
+  NOT NECESSARY What about /etc/modprobe.d/lockd.conf?
    ****LOCKD configuration has been moved to  /etc/modprobe.d/lockd.conf
    https://bugzilla.redhat.com/show_bug.cgi?id=1264387 indicates that this is the way to
    configure.  Don't understand how that differs from nfs.conf
@@ -208,8 +226,10 @@ TODO
   - why svckill for nfs-idmap instead of nfs-idmapd?
     - both services are included in old nfs-utils RPM, but nfs-idmap is old name
       (link) of nfs-idmpad
-    - how does svckill handle nfs-idmap/nfs-idmapd?  Both are static
-      svckill ignores systemctl list-unit-files -t service that return static
+    - how does svckill handle nfs-idmap/nfs-idmapd?  Both are static.
+      svckill ignores systemctl list-unit-files -t service that return static.
+      'static' means the service cannot be enabled or disabled but is controlled
+      by some other service.
   - why isn't svckill list in service_name.pp?
 - server and client will have different config files
   - what if a server and client are on the same machine?
@@ -295,18 +315,20 @@ YES systemctl restart nfs-utils  <-- on NFS server: regenerates config  and rest
 SERVICE and KERNEL MODULE NOTES
 https://www.thegeekdiary.com/beginners-guide-to-nfs-in-centos-rhel/
 Service             Use
-nfs-blkmap.service  clients using pNFS (parallel NFS)
-nfs-idmapd.service  clients and server when mapping required (servers not on the same
+nfs-idmapd.service  server when mapping required (servers not on the same
                     domain); requires /etc/idmapd.conf
+                    unit file has BindsTo nfs-server.service
 nfs-mountd.service  server; implements server side of mount requests from clients NFSv3;
                     used to set up exports NFSv4
 nfs-server.service  server; corresponds to rpc.nfsd
-nfs-utils.service   clients and server; use when config file changes
-rpc-gssd.service
-rpc-statd-notify.service
 rpc-statd.service   server; not NFSv4; used to notify clients when server has restarted
-rpc-rquotad.service
+rpc-rquotad.service server;
+
+nfs-utils.service   clients and server; use when config file changes
+rpc-gssd.service    clients and server
+rpc-statd-notify.service client and server (all peers)
 rpcbind.service     clients and server?; NFSv3
+nfs-blkmap.service  clients using pNFS (parallel NFS)
 
 Kernel Modules
 lockd               client and server; NFSV3; kernel threads  started when NFS server is run
@@ -351,4 +373,20 @@ rpc-statd.service        active running
 rpc_pipefs.target        active running
 
 
+nfs-utils.service:
+  el8:
+  ConsistsOf=rpc-statd.service rpc-gssd.service nfs-blkmap.service rpc-statd-notify.service
+  ^__ if nfs-utils is restarted, those services will be restarted
 
+  el7:
+  ConsistsOf=rpc-statd.service rpc-gssd.service rpc-statd-notify.service
+
+
+nfs-client.target:
+  Wants=rpc-statd-notify.service auth-rpcgss-module.service remote-fs-pre.target
+  After=rpc-gssd.service gssproxy.service
+
+tickets.puppetlabs.com/browse/PUP-1054
+use custom restart command as a reload?
+stop all services and see if start nfs-server back up it works
+stop some services and see if restart nfs-server starts up correctly
