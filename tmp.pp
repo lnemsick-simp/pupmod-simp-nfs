@@ -4,7 +4,7 @@ Optional[DebugOptions] exportfs_debug                = undef, # FIXME 0?
 
 Boolean                gssd_use_memcache             = undef, # false
 Boolean                gssd_use_machine_creds        = undef, # true
-Boolean                gssd_use_gss_proxy            = true,  # true el7 written to /etc/sysconfig/nfs as USE_GSS_PROXY instead
+Boolean                gssd_use_gss_proxy            = true,  # true el7 written to /etc/sysconfig/nfs as GSS_USE_PROXY instead
 Boolean                gssd_avoid_dns                = undef, # true
 Boolean                gssd_limit_to_legacy_enctypes = false, # false
 Integer[0]             gssd_context_timeout          = undef, # 0
@@ -13,6 +13,7 @@ Stdlib::AbsolutePath   gssd_keytab_file              = undef, # '/etc/krb5.keyta
 Stdlib::AbsolutePath   gssd_cred_cache_directory     = undef, # ' /tmp:/run/user/%U'
 String                 gssd_preferred_realm          = undef, # default in Kerberos config file
 Integer[0]             gssd_rpc_verbosity            = undef, # 0
+
 Simplib::Port          lockd_port                    =        # 0
 Simplib::Port          lockd_udp_port                =        # 0
 

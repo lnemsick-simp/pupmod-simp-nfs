@@ -24,7 +24,7 @@ MODULE TODO
   rpc-gssd.service). Will have to handle with an override or in Puppet.
 
 - testing
-  - NFSv3
+  - NFSv3 -> doesn't look like we test, so not clear services are working properly
   - NFSv4
   - include svckill and see what would be killed, in order to ensure we have all the
     processes set up appropriately
@@ -68,6 +68,8 @@ QUESTIONS
   - If we need to load it, do we need to persist the loading of it in /etc/modules or
     a config file in /etc/modules-load.d/?
   - Not loaded by default when no nfs services are being run.
+  - On client, will be loaded when mount point is started.  If we want to configure it up front,
+    need to load the module and set the configuration for it.
 - Does nfs-utils require any other sysconfig files
   - el8 no - no systemd services/targets/mounts source files or have any command line arguments
   - el7
@@ -124,14 +126,22 @@ QUESTIONS
 - Is there a case in which a nfs server would not be a nfs client? Do we fully support that?
 - Is modprobe required?
 - Is the sysctl fs.nfs.nfs_callback_tcpport and /etc/modprobe.d/nfs.conf still required?
-  - https://wiki.archlinux.org/index.php/Kernel_module#Automatic_module_loading_with_systemd
-  - Why were these set? (to get through firewalls or stunnel?)
-  - RPM no longer delivers a sample file for /etc/modprobe.d/nfs.conf (as of nfs-utils 1.2.6-10)
-  - Does this file still work?
-  - Should we still use it
+    "The NFSv4 client sends a port to the server for delegation callbacks.  The server attempts to
+     open a connection to the client on this port. By default, this port is ephemeral, and will be
+     blocked if the client is running a firewall."
+     the sysctl does not become available until *after* the mount has been created
+     ^-- hence the need for the /etc/modprobe/nfs.conf
+
+  - INFO https://wiki.archlinux.org/index.php/Kernel_module#Automatic_module_loading_with_systemd
+  - ANSWERED Why were these set? To get through firewalls or stunnel
+  - INFO RPM no longer delivers a sample file for /etc/modprobe.d/nfs.conf (as of nfs-utils 1.2.6-10)
+    ****But may be needed because of dynamic module loading and the fact that sysctl doesn't work
+    with dynamic file loading.
+    https://bugzilla.redhat.com/show_bug.cgi?id=1076255
   - Why does the sysctl resource fail if the parameter is not yet available?  Will it still
     write out the config so that it will be picked up when the kernel module is loaded and
     available?  Will it have to wait until the next puppet run?
+  - Should this be set on both the client and the server or just the server?
 - Why are we not setting fs.nfs.nlm_tcpport and fs.nfs.nlm_udpport?
   SOLUTION: fs.nfs.nlm_tcpport and fs.nfs.nlm_udpport are set by values in /etc/nfs.conf
     - Had to restart nfs-utils and then nfs-server in order to pick up the changes as shown by
@@ -214,7 +224,7 @@ parm:           nfs_access_max_cachesize:NFS access maximum total cache length (
 To see what a setting is
 sysctl fs.nfs.nsm_use_hostnames
 or
-cat /sys/module/lockd/nsm_use_hostnames
+cat /sys/module/lockd/parameters/nsm_use_hostnames
 
 
 
@@ -315,20 +325,24 @@ YES systemctl restart nfs-utils  <-- on NFS server: regenerates config  and rest
 SERVICE and KERNEL MODULE NOTES
 https://www.thegeekdiary.com/beginners-guide-to-nfs-in-centos-rhel/
 Service             Use
+man nfs.systemd
 nfs-idmapd.service  server when mapping required (servers not on the same
                     domain); requires /etc/idmapd.conf
                     unit file has BindsTo nfs-server.service
 nfs-mountd.service  server; implements server side of mount requests from clients NFSv3;
                     used to set up exports NFSv4
+                    unit file BindsTo nfs-server.service
 nfs-server.service  server; corresponds to rpc.nfsd
 rpc-statd.service   server; not NFSv4; used to notify clients when server has restarted
 rpc-rquotad.service server;
 
-nfs-utils.service   clients and server; use when config file changes
+nfs-utils.service   clients and server; use? when config file changes
 rpc-gssd.service    clients and server
 rpc-statd-notify.service client and server (all peers)
 rpcbind.service     clients and server?; NFSv3
 nfs-blkmap.service  clients using pNFS (parallel NFS)
+nfs-client.target   "Users intending to use NFSV4 with Kerberos need to start and enable
+                     this client" https://wiki.archlinux.org/index.php/NFS#Client
 
 Kernel Modules
 lockd               client and server; NFSV3; kernel threads  started when NFS server is run
@@ -336,17 +350,22 @@ lockd               client and server; NFSV3; kernel threads  started when NFS s
 nfsd                server; NFS server kernel module
 
 Section     Use
-general     clients and server; blkmapd(8), rpc.idmapd(8), and rpc.gssd(8)
+
 nfsdcltrack server; nfsdcltrack(8)
 nfsd        server; rpc.nfsd(8) rpc.mountd.
 mountd      server, rpc.mountd(8)
-statd       clients and server; rpc.statd(8)
-lockd       clients and server; rpc.statd(8)
-sm-notify   clients and server; sm-notify(8)
-gssd        clients? and server; rpc.gssd(8)
 exportfs    server; Only debug= is recognized.
+statd       server; rpc.statd(8)
 
-proc-fs-nfsd.mount does the actually loading of the lockd module
+general     clients and server; blkmapd(8), rpc.idmapd(8), and rpc.gssd(8)
+lockd       clients(?) server; rpc.statd(8) <-- double check needed by client when mounting with NFSv3
+gssd        clients and server; rpc.gssd(8)
+sm-notify   clients and server; sm-notify(8)
+
+proc-fs-nfsd.mount does the actually loading of the nfsd kernel module, which depends
+upon the lockd.  So lockd gets loaded as well by modprobe.
+
+nfs module also depends upon lockd module.  So that should be loaded as well.
 
 
 systemctl start nfs-server with default configuration

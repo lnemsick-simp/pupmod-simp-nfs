@@ -27,8 +27,7 @@
 # @param firewall
 #   Use the SIMP IPTables module to manipulate the firewall settings
 #
-# @author Trevor Vaughan <tvaughan@onyxpoint.com>
-# @author Kendall Moore <kendall.moore@onyxpoint.com>
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client (
   Simplib::Port $callback_port = 876,
@@ -49,6 +48,14 @@ class nfs::client (
     }
   }
 
+  # Normally, on the NFS client, the nfs kernel module would be loaded when
+  # the first mount was executed.  However, to ensure NFS server to client
+  # communication is on a known client port that can be allowed through the
+  # firewall (i.e., not an ephemeral one), we need to configure the callback
+  # port used by the nfs kernel module.  Here we (pre-)configure the kernel
+  # parameter and load the module, if it is not already loaded. Then, in case
+  # the module is already loaded, we also set the kernel parameter via sysctl.
+
   exec { 'modprobe_nfs':
     command => '/sbin/modprobe nfs',
     unless  => '/sbin/lsmod | /bin/grep -qw nfs',
@@ -56,6 +63,10 @@ class nfs::client (
       Package['nfs-utils'],
       File['/etc/modprobe.d/nfs.conf']
     ],
+    # The parameter is correctly set via /etc/modprobe.d/nfs.conf, but this
+    # notify makes the setting visible through sysctl or anyone poking around
+    # in /proc (i.e., following RHEL instructions for setting up NFS
+    # through a firewall).
     notify  => Sysctl['fs.nfs.nfs_callback_tcpport']
   }
 

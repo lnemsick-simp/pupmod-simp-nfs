@@ -104,14 +104,19 @@ class nfs (
   Boolean              $mountd_nfs_v3          = false,
   Simplib::Port        $rquotad_port           = 875,
   Optional[String]     $rpcrquotadopts         = undef,
-  Simplib::Port        $lockd_tcpport          = 32803,
-  Simplib::Port        $lockd_udpport          = 32769,
   String               $rpcnfsdargs            = '-N 2',
   Integer[0]           $rpcnfsdcount           = 8,
   Integer[0]           $nfsd_v4_grace          = 90,
   Simplib::Port        $mountd_port            = 20048,
   Simplib::Port        $statd_port             = 662,
   Simplib::Port        $statd_outgoing_port    = 2020,
+  Boolean              $gssd_avoid_dns         = true, # false is considered a security hole
+  Boolean              $gssd_limit_to_legacy_enctypes = false, # do not want old ciphers
+  Boolean              $gssd_use_gss_proxy     = true,
+  Simplib::Port        $lockd_port             = 32803,
+  Simplib::Port        $lockd_udp_port         = 32769,
+  Simplib::Port        $sm_notify_outgoing_port = 6620, #FIXME???
+  Optional[Hash]       $custom_nfs_conf_opts   = undef,
   Boolean              $secure_nfs             = false,
   Boolean              $ensure_latest_lvm2     = true,
   Boolean              $kerberos               = simplib::lookup('simp_options::kerberos', { 'default_value' => false }),
@@ -142,6 +147,25 @@ class nfs (
 
   include 'nfs::service_names'
   include 'nfs::install'
+  include 'nfs::common_config'
+
+  Class['nfs::install'] -> Class['nfs::common_config']
+
+  # This service needs to be restarted when configuration changes.  It will do any
+  # config massaging necessary (el7) and then restart (some of?) the underlying NFS
+  # services used by the NFS server and client.
+  # (On el7 it will regenerate /run/sysconfig/nfs-utils from /etc/sysconfig/nfs first)
+  exec { 'nfs_utils_restart':
+    command     => 'systemctl nfs-utils restart',
+    require     => Class['nfs::install'],
+    refreshonly => true
+  }
+
+  exec { 'nfs-server-reload-or-restart':
+    command     => 'systemctl nfs-server reload-or-restart',
+    require     => Class['nfs::install'],
+    refreshonly => true
+  }
 
   if $kerberos {
     include 'krb5'
@@ -165,14 +189,14 @@ class nfs (
   if $is_client {
     include 'nfs::client'
 
-    Class['nfs::install'] -> Class['nfs::client']
+    Class['nfs::common_config'] ~> Class['nfs::client']
   }
 
   if $is_server {
 
     include 'nfs::server'
 
-    Class['nfs::install'] -> Class['nfs::server']
+    Class['nfs::common_config'] ~> Class['nfs::server']
 
     if $kerberos {
       Class['krb5'] ~> Class['nfs::server']
@@ -208,13 +232,13 @@ class nfs (
       enable     => true,
       hasrestart => true,
       hasstatus  => true,
-      require    => Concat['/etc/sysconfig/nfs']
+      require    => Class['nfs::common_config']
     }
 
     if (!$is_server and $is_client and $stunnel) {
       service { $::nfs::service_names::rpcbind :
         ensure  => 'stopped',
-        require => Concat['/etc/sysconfig/nfs']
+        require => Class['nfs::common_config']
       }
     }
     else {
@@ -238,21 +262,7 @@ class nfs (
 
   svckill::ignore { 'nfs-rquotad': }
 
-  concat { '/etc/sysconfig/nfs':
-    owner          => 'root',
-    group          => 'root',
-    mode           => '0644',
-    ensure_newline => true,
-    warn           => true
-  }
 
-  concat::fragment { 'nfs_init':
-    order   => 5,
-    target  => '/etc/sysconfig/nfs',
-    content => template("${module_name}/etc/sysconfig/nfs.erb")
-  }
-
-  Class['nfs::install'] -> Concat['/etc/sysconfig/nfs']
 
   if $is_server {
     Concat['/etc/sysconfig/nfs'] ~> Service[$::nfs::service_names::nfs_server]

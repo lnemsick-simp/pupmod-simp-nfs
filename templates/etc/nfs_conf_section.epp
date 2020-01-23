@@ -1,0 +1,11 @@
+%-|
+  String $section,
+  Hash   $opts
+|-%>
+
+[$<%= $section -%>]
+<%
+  $opts.each |String $param, String $value| {
+-%>
+  <%= $param -%> = <%= $value %>
+<% } -%>
