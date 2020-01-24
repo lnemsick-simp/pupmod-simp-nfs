@@ -99,20 +99,22 @@
 class nfs (
   Boolean               $is_server              = false,
   Boolean               $is_client              = true,
+  Boolean               $client_nfsv3           = false,
   Boolean               $nfsv3                  = false,
   Boolean               $mountd_nfs_v2          = false,
   Boolean               $mountd_nfs_v3          = false,
   Simplib::Port         $rquotad_port           = 875,
   Optional[String]      $rpcrquotadopts         = undef,
   Simplib::Port         $mountd_port            = 20048,
-  Simplib::Port         $statd_port             = 662,
-  Simplib::Port         $statd_outgoing_port    = 2020,
+
   Boolean               $gssd_avoid_dns         = true, # false is considered a security hole
   Boolean               $gssd_limit_to_legacy_enctypes = false, # do not want old ciphers
   Boolean               $gssd_use_gss_proxy     = true,
   Simplib::Port         $lockd_port             = 32803,
   Simplib::Port         $lockd_udp_port         = 32769,
   Simplib::Port         $sm_notify_outgoing_port = 6620, #FIXME???
+  Simplib::Port         $statd_port             = 662,
+  Simplib::Port         $statd_outgoing_port    = 2020,
   Nfs::NfsConfHash      $custom_nfs_conf_opts   = {},
   Nfs::LegacyDaemonArgs $custom_daemon_args     = {},  # only applies to EL7
   Boolean               $secure_nfs             = false,
@@ -143,11 +145,17 @@ class nfs (
     $_stunnel_socket_options = $stunnel_socket_options
   }
 
+  if ($is_client and $client_nfsv3) or ($is_server and $nfsd_ver3) {
+    $_nfsv3_required = true
+  } else {
+    $_nfsv3_required = false
+  }
+
   include 'nfs::service_names'
   include 'nfs::install'
-  include 'nfs::common_config'
+  include 'nfs::base_config'
 
-  Class['nfs::install'] -> Class['nfs::common_config']
+  Class['nfs::install'] -> Class['nfs::base_config']
 
   # This service needs to be restarted when configuration changes.  It will do any
   # config massaging necessary (el7) and then restart (some of?) the underlying NFS
@@ -187,14 +195,14 @@ class nfs (
   if $is_client {
     include 'nfs::client'
 
-    Class['nfs::common_config'] ~> Class['nfs::client']
+    Class['nfs::base_config'] ~> Class['nfs::client']
   }
 
   if $is_server {
 
     include 'nfs::server'
 
-    Class['nfs::common_config'] ~> Class['nfs::server']
+    Class['nfs::base_config'] ~> Class['nfs::server']
 
     if $kerberos {
       Class['krb5'] ~> Class['nfs::server']
@@ -225,18 +233,21 @@ class nfs (
 
   if $is_server or $nfsv3 {
 
+#TODO server doesn't need this if it is not supporting NFSv3?
+# and per nfs.systemd, service will not run if rpcbind is not running
     service { $::nfs::service_names::nfs_lock :
       ensure     => 'running',
       enable     => true,
       hasrestart => true,
       hasstatus  => true,
-      require    => Class['nfs::common_config']
+      require    => Class['nfs::base_config']
     }
 
     if (!$is_server and $is_client and $stunnel) {
+#TODO how can this work without rpcbind?
       service { $::nfs::service_names::rpcbind :
         ensure  => 'stopped',
-        require => Class['nfs::common_config']
+        require => Class['nfs::base_config']
       }
     }
     else {
@@ -247,18 +258,22 @@ class nfs (
         hasstatus  => true
       }
 
-      Concat['/etc/sysconfig/nfs'] -> Service[$::nfs::service_names::rpcbind]
+# FIXME
+      Class['nfs::base_config'] -> Service[$::nfs::service_names::rpcbind]
       Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::nfs_lock]
     }
   }
   else {
+# FIXME
+# - Can we be assured no one else needs rpcbind?
+# - nfs.systemd man page says to mask to prevent other unnecessary services from running
+#    masking tells systemd to not start the service
     service { $::nfs::service_names::rpcbind :
       ensure  => 'stopped',
       require => Class['nfs::install']
     }
   }
 
-  svckill::ignore { 'nfs-rquotad': }
 
 
 

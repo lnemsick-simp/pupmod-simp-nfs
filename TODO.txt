@@ -97,10 +97,7 @@ QUESTIONS
 
 
 
-
-
-- Why are we not running nfs-idmapd.service on the client?  Man page says it services
-  server or client requests using upcalls, which mean local userspace function calls.
+- Why are we not configuring nfsidmap on the client?
 - Do we need to handle pNFS (nfs-blkmap.service)?
 - Do we need to handle RDMA?
   - Install the rdma-core package:
@@ -114,11 +111,12 @@ QUESTIONS
     default, which requests the rdma service to load the NFSoRDMA client module.
   - Restart the nfs-server service:
     # systemctl restart nfs-server
-- Do we need to do anything with gssproxy?
-  - EL8 has some sort of config... how do we use this?
+- Do we need to do anything with gssproxy configuration?
   - Should we (are we) managing /etc/gssproxy/gssproxy.conf
   - Do we need to manage /etc/gssproxy/24-nfs-server.conf from nfs-utils RPM
   - Do we need to manage /etc/gssproxy/99-nfs-client.conf from gssproxy RPM
+  - htps://pagure.io/gssproxy/
+
 
 - What does the nfs::secure_nfs=true do? How does it relate to Kerberos?
   looks like secure_nfs=true can go hand-in-hand with kerberos.  SIMP doesn't have to
@@ -326,20 +324,26 @@ SERVICE and KERNEL MODULE NOTES
 https://www.thegeekdiary.com/beginners-guide-to-nfs-in-centos-rhel/
 Service             Use
 man nfs.systemd
-nfs-idmapd.service  server when mapping required (servers not on the same
-                    domain); requires /etc/idmapd.conf
-                    unit file has BindsTo nfs-server.service
+nfs-idmapd.service  server when mapping required (servers not on the same domain? usersnames
+                    to userids?);
+                    requires /etc/idmapd.conf;
+                    unit file has BindsTo nfs-server.service <--> requires nfs-server and
+                      will stop if nfs-server is not up;
+                    RHEL docs say client uses something else
+                    RHEL docs says for NFSv4 ids?
 nfs-mountd.service  server; implements server side of mount requests from clients NFSv3;
-                    used to set up exports NFSv4
+                    --> used to set up exports NFSv4 <-- CHECK?
                     unit file BindsTo nfs-server.service
 nfs-server.service  server; corresponds to rpc.nfsd
-rpc-statd.service   server; not NFSv4; used to notify clients when server has restarted
-rpc-rquotad.service server;
+rpc-rquotad.service server; Requires rpcbind.service
 
 nfs-utils.service   clients and server; use? when config file changes
 rpc-gssd.service    clients and server
-rpc-statd-notify.service client and server (all peers)
-rpcbind.service     clients and server?; NFSv3
+rpc-statd.service   client and server; not NFSv4; part of locking mechanism; started on
+                    client with mount.nfs if needed
+rpc-statd-notify.service client and server (all peers); not NFSv4; reboot notify; used
+                    by locking mechanism
+rpcbind.service     clients and server; NFSv3; required for rpc-rquotad.service
 nfs-blkmap.service  clients using pNFS (parallel NFS)
 nfs-client.target   "Users intending to use NFSV4 with Kerberos need to start and enable
                      this client" https://wiki.archlinux.org/index.php/NFS#Client
@@ -348,6 +352,7 @@ Kernel Modules
 lockd               client and server; NFSV3; kernel threads  started when NFS server is run
                     and NFS file system is mounted
 nfsd                server; NFS server kernel module
+nfs                 client
 
 Section     Use
 
@@ -355,17 +360,18 @@ nfsdcltrack server; nfsdcltrack(8)
 nfsd        server; rpc.nfsd(8) rpc.mountd.
 mountd      server, rpc.mountd(8)
 exportfs    server; Only debug= is recognized.
-statd       server; rpc.statd(8)
 
 general     clients and server; blkmapd(8), rpc.idmapd(8), and rpc.gssd(8)
-lockd       clients(?) server; rpc.statd(8) <-- double check needed by client when mounting with NFSv3
+lockd       clients server; rpc.statd(8) <-- NFSV3
 gssd        clients and server; rpc.gssd(8)
-sm-notify   clients and server; sm-notify(8)
+statd       clients and server; rpc.statd(8)  <-- NFSv3
+sm-notify   clients and server; sm-notify(8) <-- NFSv3
 
 proc-fs-nfsd.mount does the actually loading of the nfsd kernel module, which depends
-upon the lockd.  So lockd gets loaded as well by modprobe.
+upon the lockd.  So lockd gets loaded as well by modprobe in the server case.
 
-nfs module also depends upon lockd module.  So that should be loaded as well.
+nfs module is loaded when mount.nfs is called and also depends upon lockd module.
+  So lockd gets loaded by modprobe in this client case.
 
 
 systemctl start nfs-server with default configuration
@@ -409,3 +415,14 @@ tickets.puppetlabs.com/browse/PUP-1054
 use custom restart command as a reload?
 stop all services and see if start nfs-server back up it works
 stop some services and see if restart nfs-server starts up correctly
+
+PROTOCOLS
+NLM (Network Lock Manager Protocol)
+ - https://wiki.wireshark.org/Network_Lock_Manager
+ - Used in NFSv2 and NFSv3, but not NFSv4 which builds that capability in
+ - Uses NSM to recover from peer restarts
+ - Implemented as lockd and must be run on both clients and servers
+NSM (Network Status Monitor Protocol)
+ - man rpc.statd
+ - Used in NFSv2 and NFSv3, but not NFSv4 which builds that capability in
+ - Used to notify NFS peers of reboots

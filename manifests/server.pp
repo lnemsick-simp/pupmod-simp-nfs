@@ -71,9 +71,7 @@
 # @param tcpwrappers
 #   Use the SIMP ``tcpwrappers`` module to manage tcpwrappers
 #
-# @author Trevor Vaughan <tvaughan@onyxpoint.com>
-# @author Morgan Rhodes <morgan@puppet.com>
-# @author Kendall Moore <kendall.moore@onyxpoint.com>
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::server (
   Simplib::Netlist               $trusted_nets                  = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] }),
@@ -104,12 +102,54 @@ class nfs::server (
     }
   }
 
+  if 'exportfs' in $_merged_opts {
+    concat::fragment { 'nfs_conf_exportfs':
+      order   => 2,
+      target  => '/etc/nfs.conf',
+      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+        { section => 'exportfs', opts => $_merged_opts['exportfs']})
+    }
+  }
+
+  if 'mountd' in $_merged_opts {
+    concat::fragment { 'nfs_conf_mountd':
+      order   => 1,
+      target  => '/etc/nfs.conf',
+      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+        { section => 'mountd', opts => $_merged_opts['mountd']})
+    }
+  }
+  if 'nfsd' in $_merged_opts {
+    concat::fragment { 'nfs_conf_nfsd':
+      order   => 1,
+      target  => '/etc/nfs.conf',
+      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+        { section => 'nfsd', opts => $_merged_opts['nfsd']})
+    }
+  }
+  if 'nfsdcltrack' in $_merged_opts {
+    concat::fragment { 'nfs_conf_nfsdcltrack':
+      order   => 1,
+      target  => '/etc/nfs.conf',
+      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+        { section => 'nfsdcltrack', opts => $_merged_opts['nfsdcltrack']})
+    }
+  }
+
   $_merged_opts =  $custom_nfs_conf_opts + $_required_nfs_conf_opts
 
+  #FIXME configure rpc.rquotad
+
+#FIXME start up rpc.rquotad?
+#***rpc-rquotad.service require rpcbind.service
+#  RHEL docs says it is started automatically when needed, so, need
+#  to configure but not start and thus need svckill?  Other docs show to
+#  enable and start the service.  Need to try it and see.
+  svckill::ignore('rpc-rquotad.service')
 
 
   if $tcpwrappers {
-    include '::tcpwrappers'
+    include 'tcpwrappers'
   }
 
   if $stunnel {
@@ -155,6 +195,7 @@ class nfs::server (
     hasstatus  => true
   }
 
+#FIXME only need rpcbind if servicing NFSv3?
   Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::nfs_server]
 
   # $stunnel_port_override is a value that is set by the stunnel overlay.
@@ -206,6 +247,7 @@ class nfs::server (
   }
 
   if $tcpwrappers {
+# what about sm-modify?
     tcpwrappers::allow { [
       'mountd',
       'statd',
@@ -235,6 +277,7 @@ class nfs::server (
   }
 
   if $::nfs::secure_nfs {
+# needs to run on client as well?
     service { $::nfs::service_names::gssproxy :
       ensure     => 'running',
       enable     => true,
@@ -246,6 +289,7 @@ class nfs::server (
 
     Service[$::nfs::service_names::rpcbind] -> Sysctl['sunrpc.tcp_slot_table_entries']
     Service[$::nfs::service_names::rpcbind] -> Sysctl['sunrpc.udp_slot_table_entries']
+# why is the notifying statd?
     Sysctl['sunrpc.tcp_slot_table_entries'] ~> Service[$::nfs::service_names::nfs_lock]
     Sysctl['sunrpc.udp_slot_table_entries'] ~> Service[$::nfs::service_names::nfs_lock]
   }

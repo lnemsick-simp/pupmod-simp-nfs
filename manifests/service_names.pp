@@ -7,13 +7,15 @@ class nfs::service_names {
   # When Puppet runs `systemctl is-enabled <service>` without `.service`,
   # it doesn't know what to check the enabled status of, and returns
   # unknown
-  $nfs_lock    = 'rpc-statd.service'
-  $nfs_mountd  = 'nfs-mountd.service'
-  $nfs_rquotad = 'nfs-rquotad.service'
-  $nfs_server  = 'nfs-server.service'
-  $nfs_utils   = 'nfs-utils.service'  # service to be restarted when any config changes
-  $rpcidmapd   = 'nfs-idmapd.service'
-  $rpcgssd     = 'rpc-gssd.service'
-  $gssproxy    = 'gssproxy.service'
-  $rpcbind     = 'rpcbind.service'
+  $nfs_lock         = 'rpc-statd.service'  #FIXME this is rpc_statd
+  $rpc_statd_notify = 'rpc-statd-notify.service '
+  $nfs_mountd       = 'nfs-mountd.service'
+  $nfs_rquotad      = 'nfs-rquotad.service'
+  $nfs_client       = 'nfs-client.target'
+  $nfs_server       = 'nfs-server.service'
+  $nfs_utils        = 'nfs-utils.service'  # service to be restarted when any config changes
+  $rpcidmapd        = 'nfs-idmapd.service'
+  $rpcgssd          = 'rpc-gssd.service'
+  $gssproxy         = 'gssproxy.service'
+  $rpcbind          = 'rpcbind.service'
 }
