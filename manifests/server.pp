@@ -78,37 +78,35 @@
 class nfs::server (
   Simplib::Netlist               $trusted_nets                  = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] }),
   Boolean                        $nfsv3                         = $::nfs::nfsv3,
-  Optional[String]               $lockd_arg                     = undef,
-  Optional[String]               $nfsd_module                   = undef,
-  Optional[String]               $rpcmountdopts                 = undef,
-  Optional[String]               $statdarg                      = undef,
-  Optional[Stdlib::Absolutepath] $statd_ha_callout              = undef,
-  Optional[String]               $rpcidmapdargs                 = undef,
-  Optional[String]               $rpcgssdargs                   = undef,
-#FIXME this should be gss_use_proxy and default to true
-  Optional[String]               $rpcsvcgssdargs                = undef,
   Integer[1]                     $sunrpc_udp_slot_table_entries = 128,
   Integer[1]                     $sunrpc_tcp_slot_table_entries = 128,
+  Nfs::NfsConfHash      $custom_nfs_conf_opts          = $::nfs::custom_nfs_conf_options,
+  Nfs::LegacyDaemonArgs $custom_daemon_args            = $::nfs::custom_daemon_args,
   Boolean                        $firewall                      = $::nfs::firewall,
   Boolean                        $stunnel                       = $::nfs::stunnel,
   Boolean                        $tcpwrappers                   = $::nfs::tcpwrappers,
-  # Only applies to EL7 and can be used to override command line arguments
-  # for NFS daemon settings that cannot be configured by /etc/nfs.conf.  In EL8,
-  # the daemons do not accept any command line arguments and must be configured
-  # via /etc/nfs.conf!
-  # RPCNFSDARGS=" 8"
-  # RPCMOUNTDARGS=""
-  # STATDARGS=""
-  # SMNOTIFYARGS="" <-- server and client
-  # RPCIDMAPDARGS=""
-  # GSSDARGS=""
-  # BLKMAPDARGS=""
-  # GSS_USE_PROXY="yes"
-  # 
-  Optional[Hash]                 $nfs_sysconfig_settings
 ) inherits ::nfs {
 
   assert_private()
+
+  $_required_opts = {
+    'gssd' => {
+      'avoid-dns'                => $gssd_avoid_dns,
+      'limit-to-legacy-enctypes' => $gssd_limit_to_legacy_enctypes,
+      'use-gss-proxy'            => $gssd_use_gss_proxy
+    },
+    'lockd' => {
+      'port'     => $lockd_port,
+      'udp-port' => $lockd_udp_port,
+    },
+    'sm-notify' => {
+      'outgoing-port' => $sm_notify_outgoing_port
+    }
+  }
+
+  $_merged_opts =  $custom_nfs_conf_opts + $_required_nfs_conf_opts
+
+
 
   if $tcpwrappers {
     include '::tcpwrappers'

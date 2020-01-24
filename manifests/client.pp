@@ -76,6 +76,7 @@ class nfs::client (
     silent => true #ignore the activation failure of a yet-to-be-activated sysctl value
   }
 
+#FIXME don't think this is needed.  think the notified sysctl is sufficient
   file { '/etc/modprobe.d/nfs.conf':
     owner   => 'root',
     group   => 'root',
