@@ -13,7 +13,7 @@
 #     classes
 #
 # @param nfsv3
-#   Use NFSv3 for connections
+#   Allow use NFSv3 for connections.
 #
 # @param mountd_nfs_v2
 #   Act as an ``NFSv2`` server
@@ -31,10 +31,10 @@
 #     via the `-p` option.
 #
 # @param lockd_tcpport
-#   The TCP port upon which ``lockd`` should listen
+#   The TCP port upon which ``lockd`` should listen (NFSv3)
 #
 # @param lockd_udpport
-#   The UDP port upon which ``lockd`` should listen
+#   The UDP port upon which ``lockd`` should listen (NFSv3)
 #
 # @param rpcnfsdargs
 #   Arbitrary arguments to pass to ``nfsd``
@@ -65,12 +65,15 @@
 # @param kerberos
 #   Use the SIMP ``krb5`` module for Kerberos support
 #
-#   * You may need to set variables in ``::krb5::config`` via Hiera or your ENC
+#   * You may need to set variables in ``krb5::config`` via Hiera or your ENC
 #     if you do not like the defaults.
 #
 # @param keytab_on_puppet
-#   If set, and ``$krb5`` is ``true`` then set the NFS server to pull its
-#   keytab directly from the Puppet server
+#   Whether the NFS server will pull its  keytab directly from the Puppet server.
+#
+#   * Only applicable if ``$kerberos` is ``true.
+#   * If ``false``, you will need to ensure the appropriate services are restarted
+#     when the keytab is changed.
 #
 # @param firewall
 #   Use the SIMP ``iptables`` module to manage firewall connections
@@ -82,7 +85,7 @@
 #   Wrap ``stunnel`` around the NFS server connections
 #
 #   * This is ideally suited for environments without a working Kerberos setup
-#     and may cause issues when used together
+#     and may cause issues when used with Kerberos.
 #
 # @param stunnel_tcp_nodelay
 #   Enable TCP_NODELAY for all stunnel connections
@@ -99,7 +102,6 @@
 class nfs (
   Boolean               $is_server              = false,
   Boolean               $is_client              = true,
-  Boolean               $client_nfsv3           = false,
   Boolean               $nfsv3                  = false,
   Boolean               $mountd_nfs_v2          = false,
   Boolean               $mountd_nfs_v3          = false,
@@ -145,33 +147,28 @@ class nfs (
     $_stunnel_socket_options = $stunnel_socket_options
   }
 
-  if ($is_client and $client_nfsv3) or ($is_server and $nfsd_ver3) {
-    $_nfsv3_required = true
-  } else {
-    $_nfsv3_required = false
-  }
-
   include 'nfs::service_names'
   include 'nfs::install'
   include 'nfs::base_config'
 
   Class['nfs::install'] -> Class['nfs::base_config']
 
+#FIXME if we are notifying client and/or server classes and they have the services
+# listed, do we need this?  Each el7 service will regenerate its config when it
+# is run
   # This service needs to be restarted when configuration changes.  It will do any
-  # config massaging necessary (el7) and then restart (some of?) the underlying NFS
-  # services used by the NFS server and client.
-  # (On el7 it will regenerate /run/sysconfig/nfs-utils from /etc/sysconfig/nfs first)
+  # config massaging necessary (el7) and then restart base services needed by
+  # the NFS server and client.
+  # * Still need to reload nfs-server.service
+  # * On el7 it will regenerate /run/sysconfig/nfs-utils from /etc/sysconfig/nfs first)
   exec { 'nfs_utils_restart':
-    command     => 'systemctl nfs-utils restart',
+    command     => 'systemctl restart nfs-utils',
     require     => Class['nfs::install'],
     refreshonly => true
   }
 
-  exec { 'nfs-server-reload-or-restart':
-    command     => 'systemctl nfs-server reload-or-restart',
-    require     => Class['nfs::install'],
-    refreshonly => true
-  }
+#  Class['nfs::base_config'] ~> Exec['nfs_utils_restart']
+
 
   if $kerberos {
     include 'krb5'
@@ -196,10 +193,21 @@ class nfs (
     include 'nfs::client'
 
     Class['nfs::base_config'] ~> Class['nfs::client']
+
+    # VERIFY this is needed
+    if $kerberos {
+      Class['krb5'] ~> Class['nfs::client']
+
+#FIXME move to comment for keytab_on_puppet param
+      # If you don't put your keytabs on the Puppet server, you'll need to add
+      # code to trigger this yourself!
+      if $keytab_on_puppet {
+        Class['krb5::keytab'] ~> Class['nfs::client']
+      }
+    }
   }
 
   if $is_server {
-
     include 'nfs::server'
 
     Class['nfs::base_config'] ~> Class['nfs::server']
@@ -213,71 +221,4 @@ class nfs (
     }
   }
 
-  if $secure_nfs {
-      service { $::nfs::service_names::rpcgssd :
-        ensure     => 'running',
-        enable     => true,
-        hasrestart => true,
-        hasstatus  => true
-      }
-
-      # If you don't put your keytabs on the Puppet server, you'll need to add
-      # code to trigger this yourself!
-      if $keytab_on_puppet {
-        Class['krb5::keytab'] ~> Service[$::nfs::service_names::rpcgssd]
-      }
-
-      Concat['/etc/sysconfig/nfs'] -> Service[$::nfs::service_names::rpcgssd]
-      Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::rpcgssd]
-  }
-
-  if $is_server or $nfsv3 {
-
-#TODO server doesn't need this if it is not supporting NFSv3?
-# and per nfs.systemd, service will not run if rpcbind is not running
-    service { $::nfs::service_names::nfs_lock :
-      ensure     => 'running',
-      enable     => true,
-      hasrestart => true,
-      hasstatus  => true,
-      require    => Class['nfs::base_config']
-    }
-
-    if (!$is_server and $is_client and $stunnel) {
-#TODO how can this work without rpcbind?
-      service { $::nfs::service_names::rpcbind :
-        ensure  => 'stopped',
-        require => Class['nfs::base_config']
-      }
-    }
-    else {
-      service { $::nfs::service_names::rpcbind :
-        ensure     => 'running',
-        enable     => true,
-        hasrestart => true,
-        hasstatus  => true
-      }
-
-# FIXME
-      Class['nfs::base_config'] -> Service[$::nfs::service_names::rpcbind]
-      Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::nfs_lock]
-    }
-  }
-  else {
-# FIXME
-# - Can we be assured no one else needs rpcbind?
-# - nfs.systemd man page says to mask to prevent other unnecessary services from running
-#    masking tells systemd to not start the service
-    service { $::nfs::service_names::rpcbind :
-      ensure  => 'stopped',
-      require => Class['nfs::install']
-    }
-  }
-
-
-
-
-  if $is_server {
-    Concat['/etc/sysconfig/nfs'] ~> Service[$::nfs::service_names::nfs_server]
-  }
 }

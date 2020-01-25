@@ -24,8 +24,20 @@ MODULE TODO
   rpc-gssd.service). Will have to handle with an override or in Puppet.
 
 - testing
+  - make sure systemd dependencies are correct for oldest nfs-utils
+    ***May have to lay down systemd unit files
+  - misc
+    - NFS server reboot
+    - NFS client reboot
+    -
   - NFSv3 -> doesn't look like we test, so not clear services are working properly
+    - no stunnel
+    - stunnel
+    - kerberos
   - NFSv4
+    - no stunnel
+    - stunnel
+    - kerberos
   - include svckill and see what would be killed, in order to ensure we have all the
     processes set up appropriately
   - parameters set are being used

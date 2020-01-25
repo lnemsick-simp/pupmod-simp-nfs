@@ -1,7 +1,7 @@
 # @summary Common configuration required by both NFS server and client
 #
 class nfs::base_config (
-  Boolean               $nfsv3_requird                 = $::nfs::_nfsv3_required,
+  Boolean               $nfsv3                         = $::nfs::nfsv3,
   Boolean               $gssd_avoid_dns                = $::nfs::gssd_avoid_dns,
   Boolean               $gssd_limit_to_legacy_enctypes = $::nfs::gssd_limit_to_legacy_enctypes,
   Boolean               $gssd_use_gss_proxy            = $::nfs::gssd_use_gss_proxy,
@@ -70,7 +70,7 @@ class nfs::base_config (
     }
   }
 
-  if $nfsv3_required {
+  if $nfsv3 {
     concat::fragment { 'nfs_conf_lockd':
       order   => 4,
       target  => '/etc/nfs.conf',
@@ -94,7 +94,6 @@ class nfs::base_config (
       }
     }
   }
-
 
   if (versioncmp($facts['os']['release']['major'], '8') < 0) {
     # In EL > 7, NFS services must be configured by /etc/nfs.conf. In EL7, however,

@@ -74,33 +74,40 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::server (
-  Simplib::Netlist               $trusted_nets                  = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] }),
-  Boolean                        $nfsv3                         = $::nfs::nfsv3,
-  Integer[1]                     $sunrpc_udp_slot_table_entries = 128,
-  Integer[1]                     $sunrpc_tcp_slot_table_entries = 128,
+  Simplib::Netlist      $trusted_nets                  = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] }),
+  Boolean               $nfsv3                         = $::nfs::nfsv3,
   Nfs::NfsConfHash      $custom_nfs_conf_opts          = $::nfs::custom_nfs_conf_options,
   Nfs::LegacyDaemonArgs $custom_daemon_args            = $::nfs::custom_daemon_args,
-  Boolean                        $firewall                      = $::nfs::firewall,
-  Boolean                        $stunnel                       = $::nfs::stunnel,
-  Boolean                        $tcpwrappers                   = $::nfs::tcpwrappers,
+  Integer[1]            $sunrpc_udp_slot_table_entries = 128,
+  Integer[1]            $sunrpc_tcp_slot_table_entries = 128,
+  Boolean               $firewall                      = $::nfs::firewall,
+  Boolean               $stunnel                       = $::nfs::stunnel,
+  Boolean               $tcpwrappers                   = $::nfs::tcpwrappers,
 ) inherits ::nfs {
 
   assert_private()
 
+  $_default_nfsv4_versions = {
+    'nfsd' => {
+      'vers4'   => true,
+      'vers4.0' => true,
+      'vers4.1' => true,
+      'vers4.2' => true
+    }
+  }
+
   $_required_opts = {
-    'gssd' => {
+    'nfsd' => {
+      'vers3'   => $nfsv3,
+    },
+    'mountd' => {
       'avoid-dns'                => $gssd_avoid_dns,
       'limit-to-legacy-enctypes' => $gssd_limit_to_legacy_enctypes,
       'use-gss-proxy'            => $gssd_use_gss_proxy
-    },
-    'lockd' => {
-      'port'     => $lockd_port,
-      'udp-port' => $lockd_udp_port,
-    },
-    'sm-notify' => {
-      'outgoing-port' => $sm_notify_outgoing_port
     }
   }
+
+  $_merged_opts =  $custom_nfs_conf_opts + $_required_nfs_conf_opts
 
   if 'exportfs' in $_merged_opts {
     concat::fragment { 'nfs_conf_exportfs':
@@ -111,32 +118,35 @@ class nfs::server (
     }
   }
 
-  if 'mountd' in $_merged_opts {
-    concat::fragment { 'nfs_conf_mountd':
-      order   => 1,
-      target  => '/etc/nfs.conf',
-      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
-        { section => 'mountd', opts => $_merged_opts['mountd']})
+  if $nfsv3 {
+    if 'mountd' in $_merged_opts {
+      concat::fragment { 'nfs_conf_mountd':
+        order   => 5,
+        target  => '/etc/nfs.conf',
+        content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+          { section => 'mountd', opts => $_merged_opts['mountd']})
+      }
     }
   }
+
   if 'nfsd' in $_merged_opts {
     concat::fragment { 'nfs_conf_nfsd':
-      order   => 1,
+      order   => 6,
       target  => '/etc/nfs.conf',
       content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
         { section => 'nfsd', opts => $_merged_opts['nfsd']})
     }
   }
+
   if 'nfsdcltrack' in $_merged_opts {
     concat::fragment { 'nfs_conf_nfsdcltrack':
-      order   => 1,
+      order   => 7,
       target  => '/etc/nfs.conf',
       content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
         { section => 'nfsdcltrack', opts => $_merged_opts['nfsdcltrack']})
     }
   }
 
-  $_merged_opts =  $custom_nfs_conf_opts + $_required_nfs_conf_opts
 
   #FIXME configure rpc.rquotad
 
@@ -188,10 +198,12 @@ class nfs::server (
     ]
   }
 
-  service { $::nfs::service_names::nfs_server :
+  service { 'nfs-server.service':
     ensure     => 'running',
     enable     => true,
-    hasrestart => true,
+    # use the less disruptive reload if possible for a restart
+    hasrestart => false,
+    restart    => 'systemctl reload-or-restart nfs-server.service',
     hasstatus  => true
   }
 
@@ -265,7 +277,7 @@ class nfs::server (
     val     => $sunrpc_tcp_slot_table_entries,
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module',
-    notify  => Service[$::nfs::service_names::nfs_server]
+    notify  => Service[$::nfs::service_names::nfs_server]  #FIXME is this necessary?
   }
 
   sysctl { 'sunrpc.udp_slot_table_entries':

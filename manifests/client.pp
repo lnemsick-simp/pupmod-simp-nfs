@@ -59,10 +59,10 @@ class nfs::client (
   exec { 'modprobe_nfs':
     command => '/sbin/modprobe nfs',
     unless  => '/sbin/lsmod | /bin/grep -qw nfs',
-    require => [
-      Package['nfs-utils'],
-      File['/etc/modprobe.d/nfs.conf']
-    ],
+ #   require => [
+ #     Package['nfs-utils'],
+ #     File['/etc/modprobe.d/nfs.conf']
+ #   ],
     # The parameter is correctly set via /etc/modprobe.d/nfs.conf, but this
     # notify makes the setting visible through sysctl or anyone poking around
     # in /proc (i.e., following RHEL instructions for setting up NFS
@@ -71,16 +71,29 @@ class nfs::client (
   }
 
   sysctl { 'fs.nfs.nfs_callback_tcpport':
-    ensure => 'present',
-    val    => $callback_port,
-    silent => true #ignore the activation failure of a yet-to-be-activated sysctl value
+    ensure  => 'present',
+    val     => $callback_port,
+    silent  => true, #FIXME is this required?ignore the activation failure of a yet-to-be-activated sysctl value
+    comment => 'Managed by simp-nfs Puppet module'
   }
 
 #FIXME don't think this is needed.  think the notified sysctl is sufficient
-  file { '/etc/modprobe.d/nfs.conf':
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0640',
-    content => "options nfs callback_tcpport=${callback_port}\n"
+#  file { '/etc/modprobe.d/nfs.conf':
+#    owner   => 'root',
+#    group   => 'root',
+#    mode    => '0640',
+#    content => "options nfs callback_tcpport=${callback_port}\n"
+#  }
+
+  service { 'nfs-client.target':
+    ensure     => 'running',
+    enable     => true,
+    hasrestart => true,
   }
+
+  # ancillary services that need to be enabled or masked depending upon
+  # how we are configured
+  include 'nfs::service::nfsv3'
+  include 'nfs::service::secure'
+
 }
