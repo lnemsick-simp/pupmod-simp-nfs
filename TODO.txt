@@ -29,7 +29,12 @@ MODULE TODO
   - misc
     - NFS server reboot
     - NFS client reboot
-    -
+    - no stunnel
+      - tcpwrappers
+      - iptables
+    - stunnel
+      - tcpwrappers
+      - iptables
   - NFSv3 -> doesn't look like we test, so not clear services are working properly
     - no stunnel
     - stunnel
@@ -52,6 +57,7 @@ NFSv2 not supported RHEL8
   https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/managing_file_systems/mounting-nfs-shares_managing-file-systemsto
 
 QUESTIONS
+- sm-notify uses UDP...how does that go through stunnel?
 - Class['autofs::service'] ~> Service[$::nfs::service_names::rpcbind]
   is the Wants in the autofs.service insufficient?
 - What should the initial nfs.conf look like?

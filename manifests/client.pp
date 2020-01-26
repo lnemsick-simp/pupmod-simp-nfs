@@ -91,6 +91,12 @@ class nfs::client (
     hasrestart => true,
   }
 
+  if $::nfs::idmapd {
+    include 'nfs::idmapd::client'
+  }
+  #FIXME
+  #need to configure /etc/idpmad.conf and /etc/request-key.conf for nfsidmap
+
   # ancillary services that need to be enabled or masked depending upon
   # how we are configured
   include 'nfs::service::nfsv3'

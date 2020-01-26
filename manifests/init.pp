@@ -44,9 +44,6 @@
 # @param rpcnfsdcount
 #   The number of NFS server threads to start by default
 #
-# @param nfsd_v4_grace
-#   The NFSv4 grace period, in seconds
-#
 # @param mountd_port
 #   The port upon which ``mountd`` should listen
 #
@@ -103,12 +100,9 @@ class nfs (
   Boolean               $is_server              = false,
   Boolean               $is_client              = true,
   Boolean               $nfsv3                  = false,
-  Boolean               $mountd_nfs_v2          = false,
-  Boolean               $mountd_nfs_v3          = false,
   Simplib::Port         $rquotad_port           = 875,
-  Optional[String]      $rpcrquotadopts         = undef,
   Simplib::Port         $mountd_port            = 20048,
-
+  Simplib::Port         $nfsd_port              = 2049,
   Boolean               $gssd_avoid_dns         = true, # false is considered a security hole
   Boolean               $gssd_limit_to_legacy_enctypes = false, # do not want old ciphers
   Boolean               $gssd_use_gss_proxy     = true,
@@ -119,6 +113,7 @@ class nfs (
   Simplib::Port         $statd_outgoing_port    = 2020,
   Nfs::NfsConfHash      $custom_nfs_conf_opts   = {},
   Nfs::LegacyDaemonArgs $custom_daemon_args     = {},  # only applies to EL7
+  Boolean               $idmapd                 = false, #whether to use idmapd/nfsidmap
   Boolean               $secure_nfs             = false,
   Boolean               $ensure_latest_lvm2     = true,
   Boolean               $kerberos               = simplib::lookup('simp_options::kerberos', { 'default_value' => false }),
@@ -153,23 +148,6 @@ class nfs (
 
   Class['nfs::install'] -> Class['nfs::base_config']
 
-#FIXME if we are notifying client and/or server classes and they have the services
-# listed, do we need this?  Each el7 service will regenerate its config when it
-# is run
-  # This service needs to be restarted when configuration changes.  It will do any
-  # config massaging necessary (el7) and then restart base services needed by
-  # the NFS server and client.
-  # * Still need to reload nfs-server.service
-  # * On el7 it will regenerate /run/sysconfig/nfs-utils from /etc/sysconfig/nfs first)
-  exec { 'nfs_utils_restart':
-    command     => 'systemctl restart nfs-utils',
-    require     => Class['nfs::install'],
-    refreshonly => true
-  }
-
-#  Class['nfs::base_config'] ~> Exec['nfs_utils_restart']
-
-
   if $kerberos {
     include 'krb5'
 
@@ -194,13 +172,9 @@ class nfs (
 
     Class['nfs::base_config'] ~> Class['nfs::client']
 
-    # VERIFY this is needed
     if $kerberos {
       Class['krb5'] ~> Class['nfs::client']
 
-#FIXME move to comment for keytab_on_puppet param
-      # If you don't put your keytabs on the Puppet server, you'll need to add
-      # code to trigger this yourself!
       if $keytab_on_puppet {
         Class['krb5::keytab'] ~> Class['nfs::client']
       }
@@ -220,5 +194,4 @@ class nfs (
       }
     }
   }
-
 }

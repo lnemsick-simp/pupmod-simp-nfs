@@ -32,9 +32,9 @@
 #
 #   * Overrides **all** other options
 #
-# @author Trevor Vaughan <mailto:tvaughan@onyxpoint.com>
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
-class nfs::idmapd (
+class nfs::idmapd::config (
   Optional[Integer]                          $verbosity          = undef,
   Optional[String]                           $domain             = undef,
   Optional[Array[String]]                    $local_realms       = undef,
@@ -51,26 +51,7 @@ class nfs::idmapd (
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
-    content => template("${module_name}/idmapd.conf.erb"),
-    notify  => Service[$::nfs::service_names::rpcidmapd]
+    content => template("${module_name}/idmapd.conf.erb")
   }
 
-  $_startcmd = "/usr/bin/systemctl start ${::nfs::service_names::rpcidmapd}"
-
-  service { $::nfs::service_names::rpcidmapd :
-    ensure     => 'running',
-    enable     => true,
-    hasrestart => false,
-    hasstatus  => true,
-    start      => "${_startcmd}
-      if [ \$? -ne 0 ]; then
-        /bin/mount | /bin/grep -q 'sunrpc';
-        if [ \$? -ne 0 ]; then
-          /bin/mount -t rpc_pipefs sunrpc /var/lib/nfs/rpc_pipefs;
-        fi
-      fi
-      ${_startcmd}",
-    require    => Package['nfs-utils'],
-    subscribe  => Concat['/etc/sysconfig/nfs']
-  }
 }

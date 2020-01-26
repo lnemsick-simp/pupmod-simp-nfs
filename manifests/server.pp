@@ -76,6 +76,10 @@
 class nfs::server (
   Simplib::Netlist      $trusted_nets                  = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] }),
   Boolean               $nfsv3                         = $::nfs::nfsv3,
+  Boolean               $nfsd_vers4                    = true,
+  Boolean               $nfsd_vers4_0                  = true,
+  Boolean               $nfsd_vers4_1                  = true,
+  Boolean               $nfsd_vers4_2                  = true,
   Nfs::NfsConfHash      $custom_nfs_conf_opts          = $::nfs::custom_nfs_conf_options,
   Nfs::LegacyDaemonArgs $custom_daemon_args            = $::nfs::custom_daemon_args,
   Integer[1]            $sunrpc_udp_slot_table_entries = 128,
@@ -87,23 +91,18 @@ class nfs::server (
 
   assert_private()
 
-  $_default_nfsv4_versions = {
-    'nfsd' => {
-      'vers4'   => true,
-      'vers4.0' => true,
-      'vers4.1' => true,
-      'vers4.2' => true
-    }
-  }
-
   $_required_opts = {
-    'nfsd' => {
-      'vers3'   => $nfsv3,
+    'nfsd'   => {
+      'port'        => $::nfs::nfsd_port,
+      'vers2'       => false,
+      'vers3'       => $nfsv3,
+      'vers4'       => $nfsd_vers4,
+      'vers4.0'     => $nfsd_vers4_1,
+      'vers4.1'     => $nfsd_vers4_1,
+      'vers4.2'     => $nfsd_vers4_2
     },
     'mountd' => {
-      'avoid-dns'                => $gssd_avoid_dns,
-      'limit-to-legacy-enctypes' => $gssd_limit_to_legacy_enctypes,
-      'use-gss-proxy'            => $gssd_use_gss_proxy
+      'mountd_port' => $::nfs::mountd_port,
     }
   }
 
@@ -127,6 +126,8 @@ class nfs::server (
           { section => 'mountd', opts => $_merged_opts['mountd']})
       }
     }
+
+    svckill::ignore { 'nfs-mountd': }
   }
 
   if 'nfsd' in $_merged_opts {
@@ -172,13 +173,6 @@ class nfs::server (
     }
   }
 
-  if $nfsv3 { include 'nfs::idmapd' }
-
-  concat::fragment { 'nfs_init_server':
-    target  => '/etc/sysconfig/nfs',
-    content => template("${module_name}/etc/sysconfig/nfs_server.erb")
-  }
-
   concat { '/etc/exports':
     owner          => 'root',
     group          => 'root',
@@ -192,10 +186,7 @@ class nfs::server (
     command     => '/usr/sbin/exportfs -ra',
     refreshonly => true,
     logoutput   => true,
-    require     => [
-      Package['nfs-utils'],
-      Service[$::nfs::service_names::nfs_server]
-    ]
+    require     => Service['nfs-server.service']
   }
 
   service { 'nfs-server.service':
@@ -206,9 +197,6 @@ class nfs::server (
     restart    => 'systemctl reload-or-restart nfs-server.service',
     hasstatus  => true
   }
-
-#FIXME only need rpcbind if servicing NFSv3?
-  Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::nfs_server]
 
   # $stunnel_port_override is a value that is set by the stunnel overlay.
   if $stunnel and $::nfs::server::stunnel::stunnel_port_override {
@@ -226,26 +214,24 @@ class nfs::server (
     }
   }
   else {
-    if ( $::nfs::mountd_nfs_v2 ) or ( $::nfs::mountd_nfs_v3 ) {
-      $_ports = [
-        111,
-        2049,
-        $::nfs::rquotad_port,
-        $::nfs::lockd_tcpport,
-        $::nfs::mountd_port,
-        $::nfs::statd_port
-      ] # <-- End ports
-    }
-    else {
-      $_ports = [
-        111,
-        2049,
-        $::nfs::rquotad_port
-      ]
-    }
-
     if $firewall {
       include '::iptables'
+      if $nfsv3 {
+        $_ports = [
+          111,
+          2049,
+          $::nfs::rquotad_port,
+          $::nfs::lockd_tcpport,
+          $::nfs::mountd_port,
+          $::nfs::statd_port
+        ] # <-- End ports
+      } else {
+        $_ports = [
+          111,
+          2049,
+          $::nfs::rquotad_port
+        ]
+      }
 
       iptables::listen::tcp_stateful { 'nfs_client_tcp_ports':
         trusted_nets => $trusted_nets,
@@ -288,21 +274,10 @@ class nfs::server (
     notify  => Service[$::nfs::service_names::nfs_server]
   }
 
-  if $::nfs::secure_nfs {
-# needs to run on client as well?
-    service { $::nfs::service_names::gssproxy :
-      ensure     => 'running',
-      enable     => true,
-      hasrestart => true,
-      hasstatus  => true
-    }
+  # ancillary services that need to be enabled or masked depending upon
+  # how we are configured
+  include 'nfs::service::nfsv3'
+  include 'nfs::service::secure'
+  include 'nfs::idmap::server'
 
-    Service[$::nfs::service_names::rpcbind] -> Service[$::nfs::service_names::gssproxy]
-
-    Service[$::nfs::service_names::rpcbind] -> Sysctl['sunrpc.tcp_slot_table_entries']
-    Service[$::nfs::service_names::rpcbind] -> Sysctl['sunrpc.udp_slot_table_entries']
-# why is the notifying statd?
-    Sysctl['sunrpc.tcp_slot_table_entries'] ~> Service[$::nfs::service_names::nfs_lock]
-    Sysctl['sunrpc.udp_slot_table_entries'] ~> Service[$::nfs::service_names::nfs_lock]
-  }
 }
