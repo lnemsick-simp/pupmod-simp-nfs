@@ -4,17 +4,13 @@ class nfs::idmapd::server
 {
   assert_private()
 
-  if $::nfs::idmapd {
-    include 'nfs::idmapd::config'
+  include 'nfs::idmapd::config'
 
-    service { 'nfs-idmapd.service':
-      ensure     => 'running',
-      enable     => true,
-      hasrestart => true
-    }
-
-    File['/etc/idmapd.conf'] ~> Service['nfs-idmapd.service']
-  } else {
+  service { 'nfs-idmapd.service':
+    ensure     => 'running',
+    enable     => true,
+    hasrestart => true
   }
 
+  File['/etc/idmapd.conf'] ~> Service['nfs-idmapd.service']
 }

@@ -30,7 +30,8 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client (
-  Simplib::Port $callback_port = 876,
+  Simplib::Port $callback_port  = 876,
+  Boolean       $blkmap         = false,  # NFSV4.1 or later
   Boolean       $stunnel        = $::nfs::stunnel,
   Integer[0]    $stunnel_verify = 2,
   Boolean       $firewall       = $::nfs::firewall
@@ -88,18 +89,32 @@ class nfs::client (
   service { 'nfs-client.target':
     ensure     => 'running',
     enable     => true,
-    hasrestart => true,
+    hasrestart => true
+  }
+
+  if $blkmap {
+    service { 'nfs-blkmap.service':
+      ensure     => 'running',
+      enable     => true,
+      hasrestart => true
+    }
   }
 
   if $::nfs::idmapd {
     include 'nfs::idmapd::client'
   }
-  #FIXME
-  #need to configure /etc/idpmad.conf and /etc/request-key.conf for nfsidmap
 
-  # ancillary services that need to be enabled or masked depending upon
-  # how we are configured
-  include 'nfs::service::nfsv3'
-  include 'nfs::service::secure'
+  if $::nfs::nfsv3 {
+    include 'nfs::service::nfsv3'
+  } else {
+    ensure_resource('service', 'rpc-statd.service', { ensure => 'masked' })
+    ensure_resource('service', 'rpc-statd-notify.service', { ensure => 'masked' })
+  }
+
+  if $::nfs::secure_nfs {
+    include 'nfs::service::secure'
+  } else {
+    ensure_resource('service', 'rpc-gssd.service', { ensure => 'masked' })
+  }
 
 }

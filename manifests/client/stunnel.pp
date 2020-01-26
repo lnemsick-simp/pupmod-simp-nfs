@@ -61,14 +61,10 @@ class nfs::client::stunnel (
   Boolean       $stunnel_systemd_deps    = $nfs::stunnel_systemd_deps,
   Array[String] $stunnel_wantedby        = $nfs::stunnel_wantedby
 ) inherits ::nfs::client {
-
-  if $stunnel_systemd_deps {
-    $_stunnel_wantedby = [
-      'remote-fs-pre.target',
-    ]
-  }
-  else {
+  if empty($stunnel_wantedby) {
     $_stunnel_wantedby = undef
+  } else {
+    $_stunnel_wantedby = $stunnel_wantedby
   }
 
   # Don't do this if you're running on yourself because, well, it's bad!
@@ -100,6 +96,8 @@ class nfs::client::stunnel (
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
+#FIXME are the following only needed when NFSv3?
+#FIXME what about sm-notify?
     stunnel::instance { 'nfs_client_lockd':
       connect          => ["${nfs_server}:${lockd_connect_port}"],
       accept           => "127.0.0.1:${::nfs::lockd_tcpport}",

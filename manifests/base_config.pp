@@ -1,42 +1,32 @@
 # @summary Common configuration required by both NFS server and client
 #
-class nfs::base_config (
-  Boolean               $nfsv3                         = $::nfs::nfsv3,
-  Boolean               $gssd_avoid_dns                = $::nfs::gssd_avoid_dns,
-  Boolean               $gssd_limit_to_legacy_enctypes = $::nfs::gssd_limit_to_legacy_enctypes,
-  Boolean               $gssd_use_gss_proxy            = $::nfs::gssd_use_gss_proxy,
-  Simplib::Port         $lockd_port                    = $::nfs::lockd_port,
-  Simplib::Port         $lockd_udp_port                = $::nfs::lockd_udp_port,
-  Simplib::Port         $sm_notify_outgoing_port       = $::nfs::sm_notify_outgoing_port,
-  Simplib::Port         $statd_port                    = $::nfs::statd_port,
-  Simplib::Port         $statd_outgoing_port           = $::nfs::statd_outgoing_port,
-  Nfs::NfsConfHash      $custom_nfs_conf_opts          = $::nfs::custom_nfs_conf_options,
-  Nfs::LegacyDaemonArgs $custom_daemon_args            = $::nfs::custom_daemon_args,
-  Boolean               $secure_nfs                    = $::nfs::secure_nfs
-
-) {
+class nfs::base_config
+{
   assert_private()
 
   $_required_opts = {
     'gssd'     => {
-      'avoid-dns'                => $gssd_avoid_dns,
-      'limit-to-legacy-enctypes' => $gssd_limit_to_legacy_enctypes,
-      'use-gss-proxy'            => $gssd_use_gss_proxy
+      'avoid-dns'                => $::nfs::gssd_avoid_dns,
+      'limit-to-legacy-enctypes' => $::nfs::gssd_limit_to_legacy_enctypes,
+      'use-gss-proxy'            => $::nfs::gssd_use_gss_proxy
     },
     'lockd'     => {
-      'port'                     => $lockd_port,
-      'udp-port'                 => $lockd_udp_port,
+      'port'                     => $::nfs::lockd_port,
+      'udp-port'                 => $::nfs::lockd_udp_port,
     },
     'sm-notify' => {
-      'outgoing-port' => $sm_notify_outgoing_port
+      # rpc-statd uses sm-notify to send reboot notifications.
+      # This setting appears to be the same as statd/outgoing-port.
+      # Don't know why configured twice.
+      'outgoing-port'            => $::nfs::statd_outgoing_port
     },
     'statd'     => {
-      'port'                     => $statd_port,
-      'outgoing-port'            => $statd_outgoing_port
+      'port'                     => $::nfs::statd_port,
+      'outgoing-port'            => $::nfs::statd_outgoing_port
     }
   }
 
-  $_merged_opts =  $custom_nfs_conf_opts + $_required_nfs_conf_opts
+  $_merged_opts =  $::nfs::custom_nfs_conf_opts + $_required_nfs_conf_opts
 
   # Use concat so users can add new sections on their own, in the event NFS
   # configuration changes and this module has not yet been updated.
@@ -61,7 +51,7 @@ class nfs::base_config (
     }
   }
 
-  if $secure_nfs {
+  if $::nfs::secure_nfs {
     concat::fragment { 'nfs_conf_gssd':
       order   => 3,
       target  => '/etc/nfs.conf',
@@ -70,7 +60,7 @@ class nfs::base_config (
     }
   }
 
-  if $nfsv3 {
+  if $::nfs::nfsv3 {
     concat::fragment { 'nfs_conf_lockd':
       order   => 4,
       target  => '/etc/nfs.conf',
@@ -113,7 +103,7 @@ class nfs::base_config (
       warn           => true
     }
 
-    if $secure_nfs and $gssd_use_gss_proxy  {
+    if $::nfs::secure_nfs and $::nfs::gssd_use_gss_proxy  {
       # The 'use-gss-proxy' option in /etc/nfs.conf is not used in EL7.
       # Need to set GSS_USE_PROXY service env variable instead.
       concat::fragment { 'nfs_gss_use_proxy':
@@ -123,19 +113,19 @@ class nfs::base_config (
       }
     }
 
-    if 'GSSDARGS' in $custom_daemon_args {
+    if 'GSSDARGS' in $::nfs::custom_daemon_args {
       concat::fragment { 'nfs_GSSDARGS':
         order   => 2,
         target  => '/etc/sysconfig/nfs',
-        content => "GSSDARGS=\"${custom_daemon_args['GSSDARGS']}\""
+        content => "GSSDARGS=\"${::nfs::custom_daemon_args['GSSDARGS']}\""
       }
     }
 
-    if 'SMNOTIFYARGS' in $custom_daemon_args {
+    if 'SMNOTIFYARGS' in $::nfs::custom_daemon_args {
       concat::fragment { 'nfs_SMNOTIFYARGS':
         order   => 2,
         target  => '/etc/sysconfig/nfs',
-        content => "SMNOTIFYARGS=\"${custom_daemon_args['SMNOTIFYARGS']}\""
+        content => "SMNOTIFYARGS=\"${::nfs::custom_daemon_args['SMNOTIFYARGS']}\""
       }
     }
   } else {

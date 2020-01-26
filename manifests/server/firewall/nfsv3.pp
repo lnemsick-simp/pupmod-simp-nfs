@@ -154,8 +154,53 @@ class nfs::server (
     }
   }
 
-  if $firewall {
-    include 'nfs::server::firewall'
+
+  # $stunnel_port_override is a value that is set by the stunnel overlay.
+  if $stunnel and $::nfs::server::stunnel::stunnel_port_override {
+    if $firewall {
+      include 'iptables'
+
+      iptables::listen::tcp_stateful{ 'nfs_client_tcp_ports':
+        trusted_nets => $trusted_nets,
+        dports       => $::nfs::server::stunnel::stunnel_port_override
+      }
+      iptables::listen::udp { 'nfs_client_udp_ports':
+        trusted_nets => $trusted_nets,
+        dports       => $::nfs::server::stunnel::stunnel_port_override
+      }
+    }
+  }
+  else {
+    $_rpcbind_port = 111
+    if $firewall {
+      include 'iptables'
+      if $nfsv3 {
+        $_ports = [
+          $_rpcbind_port,
+          $::nfs::nfsd_port,
+          $::nfs::rquotad_port,
+          $::nfs::lockd_port,
+          $::nfs::mountd_port,
+          $::nfs::statd_port
+        ] # <-- End ports
+      } else {
+        $_ports = [
+          $_rpcbind_port,
+          $::nfs::nfsd_port,
+          $::nfs::rquotad_port
+        ]
+      }
+
+      iptables::listen::tcp_stateful { 'nfs_client_tcp_ports':
+        trusted_nets => $trusted_nets,
+        dports       => $_ports
+      }
+      #FIXME lockd udp port is likely to be different and is not in the list!
+      iptables::listen::udp { 'nfs_client_udp_ports':
+        trusted_nets => $trusted_nets,
+        dports       => $_ports
+      }
+    }
   }
 
 }

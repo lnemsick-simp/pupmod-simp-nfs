@@ -49,14 +49,17 @@ class nfs::server::stunnel (
   include 'nfs::service_names'
 
   $_stunnel_wantedby = [
-    $nfs::service_names::nfs_lock,
-    $nfs::service_names::nfs_mountd,
-    $nfs::service_names::nfs_rquotad,
-    $nfs::service_names::nfs_server,
-    $nfs::service_names::rpcbind,
-    $nfs::service_names::rpcidmapd,
-    $nfs::service_names::rpcgssd,
-    $nfs::service_names::gssproxy,
+    'nfs-server.service',
+    'nfs-idmapd.service',
+    'rpc-rquotad.service',
+    'rpcbind.service',
+    # NFSv3
+    'nfs-mountd.service',
+    'rpc-statd.service',
+    'rpc-statd-notify.service',
+    # secure NFS
+    'rpc-gssd.service',
+    'gssproxy.service',
   ]
 
   if $version == 4 {

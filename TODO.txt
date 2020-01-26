@@ -6,6 +6,7 @@
     Should use sysctl Puppet resource
 
 MODULE TODO
+- Fix else and elsif curly braces -> make sure consistent
 - README.md
   - has hiera() functions...not sure we are still using them
   - has simp_options::kerberos <-- doesn't exist?

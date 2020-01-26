@@ -154,8 +154,25 @@ class nfs::server (
     }
   }
 
+
   if $firewall {
-    include 'nfs::server::firewall'
+    # $stunnel_port_override is a value that is set by the stunnel overlay.
+    if $stunnel and $::nfs::server::stunnel::stunnel_port_override {
+      include 'iptables'
+
+      iptables::listen::tcp_stateful{ 'nfs_client_tcp_ports':
+        trusted_nets => $trusted_nets,
+        dports       => $::nfs::server::stunnel::stunnel_port_override
+      }
+      iptables::listen::udp { 'nfs_client_udp_ports':
+        trusted_nets => $trusted_nets,
+        dports       => $::nfs::server::stunnel::stunnel_port_override
+      }
+    } elsif $nfsv3 {
+      include 'nfs::server::firewall::nfsv3.pp'
+    } else {
+      include 'nfs::server::firewall::nfsv4.pp'
+    }
   }
 
 }
