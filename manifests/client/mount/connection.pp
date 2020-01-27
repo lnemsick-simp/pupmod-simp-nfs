@@ -11,7 +11,6 @@
 # @param nfs_port
 # @param v4_remote_port
 # @param stunnel
-# @param stunnel_systemd_deps
 # @param stunnel_wantedby
 #
 # @author Trevor Vaughan <tvaughan@onyxpoint.com>
@@ -22,7 +21,6 @@ define nfs::client::mount::connection (
   Simplib::Port           $nfs_port             = 2049,
   Optional[Simplib::Port] $v4_remote_port       = undef,
   Optional[Boolean]       $stunnel              = undef,
-  Boolean                 $stunnel_systemd_deps = true,
   Array[String]           $stunnel_wantedby     = []
 ) {
 
@@ -49,7 +47,6 @@ define nfs::client::mount::connection (
         "${nfs_server}:${nfs_port}",
         {
           nfs_connect_port     => $v4_remote_port,
-          stunnel_systemd_deps => $stunnel_systemd_deps,
           stunnel_wantedby     => $stunnel_wantedby,
         }
       )

@@ -1,13 +1,13 @@
 # Hash representing nfs.conf configuration
 type Nfs::NfsConfHash = Struct[{
-  Optional['general']     => Hash,
-  Optional['exportfs']    => Hash,
-  Optional['gssd']        => Hash,
-  Optional['lockd']       => Hash,
-  Optional['mountd']      => Hash,
-  Optional['nfsd']        => Hash,
-  Optional['nfsdcltrack'] => Hash,
-  Optional['sm-notify']   => Hash,
-  Optional['statd']       => Hash
+  Optional['general']     => Hash[String,Variant[Boolean,Integer,Float,String]],
+  Optional['exportfs']    => Hash[String,Variant[String,Number,Boolean]],
+  Optional['gssd']        => Hash[String,Variant[String,Number,Boolean]],
+  Optional['lockd']       => Hash[String,Variant[String,Number,Boolean]],
+  Optional['mountd']      => Hash[String,Variant[String,Number,Boolean]],
+  Optional['nfsd']        => Hash[String,Variant[String,Number,Boolean]],
+  Optional['nfsdcltrack'] => Hash[String,Variant[String,Number,Boolean]],
+  Optional['sm-notify']   => Hash[String,Variant[String,Number,Boolean]],
+  Optional['statd']       => Hash[String,Variant[String,Number,Boolean]]
 }]
 

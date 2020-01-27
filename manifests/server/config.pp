@@ -5,7 +5,7 @@ class nfs::server::config
 {
   assert_private()
 
-  $_required_opts = {
+  $_required_nfs_conf_opts = {
     'nfsd'   => {
       'port'        => $::nfs::nfsd_port,
       'vers2'       => false,
@@ -20,48 +20,99 @@ class nfs::server::config
     }
   }
 
-  $_merged_opts =  $custom_nfs_conf_opts + $_required_nfs_conf_opts
+  if $::nfs::server::stunnel {
+    # UDP can't be encapsulated by stunnel
+    $_stunnel_opts = { 'nfsd' => { 'udp' => false } }
+  } else {
+    $_stunnel_opts = {}
+  }
+
+  $_merged_opts =  $::nfs::custom_nfs_conf_opts + $_required_nfs_conf_opts + $_stunnel_opts
 
   if 'exportfs' in $_merged_opts {
     concat::fragment { 'nfs_conf_exportfs':
       order   => 2,
       target  => '/etc/nfs.conf',
-      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+      content => epp("${module_name}/etc/nfs_conf_section.epp",
         { section => 'exportfs', opts => $_merged_opts['exportfs']})
     }
   }
 
-  if $nfsv3 {
+  if $::nfs::nfsv3 {
     if 'mountd' in $_merged_opts {
       concat::fragment { 'nfs_conf_mountd':
         order   => 5,
         target  => '/etc/nfs.conf',
-        content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+        content => epp("${module_name}/etc/nfs_conf_section.epp",
           { section => 'mountd', opts => $_merged_opts['mountd']})
       }
     }
   }
 
-  if 'nfsd' in $_merged_opts {
-    concat::fragment { 'nfs_conf_nfsd':
-      order   => 6,
-      target  => '/etc/nfs.conf',
-      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
-        { section => 'nfsd', opts => $_merged_opts['nfsd']})
-    }
+  concat::fragment { 'nfs_conf_nfsd':
+    order   => 6,
+    target  => '/etc/nfs.conf',
+    content => epp("${module_name}/etc/nfs_conf_section.epp",
+      { section => 'nfsd', opts => $_merged_opts['nfsd']})
   }
 
   if 'nfsdcltrack' in $_merged_opts {
     concat::fragment { 'nfs_conf_nfsdcltrack':
       order   => 7,
       target  => '/etc/nfs.conf',
-      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+      content => epp("${module_name}/etc/nfs_conf_section.epp",
         { section => 'nfsdcltrack', opts => $_merged_opts['nfsdcltrack']})
     }
   }
 
+  if (versioncmp($facts['os']['release']['major'], '8') < 0) {
+    # In EL > 7, NFS services must be configured by /etc/nfs.conf. In EL7, however,
+    # /etc/sysconfig/nfs is still needed to allow configuration of a handful of NFS
+    # daemon command line options that were not yet migrated to /etc/nfs.conf.
 
-  #FIXME configure rpc.rquotad
+    if 'RPCIDMAPDARGS' in $::nfs::custom_daemon_args {
+      concat::fragment { 'nfs_RPCIDMAPDARGS':
+        order   => 3,
+        target  => '/etc/sysconfig/nfs',
+        content => "RPCIDMAPDARGS=\"${::nfs::custom_daemon_args['RPCIDMAPDARGS']}\""
+      }
+    }
+
+    if 'RPCMOUNTDARGS' in $::nfs::custom_daemon_args {
+      concat::fragment { 'nfs_RPCNFSDARGS':
+        order   => 4,
+        target  => '/etc/sysconfig/nfs',
+        content => "RPCMOUNTDARGS=\"${::nfs::custom_daemon_args['RPCMOUNTDARGS']}\""
+      }
+    }
+    if 'RPCNFSDARGS' in $::nfs::custom_daemon_args {
+      concat::fragment { 'nfs_RPCNFSDARGS':
+        order   => 5,
+        target  => '/etc/sysconfig/nfs',
+        content => "RPCNFSDARGS=\"${::nfs::custom_daemon_args['RPCNFSDARGS']}\""
+      }
+    }
+  }
+
+  if $custom_rpcrquotad_opts {
+    $_rpcrquotadopts = "${::nfs::server::custom_rpcrquotad_opts} -p ${::nfs::rquotad_port}"
+  } else {
+    $_rpcrquotadopts = "-p ${::nfs::rquotad_port}"
+  }
+
+  $_sysconfig_rpc_rquotad = @("SYSCONFIGRPCRQUOTAD")
+    # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
+    # at the next puppet run.
+    #
+    RPCRQUOTADOPTS=${_rpcrquotadopts}
+    | SYSCONFIGRPCRQUOTAD
+
+  file { '/etc/sysconfig/rpc-rquotad':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    content => $_sysconfig_rpc_rquotad
+  }
 
   concat { '/etc/exports':
     owner          => 'root',
@@ -84,16 +135,14 @@ class nfs::server::config
     ensure  => 'present',
     val     => $sunrpc_tcp_slot_table_entries,
     silent  => true,
-    comment => 'Managed by simp-nfs Puppet module',
-    notify  => Service[$::nfs::service_names::nfs_server]  #FIXME is this necessary?
+    comment => 'Managed by simp-nfs Puppet module'
   }
 
   sysctl { 'sunrpc.udp_slot_table_entries':
     ensure  => 'present',
     val     => $sunrpc_udp_slot_table_entries,
     silent  => true,
-    comment => 'Managed by simp-nfs Puppet module',
-    notify  => Service[$::nfs::service_names::nfs_server]
+    comment => 'Managed by simp-nfs Puppet module'
   }
 
 }

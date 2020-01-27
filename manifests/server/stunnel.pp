@@ -29,8 +29,7 @@
 # @param mountd_accept_port
 # @param status_accept_port
 #
-# @author Trevor Vaughan <mailto:tvaughan@onyxpoint.com>
-# @author Kendall Moore <mailto:kmoore@keywcorp.com>
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::server::stunnel (
   Integer[3,4]     $version                = 4,
@@ -43,26 +42,21 @@ class nfs::server::stunnel (
   Simplib::Port    $nlockmgr_accept_port   = 32804,
   Simplib::Port    $mountd_accept_port     = 8920,
   Simplib::Port    $status_accept_port     = 6620,
-  Boolean          $stunnel_systemd_deps   = $nfs::stunnel_systemd_deps,
   Array[String]    $stunnel_wantedby       = $nfs::stunnel_wantedby
 ) {
-  include 'nfs::service_names'
 
-  $_stunnel_wantedby = [
+  $_common_services = [
     'nfs-server.service',
     'nfs-idmapd.service',
     'rpc-rquotad.service',
     'rpcbind.service',
-    # NFSv3
-    'nfs-mountd.service',
-    'rpc-statd.service',
-    'rpc-statd-notify.service',
     # secure NFS
     'rpc-gssd.service',
     'gssproxy.service',
   ]
 
   if $version == 4 {
+    $_stunnel_wantedby = unique( $_common_services + $stunnel_wantedby )
     stunnel::instance { 'nfs':
       client           => false,
       trusted_nets     => $trusted_nets,
@@ -76,9 +70,15 @@ class nfs::server::stunnel (
 
     $stunnel_port_override = [ $nfs_accept_port ]
 
-    Service[$::nfs::service_names::nfs_server] -> Stunnel::Instance['nfs']
+    Service['nfs-server.service'] -> Stunnel::Instance['nfs']
   }
   else {
+    $_nfsv3_services = $_common_service + [
+      'nfs-mountd.service',
+      'rpc-statd.service',
+      'rpc-statd-notify.service',
+    ]
+    $_stunnel_wantedby = unique( $_nfsv3_services + $stunnel_wantedby )
     stunnel::instance { 'nfs':
       client           => false,
       trusted_nets     => $trusted_nets,
@@ -112,7 +112,7 @@ class nfs::server::stunnel (
     stunnel::instance { 'nlockmgr':
       client           => false,
       trusted_nets     => $trusted_nets,
-      connect          => [$::nfs::lockd_tcpport],
+      connect          => [$::nfs::lockd_port],
       accept           => "${nfs_accept_address}:${nlockmgr_accept_port}",
       verify           => $verify,
       socket_options   => $::nfs::_stunnel_socket_options,
@@ -140,12 +140,12 @@ class nfs::server::stunnel (
       tag              => ['nfs']
     }
 
-    Service[$::nfs::service_names::nfs_server] -> Stunnel::Instance['nfs']
-    Service[$::nfs::service_names::nfs_server] -> Stunnel::Instance['portmapper']
-    Service[$::nfs::service_names::nfs_server] -> Stunnel::Instance['rquotad']
-    Service[$::nfs::service_names::nfs_server] -> Stunnel::Instance['nlockmgr']
-    Service[$::nfs::service_names::nfs_server] -> Stunnel::Instance['mountd']
-    Service[$::nfs::service_names::nfs_server] -> Stunnel::Instance['status']
+    Service['nfs-server.service'] -> Stunnel::Instance['nfs']
+    Service['nfs-server.service'] -> Stunnel::Instance['portmapper']
+    Service['nfs-server.service'] -> Stunnel::Instance['rquotad']
+    Service['nfs-server.service'] -> Stunnel::Instance['nlockmgr']
+    Service['nfs-server.service'] -> Stunnel::Instance['mountd']
+    Service['nfs-server.service'] -> Stunnel::Instance['status']
 
     $stunnel_port_override = [
       $nfs_accept_port,

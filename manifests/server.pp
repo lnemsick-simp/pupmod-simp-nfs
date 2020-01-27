@@ -81,6 +81,7 @@ class nfs::server (
   Boolean               $nfsd_vers4_0                  = true,
   Boolean               $nfsd_vers4_1                  = true,
   Boolean               $nfsd_vers4_2                  = true,
+  Optional[String]      $custom_rpcrquotad_opts        = undef,
   Integer[1]            $sunrpc_udp_slot_table_entries = 128,
   Integer[1]            $sunrpc_tcp_slot_table_entries = 128,
   Boolean               $firewall                      = $::nfs::firewall,
@@ -102,60 +103,47 @@ class nfs::server (
     subscribe  => Class['nfs::server::config']
   }
 
-  if $::nfs::nfsv3
+  if $::nfs::nfsv3 {
     include 'nfs::service::nfsv3'
     svckill::ignore { 'nfs-mountd': }
   } else {
-    ensure_resource('service', 'nfs-mound.service', { ensure => 'masked' })
-    ensure_resource('service', 'rpc-statd.service', { ensure => 'masked' })
-    ensure_resource('service', 'rpc-statd-notify.service', { ensure => 'masked' })
+    service { 'nfs-mountd.service': enable => 'mask' }
+    ensure_resource('service', 'rpc-statd.service', { enable => 'mask' })
+    ensure_resource('service', 'rpc-statd-notify.service', { enable => 'mask' })
   }
 
   if $::nfs::secure_nfs {
     include 'nfs::service::secure'
   } else {
-    ensure_resource('service', 'rpc-gssd.service', { ensure => 'masked' })
+    ensure_resource('service', 'rpc-gssd.service', { enable => 'mask' })
   }
 
-#FIXME start up rpc.rquotad?
-#***rpc-rquotad.service require rpcbind.service
-#  RHEL docs says it is started automatically when needed, so, need
-#  to configure but not start and thus need svckill?  Other docs show to
-#  enable and start the service.  Need to try it and see.
-  svckill::ignore('rpc-rquotad.service')
+
+
+  service { 'rpc-rquotad.service':
+    #FIXME start up rpc.rquotad?
+    #  RHEL docs says it is started automatically when needed, so, need
+    #  to configure but not start and thus need svckill?  Other docs show to
+    #  enable and start the service.  Need to try it and see.
+#    ensure     => 'running',
+    enable     => true,
+    hasrestart => true,
+  }
+#  svckill::ignore('rpc-rquotad.service')
 
   if $::nfs::idmapd {
     include 'nfs::idmapd::server'
   }
 
-
   if $tcpwrappers {
-    include 'tcpwrappers'
-
-    tcpwrappers::allow { [
-      'mountd',
-      # what about sm-modify?
-      'statd',
-      'rquotad',
-      'lockd',
-      'rpcbind'
-      ]:
-      pattern => $trusted_nets
-    }
+    include 'nfs::server::tcpwrappers'
   }
 
   if $stunnel {
-    contain 'nfs::server::stunnel'
-
-    # This is here due to some bug where allowing things through regularly
-    # isn't working correctly.
-    if $tcpwrappers {
-      tcpwrappers::allow { 'nfs': pattern => 'ALL' }
-    }
+    include 'nfs::server::stunnel'
   }
 
   if $firewall {
     include 'nfs::server::firewall'
   }
-
 }

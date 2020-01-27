@@ -107,14 +107,14 @@ class nfs::client (
   if $::nfs::nfsv3 {
     include 'nfs::service::nfsv3'
   } else {
-    ensure_resource('service', 'rpc-statd.service', { ensure => 'masked' })
-    ensure_resource('service', 'rpc-statd-notify.service', { ensure => 'masked' })
+    ensure_resource('service', 'rpc-statd.service', { enable => 'mask' })
+    ensure_resource('service', 'rpc-statd-notify.service', { enable => 'mask' })
   }
 
   if $::nfs::secure_nfs {
     include 'nfs::service::secure'
   } else {
-    ensure_resource('service', 'rpc-gssd.service', { ensure => 'masked' })
+    ensure_resource('service', 'rpc-gssd.service', { enable => 'mask' })
   }
 
 }

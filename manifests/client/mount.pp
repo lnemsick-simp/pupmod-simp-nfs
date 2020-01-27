@@ -139,7 +139,6 @@ define nfs::client::mount (
     nfs_port             => $port,
     v4_remote_port       => $v4_remote_port,
     stunnel              => $_stunnel,
-    stunnel_systemd_deps => $stunnel_systemd_deps,
     stunnel_wantedby     => $stunnel_wantedby
   }
 
@@ -149,7 +148,7 @@ define nfs::client::mount (
     Class['nfs::install'] -> Class['::autofs::install']
 
     # This is a particular quirk about the autofs service ordering
-    Class['autofs::service'] ~> Service[$::nfs::service_names::rpcbind]
+    Class['autofs::service'] ~> Service['rpcbind.service']
 
     # Need to handle the wildcard cases
     $_mount_point = split($name,'wildcard-')[-1]

@@ -4,8 +4,16 @@
     file shown in the sunrpc_tuning script...
     https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html-single/kernel_administration_guide/index#displaying_information_about_a_module
     Should use sysctl Puppet resource
+- FIXED rpc.quotad
+  - on NFS server only
+  - Install quota-rpc on el8 and enable service if quotad args are specified
+  - Create /etc/sysconfig/rpc-rquotad file and remove any such config from /etc/sysconfig/nfs
+- gssproxy.service has wrong Before (old name nfs-secure.service, nfs-secure-server.service ->
 
 MODULE TODO
+- Do we need $::nfs::.. or can it be $nfs:: ?
+- Put stunnel_systemd_wantedby in  hieradata?
+  - What do we do with defines?
 - Fix else and elsif curly braces -> make sure consistent
 - README.md
   - has hiera() functions...not sure we are still using them
@@ -17,38 +25,31 @@ MODULE TODO
 - Start nfs-client.target on client?
 - Move lockd configuration out of /etc/modprobe.d/nfs.conf to /etc/modprobe.d/lockd.conf
   - Why not use sysctl resource?
-- rpc.quotad
-  - on NFS server only
-  - Install quota-rpc on el8 and enable service if quotad args are specified
-  - Create /etc/sysconfig/rpc-rquotad file and remove any such config from /etc/sysconfig/nfs
-- gssproxy.service has wrong Before (old name nfs-secure.service, nfs-secure-server.service ->
   rpc-gssd.service). Will have to handle with an override or in Puppet.
 
 - testing
   - make sure systemd dependencies are correct for oldest nfs-utils
     ***May have to lay down systemd unit files
-  - misc
-    - NFS server reboot
-    - NFS client reboot
+  - For NFSv3 and NFSv4
     - no stunnel
+      - reboot (NFS server, NFS client)
+      - quotas
+      - locking (fcntl)
+        - locking through NFS server and NFS client reboots
       - tcpwrappers
       - iptables
+      - kerberos
+      - svckill
     - stunnel
+      - reboot (NFS server, NFS client)
+      - locking
+        - locking through NFS server and NFS client reboots
       - tcpwrappers
       - iptables
-  - NFSv3 -> doesn't look like we test, so not clear services are working properly
-    - no stunnel
-    - stunnel
-    - kerberos
-  - NFSv4
-    - no stunnel
-    - stunnel
-    - kerberos
-  - include svckill and see what would be killed, in order to ensure we have all the
-    processes set up appropriately
-  - parameters set are being used
+      - svckill
     - sysctl settings are adequate, even after reboot
-    - /etc/modules.d/(lockd|nfs).conf not needed?
+      - server
+      - client
   - server still works with client when custom config such as lockd
     - verify server config item list is correct and client config it list is correct,
       i.e., when server config is customized, we haven't missed a corresponding client
@@ -58,7 +59,12 @@ NFSv2 not supported RHEL8
   https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/managing_file_systems/mounting-nfs-shares_managing-file-systemsto
 
 QUESTIONS
-- sm-notify uses UDP...how does that go through stunnel?
+- exportfs is linked against libwrap.  Does it need to be in the tcp wrappers list?
+- nfs,nfsv4  old syntax for mounts
+  - mount.nfs used to handle NFSv2/3 exclusively and mount.nfsv4 used to handle NFSv4 exclusively.
+  - FIXME mount.nfs now handles all mount types.  
+- NSM notifications are over UDP, so when nfsv3 and using stunnel, protocol won't work?
+  - what does this mean for iptables and stunnel settings?
 - Class['autofs::service'] ~> Service[$::nfs::service_names::rpcbind]
   is the Wants in the autofs.service insufficient?
 - What should the initial nfs.conf look like?

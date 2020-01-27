@@ -121,12 +121,12 @@ class nfs (
   Boolean               $stunnel                      = simplib::lookup('simp_options::stunnel', { 'default_value' => false }),
   Boolean               $stunnel_tcp_nodelay          = true,
   Array[String]         $stunnel_socket_options       = [],
-  Array[String]         $stunnel_wantedby             = ['remote-fs-pre.target']
+  Array[String]         $stunnel_wantedby             = []
 ) {
 
   simplib::assert_metadata($module_name)
   if (versioncmp($facts['os']['release']['full'], '7.4') < 0) {
-    warning("This version of simp-nfs may not work with ${facts['os']['name]} ${facts['os']['release']['full']}. Use simp-nfs module version < 7.0.0 instead")
+    warning("This version of simp-nfs may not work with ${facts['os']['name']} ${facts['os']['release']['full']}. Use simp-nfs module version < 7.0.0 instead")
   }
 
   if $stunnel_tcp_nodelay {
@@ -139,7 +139,6 @@ class nfs (
     $_stunnel_socket_options = $stunnel_socket_options
   }
 
-  include 'nfs::service_names'
   include 'nfs::install'
   include 'nfs::base_config'
 

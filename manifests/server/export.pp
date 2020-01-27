@@ -119,7 +119,7 @@ define nfs::server::export (
 ) {
   simplib::assert_metadata($module_name)
 
-  include '::nfs::server'
+  include 'nfs::server'
 
   $_name = inline_template('<%= @name.gsub("/","|") -%>')
 

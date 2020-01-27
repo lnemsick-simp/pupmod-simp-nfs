@@ -4,7 +4,7 @@ class nfs::base_config
 {
   assert_private()
 
-  $_required_opts = {
+  $_required_nfs_conf_opts = {
     'gssd'     => {
       'avoid-dns'                => $::nfs::gssd_avoid_dns,
       'limit-to-legacy-enctypes' => $::nfs::gssd_limit_to_legacy_enctypes,
@@ -46,7 +46,7 @@ class nfs::base_config
     concat::fragment { 'nfs_conf_general':
       order   => 1,
       target  => '/etc/nfs.conf',
-      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+      content => epp("${module_name}/etc/nfs_conf_section.epp",
         { section => 'general', opts => $_merged_opts['general']})
     }
   }
@@ -55,7 +55,7 @@ class nfs::base_config
     concat::fragment { 'nfs_conf_gssd':
       order   => 3,
       target  => '/etc/nfs.conf',
-      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+      content => epp("${module_name}/etc/nfs_conf_section.epp",
         { section => 'gssd', opts => $_merged_opts['gssd']})
     }
   }
@@ -64,22 +64,22 @@ class nfs::base_config
     concat::fragment { 'nfs_conf_lockd':
       order   => 4,
       target  => '/etc/nfs.conf',
-      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+      content => epp("${module_name}/etc/nfs_conf_section.epp",
         { section => 'lockd', opts => $_merged_opts['lockd']})
     }
 
     concat::fragment { 'nfs_conf_sm_notify':
       order   => 8,
       target  => '/etc/nfs.conf',
-      content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+      content => epp("${module_name}/etc/nfs_conf_section.epp",
         { section => 'sm-notify', opts => $_merged_opts['sm-notify']})
     }
 
     if 'statd' in $_merged_opts {
       concat::fragment { 'nfs_conf_statd':
-        order   => 1,
+        order   => 9,
         target  => '/etc/nfs.conf',
-        content => epp("${module_name}/etc/nfs/nfs_conf_section.epp",
+        content => epp("${module_name}/etc/nfs_conf_section.epp",
           { section => 'statd', opts => $_merged_opts['statd']})
       }
     }
@@ -123,9 +123,19 @@ class nfs::base_config
 
     if 'SMNOTIFYARGS' in $::nfs::custom_daemon_args {
       concat::fragment { 'nfs_SMNOTIFYARGS':
-        order   => 2,
+        order   => 6,
         target  => '/etc/sysconfig/nfs',
         content => "SMNOTIFYARGS=\"${::nfs::custom_daemon_args['SMNOTIFYARGS']}\""
+      }
+    }
+
+    # The variable in /etc/sysconfig/nfs is $STATDARG but is written to
+    # /run/sysconfig/nfs-utils as STATDARGS.
+    if 'STATDARG' in $::nfs::custom_daemon_args {
+      concat::fragment { 'nfs_STATDARG':
+        order   => 7,
+        target  => '/etc/sysconfig/nfs',
+        content => "STATDARG=\"${::nfs::custom_daemon_args['STATDARG']}\""
       }
     }
   } else {

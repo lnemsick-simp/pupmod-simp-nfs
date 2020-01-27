@@ -5,7 +5,7 @@
 
 [$<%= $section -%>]
 <%
-  $opts.each |String $param, String $value| {
+  $opts.each |String $param, Any $value| {
 -%>
   <%= $param -%> = <%= $value %>
 <% } -%>

@@ -44,8 +44,7 @@
 #
 #   * See ``stunnel::instance::verify`` for details
 #
-# @author Trevor Vaughan <tvaughan@onyxpoint.com>
-# @author Kendall Moore <kendall.moore@onyxpoint.com>
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client::stunnel (
   Simplib::Host $nfs_server,
@@ -58,14 +57,9 @@ class nfs::client::stunnel (
   Simplib::Port $mountd_connect_port     = 8920,
   Simplib::Port $statd_connect_port      = 6620,
   Integer[0]    $stunnel_verify          = $nfs::client::stunnel_verify,
-  Boolean       $stunnel_systemd_deps    = $nfs::stunnel_systemd_deps,
   Array[String] $stunnel_wantedby        = $nfs::stunnel_wantedby
 ) inherits ::nfs::client {
-  if empty($stunnel_wantedby) {
-    $_stunnel_wantedby = undef
-  } else {
-    $_stunnel_wantedby = $stunnel_wantedby
-  }
+  $_stunnel_wantedby = unique( ['remote-fs-pre.target'] + $stunnel_wantedby )
 
   # Don't do this if you're running on yourself because, well, it's bad!
   if !simplib::host_is_me($nfs_server) {
@@ -82,7 +76,7 @@ class nfs::client::stunnel (
       connect          => ["${nfs_server}:${portmapper_connect_port}"],
       accept           => "127.0.0.1:${portmapper_accept_port}",
       verify           => $stunnel_verify,
-      require          => Service[$::nfs::service_names::rpcbind],
+      require          => Service['rpcbind.service'],
       socket_options   => $::nfs::_stunnel_socket_options,
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
@@ -96,8 +90,7 @@ class nfs::client::stunnel (
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
-#FIXME are the following only needed when NFSv3?
-#FIXME what about sm-notify?
+
     stunnel::instance { 'nfs_client_lockd':
       connect          => ["${nfs_server}:${lockd_connect_port}"],
       accept           => "127.0.0.1:${::nfs::lockd_tcpport}",

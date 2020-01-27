@@ -17,18 +17,15 @@
 #
 define nfs::client::stunnel::v4 (
   Simplib::Port $nfs_connect_port     = 20490,
-  Boolean       $stunnel_systemd_deps = true,
   Array[String] $stunnel_wantedby     = []
 ) {
   include 'nfs::client'
-  include 'nfs::service_names'
 
   if $name !~ Simplib::Host::Port {
     fail('$name must be a Simplib::Host::Port => `<host>:<port>`')
   }
 
-#FIXME use $stunnel_wantedby if set otherwise default?  or have this set as the default?
-  $_stunnel_wantedby = ['remote-fs-pre.target']
+  $_stunnel_wantedby = uniq(['remote-fs-pre.target'] + $stunnel_wantedby)
 
   $_target_parts = split($name, ':')
 
