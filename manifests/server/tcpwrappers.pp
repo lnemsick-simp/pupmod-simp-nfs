@@ -32,7 +32,7 @@ class nfs::server::tcpwrappers
   }
 
   tcpwrappers::allow { $_allow:
-    pattern => $trusted_nets
+    pattern => $::nfs::server::trusted_nets
   }
 
   if $::nfs::server::stunnel {

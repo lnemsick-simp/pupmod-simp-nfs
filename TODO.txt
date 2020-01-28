@@ -28,6 +28,7 @@ MODULE TODO
   rpc-gssd.service). Will have to handle with an override or in Puppet.
 
 - testing
+- selinux_hotfix -> mounts wouldn't work when selinux enabled
   - make sure systemd dependencies are correct for oldest nfs-utils
     ***May have to lay down systemd unit files
   - For NFSv3 and NFSv4
@@ -59,6 +60,8 @@ NFSv2 not supported RHEL8
   https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/managing_file_systems/mounting-nfs-shares_managing-file-systemsto
 
 QUESTIONS
+- Is rpc.mountd required for NFSV4 during startup or otherwise --> don't want svckill to kill it
+- Is rpc.quotad required for NFSv4?
 - exportfs is linked against libwrap.  Does it need to be in the tcp wrappers list?
 - nfs,nfsv4  old syntax for mounts
   - mount.nfs used to handle NFSv2/3 exclusively and mount.nfsv4 used to handle NFSv4 exclusively.
@@ -440,6 +443,23 @@ tickets.puppetlabs.com/browse/PUP-1054
 use custom restart command as a reload?
 stop all services and see if start nfs-server back up it works
 stop some services and see if restart nfs-server starts up correctly
+
+https://serverfault.com/questions/530908/nfsv4-not-able-to-set-any-sockets-for-nfsd-without-running-rpcbind
+The quoted documentation from RedHat was wrong and got fixed by Bug 521215: rpc.mountd still must be used to setup NFSv4, but strictly speaking it is not required to be running after that.
+
+nfs: Server for all versions of NFS: v2, v3, v4, v4.1
+rpcbind/portmapper: Server, strictly only for NFS <= v3. But also for NFS v4 as the Linux Kernel NFS server tries to register itself and fails to start if rpcbind is not running.
+rpc.mountd: Server, strictly only for NFS <=3. But also for NFS v4 as the Linux Kernel uses it to check, if the connecting client is allowed to connect.
+nfslock: Server only for NFS <= v3
+rpc.idmapd: Optional Server (and older Clients) for NFS v4
+rpc.quotad: Server for using disk quota
+rpc.statd: Server only for NFS <= v3
+When using Kerberos (sec=krb/krb5i/krb5p) the following services are required:
+
+rpc.gssd: Client
+rpc.svcgssd: Server
+Please note that even they carry rpc. in their name, they use the Linux kernel internal mechanism rpc_pipef for communication between the Linux kernel and the user space helper; so rpcbind AKA portmapper is not needed for them.
+
 
 PROTOCOLS
 NLM (Network Lock Manager Protocol)

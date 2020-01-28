@@ -8,6 +8,12 @@ class nfs::service::secure
     hasrestart => true
   }
 
+  exec { 'unmask_rpc-gssd.service':
+    command => '/usr/bin/systemctl mask rpc-gssd.service',
+    onlyif  => '/usr/bin/systemctl status rpc-gssd.service | /usr/bin/grep -qw masked',
+    notify  => Service['rpc-gssd.service']
+  }
+
   if $::nfs::gssd_use_gss_proxy {
     # gssproxy may be being used by other filesystem services and thus
     # managed elsewhere

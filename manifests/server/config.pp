@@ -94,7 +94,7 @@ class nfs::server::config
     }
   }
 
-  if $custom_rpcrquotad_opts {
+  if $::nfs::server::custom_rpcrquotad_opts {
     $_rpcrquotadopts = "${::nfs::server::custom_rpcrquotad_opts} -p ${::nfs::rquotad_port}"
   } else {
     $_rpcrquotadopts = "-p ${::nfs::rquotad_port}"
@@ -127,22 +127,20 @@ class nfs::server::config
     command     => '/usr/sbin/exportfs -ra',
     refreshonly => true,
     logoutput   => true,
-    require     => Service['nfs-server.service']
   }
 
   # Ensure NFS starts with the proper number of slot entries.
   sysctl { 'sunrpc.tcp_slot_table_entries':
     ensure  => 'present',
-    val     => $sunrpc_tcp_slot_table_entries,
+    val     => $::nfs::server::sunrpc_tcp_slot_table_entries,
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
   }
 
   sysctl { 'sunrpc.udp_slot_table_entries':
     ensure  => 'present',
-    val     => $sunrpc_udp_slot_table_entries,
+    val     => $::nfs::server::sunrpc_udp_slot_table_entries,
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
   }
-
 }

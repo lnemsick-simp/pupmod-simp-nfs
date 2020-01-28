@@ -27,10 +27,7 @@
 # @param rpcrquotadopts
 #   Options that should be passed to ``rquotad`` at start time.
 #
-#   * **NOTE::** $rquotad_port will be automatically added to this string
-#     via the `-p` option.
-#
-# @param lockd_tcpport
+# @param lockd_port
 #   The TCP port upon which ``lockd`` should listen (NFSv3)
 #
 # @param lockd_udpport

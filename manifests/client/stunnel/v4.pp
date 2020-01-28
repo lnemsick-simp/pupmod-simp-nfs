@@ -25,7 +25,7 @@ define nfs::client::stunnel::v4 (
     fail('$name must be a Simplib::Host::Port => `<host>:<port>`')
   }
 
-  $_stunnel_wantedby = uniq(['remote-fs-pre.target'] + $stunnel_wantedby)
+  $_stunnel_wantedby = unique(['remote-fs-pre.target'] + $stunnel_wantedby)
 
   $_target_parts = split($name, ':')
 

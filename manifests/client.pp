@@ -7,7 +7,9 @@
 # automatically called for you.
 #
 # @param callback_port
-#   The callback port
+#   The port used by the server to recall delegation of responsibilities to a
+#   client in NFSv4.0.  Beginning with NFSv4.1, a separate callback side channel
+#   is not required.
 #
 # @param stunnel
 #   Enable ``stunnel`` connections for this system
@@ -30,7 +32,7 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client (
-  Simplib::Port $callback_port  = 876,
+  Simplib::Port $callback_port  = 876,    # NFSV4
   Boolean       $blkmap         = false,  # NFSV4.1 or later
   Boolean       $stunnel        = $::nfs::stunnel,
   Integer[0]    $stunnel_verify = 2,
@@ -49,42 +51,37 @@ class nfs::client (
     }
   }
 
-  # Normally, on the NFS client, the nfs kernel module would be loaded when
-  # the first mount was executed.  However, to ensure NFS server to client
-  # communication is on a known client port that can be allowed through the
-  # firewall (i.e., not an ephemeral one), we need to configure the callback
-  # port used by the nfs kernel module.  Here we (pre-)configure the kernel
-  # parameter and load the module, if it is not already loaded. Then, in case
-  # the module is already loaded, we also set the kernel parameter via sysctl.
-
-  exec { 'modprobe_nfs':
-    command => '/sbin/modprobe nfs',
-    unless  => '/sbin/lsmod | /bin/grep -qw nfs',
- #   require => [
- #     Package['nfs-utils'],
- #     File['/etc/modprobe.d/nfs.conf']
- #   ],
-    # The parameter is correctly set via /etc/modprobe.d/nfs.conf, but this
-    # notify makes the setting visible through sysctl or anyone poking around
-    # in /proc (i.e., following RHEL instructions for setting up NFS
-    # through a firewall).
+  # We need to configure the NFSv4.0 client delegation callback port for the
+  # nfsv4 kernel module, to ensure the port will pass through a firewall (i.e.,
+  # is not ephemeral).  Normally, the nfsv4 kernel module would be loaded when
+  # the mount requiring it is executed.  This dynamic loading doesn't play
+  # well with sysctl.  So, we are going to ensure the kernel module is
+  # configured properly with a static configuration file, load the module if
+  # necessary, and, in case it was already loaded, set the value by sysctl.
+  #
+  # NOTE: The parameter has to be configured via the nfs kernel module (a
+  # dependency of the nfsv4 kernel module), but won't be activated until the
+  # nfsv4 module is loaded.
+  #
+  exec { 'modprobe_nfsv4':
+    command => '/sbin/modprobe nfsv4',
+    unless  => '/sbin/lsmod | /usr/bin/grep -qw nfsv4',
     notify  => Sysctl['fs.nfs.nfs_callback_tcpport']
   }
 
   sysctl { 'fs.nfs.nfs_callback_tcpport':
     ensure  => 'present',
     val     => $callback_port,
-    silent  => true, #FIXME is this required?ignore the activation failure of a yet-to-be-activated sysctl value
+    silent  => true, #FIXME is this required? ignore the activation failure of a yet-to-be-activated sysctl value
     comment => 'Managed by simp-nfs Puppet module'
   }
 
-#FIXME don't think this is needed.  think the notified sysctl is sufficient
-#  file { '/etc/modprobe.d/nfs.conf':
-#    owner   => 'root',
-#    group   => 'root',
-#    mode    => '0640',
-#    content => "options nfs callback_tcpport=${callback_port}\n"
-#  }
+  file { '/etc/modprobe.d/nfs.conf':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0640',
+    content => "options nfs callback_tcpport=${callback_port}\n"
+  }
 
   service { 'nfs-client.target':
     ensure     => 'running',
@@ -107,14 +104,13 @@ class nfs::client (
   if $::nfs::nfsv3 {
     include 'nfs::service::nfsv3'
   } else {
-    ensure_resource('service', 'rpc-statd.service', { enable => 'mask' })
-    ensure_resource('service', 'rpc-statd-notify.service', { enable => 'mask' })
+    include 'nfs::service::nfsv3_mask'
   }
 
   if $::nfs::secure_nfs {
     include 'nfs::service::secure'
   } else {
-    ensure_resource('service', 'rpc-gssd.service', { enable => 'mask' })
+    include 'nfs::service::secure_mask'
   }
 
 }

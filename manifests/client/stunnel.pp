@@ -59,6 +59,9 @@ class nfs::client::stunnel (
   Integer[0]    $stunnel_verify          = $nfs::client::stunnel_verify,
   Array[String] $stunnel_wantedby        = $nfs::stunnel_wantedby
 ) inherits ::nfs::client {
+
+  assert_private()
+
   $_stunnel_wantedby = unique( ['remote-fs-pre.target'] + $stunnel_wantedby )
 
   # Don't do this if you're running on yourself because, well, it's bad!
@@ -93,7 +96,7 @@ class nfs::client::stunnel (
 
     stunnel::instance { 'nfs_client_lockd':
       connect          => ["${nfs_server}:${lockd_connect_port}"],
-      accept           => "127.0.0.1:${::nfs::lockd_tcpport}",
+      accept           => "127.0.0.1:${::nfs::lockd_port}",
       verify           => $stunnel_verify,
       socket_options   => $::nfs::_stunnel_socket_options,
       systemd_wantedby => $_stunnel_wantedby,

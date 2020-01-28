@@ -148,7 +148,9 @@ define nfs::client::mount (
     Class['nfs::install'] -> Class['::autofs::install']
 
     # This is a particular quirk about the autofs service ordering
-    Class['autofs::service'] ~> Service['rpcbind.service']
+#FIXME Is this still required?
+# autofs.service Wants rpcbind.service and After rpcbind.service
+#    Class['autofs::service'] ~> Service['rpcbind.service']
 
     # Need to handle the wildcard cases
     $_mount_point = split($name,'wildcard-')[-1]

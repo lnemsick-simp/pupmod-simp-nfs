@@ -1,8 +1,8 @@
 require 'spec_helper_acceptance'
 
-test_name 'nfs basic'
+test_name 'nfs basic NFSv4'
 
-describe 'nfs basic' do
+describe 'nfs basic NFSv4' do
 
   servers = hosts_with_role( hosts, 'nfs_server' )
   clients = hosts_with_role( hosts, 'client' )
@@ -17,6 +17,7 @@ describe 'nfs basic' do
   let(:hieradata) {
     <<-EOM
 ---
+# Set us up for a basic NFSv4 server for right now (no Kerberos)
 simp_options::firewall : true
 simp_options::kerberos : false
 simp_options::stunnel : false
@@ -26,11 +27,6 @@ simp_options::trusted_nets : ['ALL','0.0.0.0/0']
 ssh::server::conf::permitrootlogin : true
 ssh::server::conf::authorizedkeysfile : '.ssh/authorized_keys'
 
-# Set us up for a basic server for right now (no Kerberos)
-
-# These two need to be paired in our case since we expect to manage the Kerberos
-# infrastructure for our tests.
-nfs::secure_nfs: false
 nfs::is_server: #IS_SERVER#
     EOM
   }
@@ -85,7 +81,7 @@ nfs::is_server: #IS_SERVER#
     File['/srv/nfs_share'] -> Nfs::Server::Export['nfs4_root']
   EOM
 
-  context "as a server" do
+  context 'as a server' do
     servers.each do |host|
       it 'should export a directory' do
         apply_manifest_on(host, server_manifest, :catch_failures => true)
@@ -93,7 +89,7 @@ nfs::is_server: #IS_SERVER#
     end
   end
 
-  context "as a client" do
+  context 'as a client' do
     clients.each do |host|
       servers.each do |server|
         it "should mount a directory on the #{server} server" do
@@ -117,6 +113,13 @@ nfs::is_server: #IS_SERVER#
           host.mkdir_p("/mnt/#{server}")
           apply_manifest_on(host, client_manifest, :catch_failures => true)
           on(host, %(grep -q 'This is a test' /mnt/#{server}/test_file))
+        end
+
+        it 'mount should be re-established after client reboot' do
+        end
+
+        it 'mount should be re-established after server reboot' do
+          # unmount to start clean for the next test
           on(host, %{puppet resource mount /mnt/#{server} ensure=absent})
         end
 
@@ -138,9 +141,14 @@ nfs::is_server: #IS_SERVER#
             autofs_client_manifest = autofs_client_manifest + "\n" + server_manifest
           end
 
-          apply_manifest_on(host, autofs_client_manifest)
-          # apply_manifest_on(host, autofs_client_manifest, catch_failures: true)
+          apply_manifest_on(host, autofs_client_manifest, catch_failures: true)
           apply_manifest_on(host, autofs_client_manifest, catch_changes: true)
+          # FIXME:  SIMP-2944
+          # We are **NOT** checking a file on the automounted directory, because it
+          # is not set up correctly
+          # on(host, %(cd /mnt/#{server}; grep -q 'This is a test' test_file))
+
+          # unmount to start clean for the next test
           on(host, %{puppet resource service autofs ensure=stopped})
         end
       end

@@ -107,18 +107,25 @@ class nfs::server (
     include 'nfs::service::nfsv3'
     svckill::ignore { 'nfs-mountd': }
   } else {
-    service { 'nfs-mountd.service': enable => 'mask' }
-    ensure_resource('service', 'rpc-statd.service', { enable => 'mask' })
-    ensure_resource('service', 'rpc-statd-notify.service', { enable => 'mask' })
+    include 'nfs::service::nfsv3_mask'
+#FIXME what about nfs-mountd.service
   }
 
   if $::nfs::secure_nfs {
     include 'nfs::service::secure'
   } else {
-    ensure_resource('service', 'rpc-gssd.service', { enable => 'mask' })
+    include 'nfs::service::secure_mask'
   }
 
-
+  ensure_resource(
+    'service',
+    'rpcbind.service',
+    {
+      ensure     => 'running',
+      enable     => true,
+      hasrestart => true
+    }
+  )
 
   service { 'rpc-rquotad.service':
     #FIXME start up rpc.rquotad?
