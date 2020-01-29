@@ -138,8 +138,12 @@ class nfs (
 
   include 'nfs::install'
   include 'nfs::base_config'
+  include 'nfs::service::nfsv3_base'
+  include 'nfs::service::secure'
 
   Class['nfs::install'] -> Class['nfs::base_config']
+  Class['nfs::base_config'] ~> Class['nfs::service::nfsv3_base']
+  Class['nfs::base_config'] ~> Class['nfs::service::secure']
 
   if $kerberos {
     include 'krb5'
@@ -164,6 +168,8 @@ class nfs (
     include 'nfs::client'
 
     Class['nfs::base_config'] ~> Class['nfs::client']
+    Class['nfs::service::nfsv3_base'] -> Class['nfs::client']
+    Class['nfs::service::secure'] -> Class['nfs::client']
 
     if $kerberos {
       Class['krb5'] ~> Class['nfs::client']
@@ -178,6 +184,8 @@ class nfs (
     include 'nfs::server'
 
     Class['nfs::base_config'] ~> Class['nfs::server']
+    Class['nfs::service::nfsv3_base'] -> Class['nfs::server']
+    Class['nfs::service::secure'] -> Class['nfs::server']
 
     if $kerberos {
       Class['krb5'] ~> Class['nfs::server']

@@ -87,6 +87,7 @@
 #
 define nfs::client::mount (
   Simplib::Host                         $nfs_server,
+  Optional[Simplib::Ip]                 $nfs_server_ip        = undef,
   Stdlib::Absolutepath                  $remote_path,
   Boolean                               $autodetect_remote    = true,
   Simplib::Port                         $port                 = 2049,
@@ -135,6 +136,7 @@ define nfs::client::mount (
 
   nfs::client::mount::connection { $name:
     nfs_server           => $nfs_server,
+    nfs_server_ip        => $nfs_server_ip,
     nfs_version          => $nfs_version,
     nfs_port             => $port,
     v4_remote_port       => $v4_remote_port,

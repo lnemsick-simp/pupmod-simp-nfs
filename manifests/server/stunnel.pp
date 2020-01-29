@@ -73,7 +73,7 @@ class nfs::server::stunnel (
     Service['nfs-server.service'] -> Stunnel::Instance['nfs']
   }
   else {
-    $_nfsv3_services = $_common_service + [
+    $_nfsv3_services = $_common_services + [
       'nfs-mountd.service',
       'rpc-statd.service',
       'rpc-statd-notify.service',
@@ -139,6 +139,7 @@ class nfs::server::stunnel (
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
+    #FIXME what about sm-notify?
 
     Service['nfs-server.service'] -> Stunnel::Instance['nfs']
     Service['nfs-server.service'] -> Stunnel::Instance['portmapper']

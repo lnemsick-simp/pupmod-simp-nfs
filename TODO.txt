@@ -11,6 +11,12 @@
 - gssproxy.service has wrong Before (old name nfs-secure.service, nfs-secure-server.service ->
 
 MODULE TODO
+- rpc.mountd still required on server but not for any over-the-wire operation
+- trusted_nets with hostnames does not work in nfs::client::mount::connection
+- override unit file for gssproxy removing secure targets and having a After that has network.target
+- what is correct ordering?
+  nfs-server.service -> stunnel -> firewall
+- nfs is not idempotent...takes 2 runs for sysctl for client
 - Do we need $::nfs::.. or can it be $nfs:: ?
 - Put stunnel_systemd_wantedby in  hieradata?
   - What do we do with defines?
@@ -31,12 +37,14 @@ MODULE TODO
 - selinux_hotfix -> mounts wouldn't work when selinux enabled
   - make sure systemd dependencies are correct for oldest nfs-utils
     ***May have to lay down systemd unit files
+- verify that if change config file, everything restarts ok
   - For NFSv3 and NFSv4
     - no stunnel
       - reboot (NFS server, NFS client)
       - quotas
       - locking (fcntl)
         - locking through NFS server and NFS client reboots
+LOCKING ONLY MAKE SENSE with hard mounts
       - tcpwrappers
       - iptables
       - kerberos
@@ -60,12 +68,17 @@ NFSv2 not supported RHEL8
   https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/managing_file_systems/mounting-nfs-shares_managing-file-systemsto
 
 QUESTIONS
+- use systemd directly to fix any dependency bugs
+- how to set up and use nfs root (see dev system)
+- what are direct and indirect mounts in autofs?
+- what are wildcards?
+- what is the problem with SIMP-2944
 - Is rpc.mountd required for NFSV4 during startup or otherwise --> don't want svckill to kill it
 - Is rpc.quotad required for NFSv4?
 - exportfs is linked against libwrap.  Does it need to be in the tcp wrappers list?
 - nfs,nfsv4  old syntax for mounts
   - mount.nfs used to handle NFSv2/3 exclusively and mount.nfsv4 used to handle NFSv4 exclusively.
-  - FIXME mount.nfs now handles all mount types.  
+  - FIXME mount.nfs now handles all mount types.
 - NSM notifications are over UDP, so when nfsv3 and using stunnel, protocol won't work?
   - what does this mean for iptables and stunnel settings?
 - Class['autofs::service'] ~> Service[$::nfs::service_names::rpcbind]

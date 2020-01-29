@@ -148,4 +148,8 @@ class nfs::base_config
       before => Concat['/etc/nfs.conf']
     }
   }
+
+  if $::nfs::idmapd {
+    include 'nfs::idmapd::config'
+  }
 }

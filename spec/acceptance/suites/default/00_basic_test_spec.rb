@@ -7,15 +7,45 @@ describe 'nfs basic NFSv4' do
   servers = hosts_with_role( hosts, 'nfs_server' )
   clients = hosts_with_role( hosts, 'client' )
 
-  let(:manifest) {
-    <<-EOM
+  let(:basic_manifest) {
+    <<~EOM
       include 'nfs'
       include 'ssh'
     EOM
   }
 
+  let(:server_manifest) {
+    <<~EOM
+      include 'nfs'
+      include 'ssh'
+
+      file { '/srv/nfs_share':
+        ensure => 'directory',
+        owner  => 'root',
+        group  => 'root',
+        mode   => '0644'
+      }
+
+      file { '/srv/nfs_share/test_file':
+        ensure  => 'file',
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0644',
+        content => 'This is a test'
+      }
+
+      nfs::server::export { 'nfs4_root':
+        clients     => ['*'],
+        export_path => '/srv/nfs_share',
+        sec         => ['sys']
+      }
+
+      File['/srv/nfs_share'] -> Nfs::Server::Export['nfs4_root']
+    EOM
+  }
+
   let(:hieradata) {
-    <<-EOM
+    <<~EOM
 ---
 # Set us up for a basic NFSv4 server for right now (no Kerberos)
 simp_options::firewall : true
@@ -44,53 +74,31 @@ nfs::is_server: #IS_SERVER#
         end
 
         set_hieradata_on(host, hdata)
-        apply_manifest_on(host, manifest, :catch_failures => true)
+        apply_manifest_on(host, basic_manifest, :catch_failures => true)
       end
 
-      it 'should be idempotent' do
-        apply_manifest_on(host, manifest, :catch_changes => true)
+      it 'should converge in 1 extra puppet run' do
+        # sysctl resource loads all kernel parameter/value pairs once
+        # at the beginning of the catalog.  We have logic that will
+        # load a kernel module and then set the kernel parameters
+        # using a sysctl resource.  So, the syctl resource setting
+        # will not work the first time because of old, cached info.
+        apply_manifest_on(host, basic_manifest, :catch_failures => true)
+        apply_manifest_on(host, basic_manifest, :catch_changes => true)
       end
     end
   end
 
-  server_manifest = <<-EOM
-    include 'nfs'
-    include 'ssh'
-
-    file { '/srv/nfs_share':
-      ensure => 'directory',
-      owner  => 'root',
-      group  => 'root',
-      mode   => '0644'
-    }
-
-    file { '/srv/nfs_share/test_file':
-      ensure  => 'file',
-      owner   => 'root',
-      group   => 'root',
-      mode    => '0644',
-      content => 'This is a test'
-    }
-
-    nfs::server::export { 'nfs4_root':
-      clients     => ['*'],
-      export_path => '/srv/nfs_share',
-      sec         => ['sys']
-    }
-
-    File['/srv/nfs_share'] -> Nfs::Server::Export['nfs4_root']
-  EOM
-
   context 'as a server' do
-    servers.each do |host|
+    servers.each do |server|
       it 'should export a directory' do
-        apply_manifest_on(host, server_manifest, :catch_failures => true)
+        apply_manifest_on(server, server_manifest, :catch_failures => true)
       end
     end
   end
 
   context 'as a client' do
-    clients.each do |host|
+    clients.each do |client|
       servers.each do |server|
         it "should mount a directory on the #{server} server" do
           server_fqdn = fact_on(server, 'fqdn')
@@ -101,55 +109,43 @@ nfs::is_server: #IS_SERVER#
             nfs::client::mount { '/mnt/#{server}':
               nfs_server        => '#{server_fqdn}',
               remote_path       => '/srv/nfs_share',
-              autodetect_remote => #{!servers.include?(host)},
+              autodetect_remote => #{!servers.include?(client)},
               autofs            => false
             }
           EOM
 
-          if servers.include?(host)
+          if servers.include?(client)
             client_manifest = client_manifest + "\n" + server_manifest
           end
 
-          host.mkdir_p("/mnt/#{server}")
-          apply_manifest_on(host, client_manifest, :catch_failures => true)
-          on(host, %(grep -q 'This is a test' /mnt/#{server}/test_file))
+          client.mkdir_p("/mnt/#{server}")
+          apply_manifest_on(client, client_manifest, :catch_failures => true)
+          on(client, %(grep -q 'This is a test' /mnt/#{server}/test_file))
         end
 
         it 'mount should be re-established after client reboot' do
+          client.reboot
+          retry_on(client, %(grep -q 'This is a test' /mnt/#{server}/test_file))
         end
 
         it 'mount should be re-established after server reboot' do
-          # unmount to start clean for the next test
-          on(host, %{puppet resource mount /mnt/#{server} ensure=absent})
+          unless client == server
+            server.reboot
+            retry_on(client, %(grep -q 'This is a test' /mnt/#{server}/test_file))
+          end
         end
 
-        it "should mount a directory on the #{server} server with autofs" do
-          server_fqdn = fact_on(server, 'fqdn')
+        it 'should restart all services correctly when configuration changes' do
+        end
 
-          autofs_client_manifest = <<-EOM
-            include 'ssh'
+        it 'manifest should start all NFS services when all have been killed' do
+        end
 
-            nfs::client::mount { '/mnt/#{server}':
-              nfs_server        => '#{server_fqdn}',
-              remote_path       => '/srv/nfs_share',
-              autodetect_remote => #{!servers.include?(host)},
-              autofs            => true
-            }
-          EOM
+        it 'manifest should start missing NFS services some have been killed' do
+        end
 
-          if servers.include?(host)
-            autofs_client_manifest = autofs_client_manifest + "\n" + server_manifest
-          end
-
-          apply_manifest_on(host, autofs_client_manifest, catch_failures: true)
-          apply_manifest_on(host, autofs_client_manifest, catch_changes: true)
-          # FIXME:  SIMP-2944
-          # We are **NOT** checking a file on the automounted directory, because it
-          # is not set up correctly
-          # on(host, %(cd /mnt/#{server}; grep -q 'This is a test' test_file))
-
-          # unmount to start clean for the next test
-          on(host, %{puppet resource service autofs ensure=stopped})
+        it 'should unmount to clean up for follow-on tests' do
+          on(client, %{puppet resource mount /mnt/#{server} ensure=absent})
         end
       end
     end

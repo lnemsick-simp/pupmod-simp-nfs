@@ -66,13 +66,18 @@ class nfs::client (
   exec { 'modprobe_nfsv4':
     command => '/sbin/modprobe nfsv4',
     unless  => '/sbin/lsmod | /usr/bin/grep -qw nfsv4',
+    require =>  File['/etc/modprobe.d/nfs.conf'],
     notify  => Sysctl['fs.nfs.nfs_callback_tcpport']
   }
 
   sysctl { 'fs.nfs.nfs_callback_tcpport':
     ensure  => 'present',
     val     => $callback_port,
-    silent  => true, #FIXME is this required? ignore the activation failure of a yet-to-be-activated sysctl value
+    # Ignore 'invalid' kernel parameter, because the sysctl type caches all
+    # kernel param info the first time any sysctl resource is created. So, the
+    # parameter may appear to not be activated, even when it has just been
+    # activated by the module we loaded in Exec['modprove_nfsv4'].
+    silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
   }
 
@@ -100,17 +105,4 @@ class nfs::client (
   if $::nfs::idmapd {
     include 'nfs::idmapd::client'
   }
-
-  if $::nfs::nfsv3 {
-    include 'nfs::service::nfsv3'
-  } else {
-    include 'nfs::service::nfsv3_mask'
-  }
-
-  if $::nfs::secure_nfs {
-    include 'nfs::service::secure'
-  } else {
-    include 'nfs::service::secure_mask'
-  }
-
 }

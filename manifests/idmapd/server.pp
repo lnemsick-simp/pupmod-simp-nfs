@@ -2,8 +2,6 @@
 #
 class nfs::idmapd::server
 {
-  assert_private()
-
   include 'nfs::idmapd::config'
 
   service { 'nfs-idmapd.service':
@@ -12,5 +10,5 @@ class nfs::idmapd::server
     hasrestart => true
   }
 
-  File['/etc/idmapd.conf'] ~> Service['nfs-idmapd.service']
+  Class['nfs::idmap::config'] ~> Service['nfs-idmapd.service']
 }

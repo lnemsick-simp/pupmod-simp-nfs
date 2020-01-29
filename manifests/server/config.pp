@@ -129,10 +129,11 @@ class nfs::server::config
     logoutput   => true,
   }
 
-  # Ensure NFS starts with the proper number of slot entries.
+  # Tune with the proper number of slot entries.
   sysctl { 'sunrpc.tcp_slot_table_entries':
     ensure  => 'present',
     val     => $::nfs::server::sunrpc_tcp_slot_table_entries,
+    # Ignore failure if var-lib-nfs-rpc_pipefs.mount is not up yet.
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
   }
@@ -140,7 +141,12 @@ class nfs::server::config
   sysctl { 'sunrpc.udp_slot_table_entries':
     ensure  => 'present',
     val     => $::nfs::server::sunrpc_udp_slot_table_entries,
+    # Ignore failure if var-lib-nfs-rpc_pipefs.mount is not up yet.
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
+  }
+
+  if $::nfs::server::tcpwrappers {
+    include 'nfs::server::tcpwrappers'
   }
 }

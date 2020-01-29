@@ -17,6 +17,7 @@
 #
 define nfs::client::mount::connection (
   Simplib::Host           $nfs_server,
+  Optional[Simplib::Ip]   $nfs_server_ip        = undef,
   Enum['nfs','nfs4']      $nfs_version,
   Simplib::Port           $nfs_port             = 2049,
   Optional[Simplib::Port] $v4_remote_port       = undef,
@@ -53,15 +54,22 @@ define nfs::client::mount::connection (
     }
   }
 
-  # Set up the callback port IPTables opening if appropriate
-  if $::nfs::client::firewall {
+  # Set up the NFSv4.0 callback port IPTables opening if appropriate
+  # We are forced to use an IP address for any host for which the iptables
+  # resource is delegating to a firewalld resource. The firewalld resource
+  # requires IP addressess.
+  # * The side channel is not needed for > NFSv4.0
+  # * If this port is not set up, the NFS server won't delegate to the client,
+  #   which could be less efficient, but not catastrophic.
+  #
+  if $::nfs::client::firewall and ($nfs_version == 'nfs4') and $nfs_server_ip {
     include '::iptables'
 
     # It is possible that this is called for multiple mounts on the same server
     ensure_resource('iptables::listen::tcp_stateful',
-      "nfs_callback_${nfs_server}",
+      "nfs_callback_${nfs_server_ip}",
       {
-        trusted_nets => [$nfs_server],
+        trusted_nets => [$nfs_server_ip],
         dports       => $nfs::client::callback_port
       }
     )

@@ -1,5 +1,3 @@
-# **NOTE: THIS IS A [PRIVATE](https://github.com/puppetlabs/puppetlabs-stdlib#assert_private) CLASS**
-#
 # Provides for the configuration of ``idmapd``
 #
 # The daemon is started from ``init.pp`` but you may need to tweak some values
@@ -45,7 +43,6 @@ class nfs::idmapd::config (
   Optional[Hash[String,String]]              $static_translation = undef,
   Optional[String]                           $content            = undef
 ) {
-  assert_private()
 
   file { '/etc/idmapd.conf':
     owner   => 'root',
