@@ -11,7 +11,32 @@
 - gssproxy.service has wrong Before (old name nfs-secure.service, nfs-secure-server.service ->
 
 MODULE TODO
-- rpc.mountd still required on server but not for any over-the-wire operation
+- shouldn't we force TCP for TRANSPORT METHODS when using stunnel?
+  YES AS MUCH AS POSSIBLE
+  from man nfs
+       Using the mountproto mount option
+       This section applies only to NFS version 2 and version 3 mounts since
+       NFS version 4 does not use a separate protocol for mount requests.
+
+       The Linux NFS client can use a different transport for contacting  an
+       NFS  server's  rpcbind  service, its mountd service, its Network Lock
+       Manager (NLM) service, and its NFS  service.   The  exact  transports
+       employed  by the Linux NFS client for each mount point depends on the
+       settings of the transport mount options, which include proto,  mount‐
+       proto, udp, and tcp.
+
+       The  client  sends Network Status Manager (NSM) notifications via UDP
+       no matter what transport  options  are  specified,  but  listens  for
+       server NSM notifications on both UDP and TCP.  The NFS Access Control
+       List (NFSACL) protocol shares the same transport as the main NFS ser‐
+       vice.
+
+       If  no transport options are specified, the Linux NFS client uses UDP
+       to contact the server's mountd service, and TCP to  contact  its  NLM
+       and NFS services by default.
+
+  if force on the server, will be negotiated to TCP with the client
+- man nfs and tcpdump
 - trusted_nets with hostnames does not work in nfs::client::mount::connection
 - override unit file for gssproxy removing secure targets and having a After that has network.target
 - what is correct ordering?
@@ -484,3 +509,78 @@ NSM (Network Status Monitor Protocol)
  - man rpc.statd
  - Used in NFSv2 and NFSv3, but not NFSv4 which builds that capability in
  - Used to notify NFS peers of reboots
+
+
+mount 
+  el7.4 and later NFSv4.1 is default and steps down
+  el8 NFSv4.2 is default
+man 5 autofs
+root@ws150 etc]# cat auto.master
+# This file is managed by Puppet. DO NOT EDIT.
+/- /etc/autofs/iso.map 
+/- /etc/autofs/misc.map 
+/- /etc/autofs/transfer.map 
+/- /etc/autofs/vagrant.map 
+/home /etc/autofs/home.map 
+[root@ws150 etc]# 
+[root@ws150 etc]# cd autofs
+[root@ws150 autofs]# cat *.map
+# This file is managed by Puppet. DO NOT EDIT.
+*	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/home/&
+# This file is managed by Puppet. DO NOT EDIT.
+/net/ISO	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/ISO
+# This file is managed by Puppet. DO NOT EDIT.
+/net/misc	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/misc
+# This file is managed by Puppet. DO NOT EDIT.
+/net/transfer	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/transfer
+# This file is managed by Puppet. DO NOT EDIT.
+/net/vagrant	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/vagrant
+
+
+
+
+@Trevor Vaughan Shouldn't pupmod-simp-nfs enforce the use of TCP for server and client transport (where configurable) when using stunnel?  In other words, set the proto parameters in the server and mount configs. Or are we assuming that use of TCP will be figured out in the mount negotiation process?
+
+Trevor Vaughan:simp:  4:38 PM
+Yes, it should.
+
+Liz Nemsick:glitch_crab:  4:38 PM
+Yes to which part? (edited) 
+
+Trevor Vaughan:simp:  4:39 PM
+It should force TCP
+4:40
+It probably does the right thing but no reason to try otherwise
+
+Liz Nemsick:glitch_crab:  4:41 PM
+OK.  Now for NSM notifications from the client to the server in NFSv3, which according to the nfs man page are always UDP, do we want to allow those notifications through the firewall unencrypted, as they can't be encrypted with stunnel. (edited) 
+
+Trevor Vaughan:simp:  4:42 PM
+We'll have to
+
+Liz Nemsick:glitch_crab:  4:43 PM
+I think they are reboot notifications.  If they are being sent via UDP, are they critical?
+4:43
+The server can send the same notification to the client via TCP.
+
+Trevor Vaughan:simp:  4:44 PM
+If it can go over TCP that would be best. They might not be critical but it makes sense to let them through
+
+Liz Nemsick:glitch_crab:  4:45 PM
+Only can go TCP from server to client, not client to server.  That's why I was wondering how critical they are.
+4:45
+(client to server criticality)
+
+Trevor Vaughan:simp:  4:45 PM
+No idea honestly
+
+
+
+
+
+4:45
+May be useful for releasing file locks or the like
+
+Liz Nemsick:glitch_crab:  4:46 PM
+Wish we could jettison NFSv3
+

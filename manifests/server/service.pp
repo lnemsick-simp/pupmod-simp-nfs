@@ -15,12 +15,11 @@ class nfs::server::service
     hasstatus  => true
   }
 
-  if $::nfs::nfsv3 {
-    svckill::ignore { 'nfs-mountd': }
-  } else {
-#FIXME Should we mask nfs-mountd.service?
-  }
+  # nfs-mountd is required for both NFSv3 and NFSv4 and is started
+  # when needed, but only has over-the-wire operation in NFSv3
+  svckill::ignore { 'nfs-mountd': }
 
+  # required by rpc-rquotad.service and common NFSv3 services
   ensure_resource(
     'service',
     'rpcbind.service',
@@ -41,16 +40,14 @@ class nfs::server::service
     include 'nfs::idmapd::server'
   }
 
+  if $::nfs::server::firewall {
+    include 'nfs::server::firewall'
+  }
+
   if $::nfs::server::stunnel {
     include 'nfs::server::stunnel'
     if $::nfs::server::firewall {
-#      Class['nfs::server::stunnel'] ~> Class['nfs::server::firewall']
-#or
-      Class['nfs::server::stunnel'] -> Class['nfs::server::firewall']
+      Class['nfs::server::firewall'] ~> Class['nfs::server::stunnel']
     }
-  }
-
-  if $::nfs::server::firewall {
-    include 'nfs::server::firewall'
   }
 }

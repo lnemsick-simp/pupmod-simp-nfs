@@ -9,7 +9,7 @@
 #   * **NOTE:** This define will **NOT** create the target file for you
 #
 # @param nfs_server
-#   The NFS server to which you will be connecting
+#   The IP address of the NFS server to which you will be connecting
 #
 #   * If you are the server, please make sure that this is ``127.0.0.1``
 #
@@ -29,7 +29,9 @@
 #   The NFS port to which to connect
 #
 # @param nfs_version
-#   The NFS version that you want to use
+#   The NFS major version that you want to use.  If you need to specify
+#   an explicit minor version of NFSv4, include 'minorversion=<#>'in
+#   `$options`.
 #
 # @param v4_remote_port
 #   If using NFSv4, specify the remote port to which to connect
@@ -86,12 +88,15 @@
 # @author Trevor Vaughan <mailto:tvaughan@onyxpoint.com>
 #
 define nfs::client::mount (
-  Simplib::Host                         $nfs_server,
-  Optional[Simplib::Ip]                 $nfs_server_ip        = undef,
+  Simplib::Ip                           $nfs_server,
   Stdlib::Absolutepath                  $remote_path,
   Boolean                               $autodetect_remote    = true,
   Simplib::Port                         $port                 = 2049,
-  Enum['nfs','nfs4']                    $nfs_version          = 'nfs4',
+  Enum[3,4]                             $nfs_version          = 4,
+# set this when you want to specify an explicit minor version of NFSv4 to use
+# Should be set to 0 for NFSv4.0 to open the client delegation callback port
+# through the firewall.
+  Optional[Integer[0]]                  $nfs_minor_version    = undef,
   Optional[Simplib::Port]               $v4_remote_port       = undef,
   Nfs::SecurityFlavor                   $sec                  = 'sys',
   String                                $options              = 'hard,intr',
@@ -120,11 +125,11 @@ define nfs::client::mount (
 
   include 'nfs::client'
 
-  if $nfs_version == 'nfs4' {
-    $_nfs_options = "port=${port},${options},sec=${sec}"
+  if ($nfs_version  == 4) {
+    $_nfs_options = "nfsver=4,port=${port},${options},sec=${sec}"
   }
   else {
-    $_nfs_options = "port=${port},${options}"
+    $_nfs_options = "nfsver=3,port=${port},${options}"
   }
 
   if $stunnel !~ Undef {
@@ -136,8 +141,8 @@ define nfs::client::mount (
 
   nfs::client::mount::connection { $name:
     nfs_server           => $nfs_server,
-    nfs_server_ip        => $nfs_server_ip,
     nfs_version          => $nfs_version,
+    nfs_minor_version    => $nfs_minor_version,
     nfs_port             => $port,
     v4_remote_port       => $v4_remote_port,
     stunnel              => $_stunnel,
@@ -188,7 +193,7 @@ define nfs::client::mount (
       }
 
       autofs::map::entry { $name:
-        options  => "-fstype=${nfs_version},${_nfs_options}",
+        options  => "${_nfs_options}",
         location => $_location,
         target   => $_clean_name,
         require  => Nfs::Client::Mount::Connection[$name]
@@ -202,7 +207,7 @@ define nfs::client::mount (
         $_location = "${nfs_server}:${remote_path}"
       }
       autofs::map::entry { $name:
-        options  => "-fstype=${nfs_version},${_nfs_options}",
+        options  => "${_nfs_options}",
         location => $_location,
         target   => $_clean_name,
         require  => Nfs::Client::Mount::Connection[$name]
@@ -215,7 +220,7 @@ define nfs::client::mount (
         ensure   => $ensure,
         atboot   => $at_boot,
         device   => "127.0.0.1:${remote_path}",
-        fstype   => $nfs_version,
+        fstype   => 'nfs', # NFS version specified in options
         options  => $_nfs_options,
         remounts => false,
         require  => Nfs::Client::Mount::Connection[$name]
@@ -226,7 +231,7 @@ define nfs::client::mount (
         ensure   => $ensure,
         atboot   => $at_boot,
         device   => "${nfs_server}:${remote_path}",
-        fstype   => $nfs_version,
+        fstype   => 'nfs', # NFS version specified in options
         options  => $_nfs_options,
         remounts => false,
         require  => Nfs::Client::Mount::Connection[$name]

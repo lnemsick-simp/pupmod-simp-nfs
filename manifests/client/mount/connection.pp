@@ -16,13 +16,13 @@
 # @author Trevor Vaughan <tvaughan@onyxpoint.com>
 #
 define nfs::client::mount::connection (
-  Simplib::Host           $nfs_server,
-  Optional[Simplib::Ip]   $nfs_server_ip        = undef,
-  Enum['nfs','nfs4']      $nfs_version,
-  Simplib::Port           $nfs_port             = 2049,
-  Optional[Simplib::Port] $v4_remote_port       = undef,
-  Optional[Boolean]       $stunnel              = undef,
-  Array[String]           $stunnel_wantedby     = []
+  Simplib::Ip             $nfs_server,
+  Enum[3,4]               $nfs_version,
+  Optional[Integer[0]]    $nfs_minor_version = undef,
+  Simplib::Port           $nfs_port          = 2049,
+  Optional[Simplib::Port] $v4_remote_port    = undef,
+  Optional[Boolean]       $stunnel           = undef,
+  Array[String]           $stunnel_wantedby  = []
 ) {
 
   # This is only meant to be called from inside nfs::client::mount
@@ -32,7 +32,7 @@ define nfs::client::mount::connection (
   # If this doesn't work, you'll need to set ``stunnel`` to ``false`` in your
   # call to ``nfs::client::mount``
   if $stunnel {
-    if $nfs_version == 'nfs' {
+    if $nfs_version == 3 {
       # This is not great but the target is actually only able to be called
       # once anyway
       ensure_resource('class',
@@ -54,15 +54,11 @@ define nfs::client::mount::connection (
     }
   }
 
-  # Set up the NFSv4.0 callback port IPTables opening if appropriate
-  # We are forced to use an IP address for any host for which the iptables
-  # resource is delegating to a firewalld resource. The firewalld resource
-  # requires IP addressess.
-  # * The side channel is not needed for > NFSv4.0
-  # * If this port is not set up, the NFS server won't delegate to the client,
-  #   which could be less efficient, but not catastrophic.
+  # Set up the NFSv4.0 delegation callback port IPTables opening.  This is only
+  # needed for NFSv4.0, because, beginning with NFSv4.1 delegation does not
+  # require a side channel.
   #
-  if $::nfs::client::firewall and ($nfs_version == 'nfs4') and $nfs_server_ip {
+  if $::nfs::client::firewall and ($nfs_version == 4) {
     include '::iptables'
 
     # It is possible that this is called for multiple mounts on the same server

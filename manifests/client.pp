@@ -32,7 +32,7 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client (
-  Simplib::Port $callback_port  = 876,    # NFSV4
+  Simplib::Port $callback_port  = 876,    # NFSV4.0
   Boolean       $blkmap         = false,  # NFSV4.1 or later
   Boolean       $stunnel        = $::nfs::stunnel,
   Integer[0]    $stunnel_verify = 2,
@@ -73,10 +73,10 @@ class nfs::client (
   sysctl { 'fs.nfs.nfs_callback_tcpport':
     ensure  => 'present',
     val     => $callback_port,
-    # Ignore 'invalid' kernel parameter, because the sysctl type caches all
-    # kernel param info the first time any sysctl resource is created. So, the
-    # parameter may appear to not be activated, even when it has just been
-    # activated by the module we loaded in Exec['modprove_nfsv4'].
+    # Ignore 'invalid' kernel parameter, because the sysctl custom type caches
+    # all kernel param info the first time any sysctl resource is created. So,
+    # the parameter may appear to not be activated, even when it has just been
+    # activated by the module we loaded in Exec['modprobe_nfsv4'].
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
   }

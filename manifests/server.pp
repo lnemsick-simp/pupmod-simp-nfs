@@ -68,6 +68,8 @@
 #
 # @param stunnel Use the SIMP ``stunnel`` module to manage stunnel
 #
+#   * This will configure the NFS server to only use TCP communication
+#
 # @param tcpwrappers
 #   Use the SIMP ``tcpwrappers`` module to manage tcpwrappers
 #

@@ -80,6 +80,7 @@
 #
 #   * This is ideally suited for environments without a working Kerberos setup
 #     and may cause issues when used with Kerberos.
+#   * This will configure the NFS server to only use TCP communication
 #
 # @param stunnel_tcp_nodelay
 #   Enable TCP_NODELAY for all stunnel connections
@@ -103,7 +104,7 @@ class nfs (
   Simplib::Port         $mountd_port                  = 20048,
   Simplib::Port         $nfsd_port                    = 2049,
   Simplib::Port         $rquotad_port                 = 875,
-#  Simplib::Port         $sm_notify_outgoing_port      = 2020, same as $statd_outgoing_port?
+  Simplib::Port         $sm_notify_outgoing_port      = 661,
   Simplib::Port         $statd_port                   = 662,
   Simplib::Port         $statd_outgoing_port          = 2020,
   Nfs::NfsConfHash      $custom_nfs_conf_opts         = {},

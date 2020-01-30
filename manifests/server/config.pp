@@ -22,7 +22,7 @@ class nfs::server::config
 
   if $::nfs::server::stunnel {
     # UDP can't be encapsulated by stunnel
-    $_stunnel_opts = { 'nfsd' => { 'udp' => false } }
+    $_stunnel_opts = { 'nfsd' => { 'tcp' => true, 'udp' => false } }
   } else {
     $_stunnel_opts = {}
   }
@@ -129,6 +129,9 @@ class nfs::server::config
     logoutput   => true,
   }
 
+  #FIXME looks like this should be done on the NFS client
+  #Also, should we persist to file in /etc/modprobe.d so that
+  #it is available at boot time?
   # Tune with the proper number of slot entries.
   sysctl { 'sunrpc.tcp_slot_table_entries':
     ensure  => 'present',

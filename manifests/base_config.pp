@@ -15,10 +15,7 @@ class nfs::base_config
       'udp-port'                 => $::nfs::lockd_udp_port,
     },
     'sm-notify' => {
-      # rpc-statd uses sm-notify to send reboot notifications.
-      # This setting appears to be the same as statd/outgoing-port.
-      # Don't know why configured twice.
-      'outgoing-port'            => $::nfs::statd_outgoing_port
+      'outgoing-port'            => $::nfs::sm_notify_outgoing_port
     },
     'statd'     => {
       'port'                     => $::nfs::statd_port,
