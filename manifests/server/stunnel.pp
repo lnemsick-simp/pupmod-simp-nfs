@@ -44,7 +44,7 @@ class nfs::server::stunnel (
   Simplib::Port    $status_accept_port     = 6620,
   Array[String]    $stunnel_wantedby       = $nfs::stunnel_wantedby
 ) {
-
+assert_private()
   $_common_services = [
     'nfs-server.service',
     'nfs-idmapd.service',

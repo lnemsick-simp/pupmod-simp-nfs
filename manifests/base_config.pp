@@ -1,9 +1,16 @@
 # @summary Common configuration required by both NFS server and client
 #
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 class nfs::base_config
 {
   assert_private()
 
+  # Required /etc/nfs.conf options for all possible NFS base services shared
+  # by NFS client and NFS server
+  # * Only config appropriate for specified NFS versions will actually be set.
+  # * All values can be set vi nfs class parameters
+  # * Will override any $nfs::custom_nfs_conf_opts settings, because firewall
+  #   and stunnels will not work otherwise!
   $_required_nfs_conf_opts = {
     'gssd'     => {
       'avoid-dns'                => $::nfs::gssd_avoid_dns,

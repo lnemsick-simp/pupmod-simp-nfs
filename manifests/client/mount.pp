@@ -99,7 +99,7 @@ define nfs::client::mount (
   Optional[Integer[0]]                  $nfs_minor_version    = undef,
   Optional[Simplib::Port]               $v4_remote_port       = undef,
   Nfs::SecurityFlavor                   $sec                  = 'sys',
-  String                                $options              = 'hard,intr',
+  String                                $options              = 'hard',
   Enum['mounted','present','unmounted'] $ensure               = 'mounted',
   Boolean                               $at_boot              = true,
   Boolean                               $autofs               = true,
@@ -126,10 +126,10 @@ define nfs::client::mount (
   include 'nfs::client'
 
   if ($nfs_version  == 4) {
-    $_nfs_options = "nfsver=4,port=${port},${options},sec=${sec}"
+    $_nfs_options = "nfsvers=4,port=${port},${options},sec=${sec}"
   }
   else {
-    $_nfs_options = "nfsver=3,port=${port},${options}"
+    $_nfs_options = "nfsvers=3,port=${port},${options}"
   }
 
   if $stunnel !~ Undef {

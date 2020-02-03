@@ -115,11 +115,12 @@ class nfs (
   Boolean               $kerberos                     = simplib::lookup('simp_options::kerberos', { 'default_value' => false }),
   Boolean               $keytab_on_puppet             = simplib::lookup('simp_options::kerberos', { 'default_value' => true}),
   Boolean               $firewall                     = simplib::lookup('simp_options::firewall', { 'default_value' => false}),
-  Boolean               $tcpwrappers                  = simplib::lookup('simp_options::tcpwrappers', { 'default_value' => false }),
   Boolean               $stunnel                      = simplib::lookup('simp_options::stunnel', { 'default_value' => false }),
   Boolean               $stunnel_tcp_nodelay          = true,
   Array[String]         $stunnel_socket_options       = [],
-  Array[String]         $stunnel_wantedby             = []
+  Array[String]         $stunnel_wantedby             = [],
+  Boolean               $tcpwrappers                  = simplib::lookup('simp_options::tcpwrappers', { 'default_value' => false }),
+  Simplib::Netlist      $trusted_nets                 = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] })
 ) {
 
   simplib::assert_metadata($module_name)
@@ -138,13 +139,13 @@ class nfs (
   }
 
   include 'nfs::install'
-  include 'nfs::base_config'
-  include 'nfs::service::nfsv3_base'
-  include 'nfs::service::secure'
+#  include 'nfs::base_config'
+#  include 'nfs::service::nfsv3_base'
+#  include 'nfs::service::secure'
 
-  Class['nfs::install'] -> Class['nfs::base_config']
-  Class['nfs::base_config'] ~> Class['nfs::service::nfsv3_base']
-  Class['nfs::base_config'] ~> Class['nfs::service::secure']
+#  Class['nfs::install'] -> Class['nfs::base_config']
+#  Class['nfs::base_config'] ~> Class['nfs::service::nfsv3_base']
+#  Class['nfs::base_config'] ~> Class['nfs::service::secure']
 
   if $kerberos {
     include 'krb5'
@@ -167,11 +168,11 @@ class nfs (
 
   if $is_client {
     include 'nfs::client'
+    Class['nfs::install'] -> Class['nfs::client']
 
-    Class['nfs::base_config'] ~> Class['nfs::client']
-    Class['nfs::service::nfsv3_base'] -> Class['nfs::client']
-    Class['nfs::service::secure'] -> Class['nfs::client']
-
+    # This notification just makes sure SIMP-provided Kerberos set up
+    # is done before a client mount operation requiring it is executed?
+    # FIXME This won't affect an existing NFS mount.
     if $kerberos {
       Class['krb5'] ~> Class['nfs::client']
 
@@ -183,10 +184,7 @@ class nfs (
 
   if $is_server {
     include 'nfs::server'
-
-    Class['nfs::base_config'] ~> Class['nfs::server']
-    Class['nfs::service::nfsv3_base'] -> Class['nfs::server']
-    Class['nfs::service::secure'] -> Class['nfs::server']
+    Class['nfs::install'] -> Class['nfs::server']
 
     if $kerberos {
       Class['krb5'] ~> Class['nfs::server']

@@ -9,8 +9,32 @@
   - Install quota-rpc on el8 and enable service if quotad args are specified
   - Create /etc/sysconfig/rpc-rquotad file and remove any such config from /etc/sysconfig/nfs
 - gssproxy.service has wrong Before (old name nfs-secure.service, nfs-secure-server.service ->
+- FIXED remove intr option in mount, as it doesn't do anything anymore
+- Make sure not to use ephemeral ports lockd on NFS clients.  This port is used when
+  multiple NFS clients attempt to lock the same file.
+- FIXED did not set sm-notify port to a non-ephemeral value.  This port is used
+  when a NFS client or server reboots and a file has been locked.
+
 
 MODULE TODO
+- tcpwrappers nfsv3 client when mount?
+- can client run without rpcbind?, if not, need to open up tcpwrappers on client as well
+- YES do we need to set the lockd ports on NFS clients?
+   verified with a 2-client lock test
+- have to make sure sm-modify's reboot notification goes out when stunnel and firewalls are
+  up...so need to make sure firewall service is before stunnel service is before nfs-server
+   iptables service is before network service
+   firewalld.service before network-pre.target
+  if stunnel wants network service/target, we are golden
+  (or at least nfs-server socket connection?)
+- Make sure export parameters in nfs::server::export still make sense
+- why was the number of rpc.mountd threads decreased when applied puppet?
+- EL8 only way could get nfs-mountd configured was with a command-line argument.  Did not read
+  /etc/nsf.conf
+- EL8 only way could get lock manager ports correctly read in was to ensure nfsd/nfs module was
+  loaded before rpc-statd was started.
+  This was even with setting the ports on the command line
+- RPCNFSDARGS set ot 8 in /run/sysconfig/nfs-utils el7, which will make setting in /etc/nfs/conf obsolete
 - shouldn't we force TCP for TRANSPORT METHODS when using stunnel?
   YES AS MUCH AS POSSIBLE
   from man nfs
@@ -448,8 +472,8 @@ nfs_acl                16384  1 nfsd
 lockd                 118784  1 nfsd
 grace                  16384  2 nfsd,lockd
 sunrpc                434176  17 nfsd,auth_rpcgss,lockd,nfs_acl
-  Do the nfsv4 kernel modules only start up if you have mounted a file system with nfsv4?
-  Pretty sure nfs turns on the ones needed
+  YES: Do the nfsv4 kernel modules only start up if you have mounted a file system with nfsv4?
+       Pretty sure nfs turns on the ones needed
 
 nfs-blkmap.service       inactive dead  <-- expected
 nfs-client.target        active running
@@ -582,5 +606,35 @@ No idea honestly
 May be useful for releasing file locks or the like
 
 Liz Nemsick:glitch_crab:  4:46 PM
-Wish we could jettison NFSv3
+
+
+mount -t nfs  -o nfsvers=3,port=2049,hard 10.255.67.177:/srv/nfs_share /srv/el7-server
+
+mount proto options:
+- should mount command proto=tcp and mountproto=tcp be set when using stunnel and NFSv3?
+   if proto is set and mountproto is not, will be used for mountproto
+   FIXME:  specify proto=tcp on very rightmost, last one wins
+- should mount command proto=tcp be set when using stunnel and NFSv4
+- is the proto negotiated to tcp automatically otherwise?
+
+mount security options:  Why not supporting krb5 for NFSv3?
+ - RPCGSS auth can be supported, but does not protect side channels
+
+Should we be blocking rpcbind's port 111 and just use known ports?
+- No, No mechanism to specify the quota port? So, allow port 111 and
+  then fix the ports and allow those ports.
+
+
+mount operation
+
+
+flock on client really long
+reboot server
+ tcpdump -i eth1 -nn tcp or udp -w nfs.pkts
+ tcpdump -r nfs.pkts -nn -t > nfs.pkts.txt
+
+from packet dumps, lockd config does not need to be on the client
+statd and statd-notify does need to be on the client
+client needs to restart nfs-utils to pick up changes
+changes will be picked up even if mounted filesystems
 

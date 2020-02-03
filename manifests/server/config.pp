@@ -5,7 +5,15 @@ class nfs::server::config
 {
   assert_private()
 
+  # Required config options for all possible NFS server services.
+  # * Augments the base config shared with NFS client.
+  # * Only config appropriate for specified NFS versions will actually be set.
+  # * Will override any user-input options, because firewall and stunnels
+  #   will not work otherwise!
   $_required_nfs_conf_opts = {
+    'mountd' => {
+      'mountd_port' => $::nfs::mountd_port,
+    },
     'nfsd'   => {
       'port'        => $::nfs::nfsd_port,
       'vers2'       => false,
@@ -15,13 +23,11 @@ class nfs::server::config
       'vers4.1'     => $::nfs::server::nfsd_vers4_1,
       'vers4.2'     => $::nfs::server::nfsd_vers4_2
     },
-    'mountd' => {
-      'mountd_port' => $::nfs::mountd_port,
-    }
   }
 
   if $::nfs::server::stunnel {
-    # UDP can't be encapsulated by stunnel
+    # UDP can't be encapsulated by stunnel, so we have to force this
+    # setting.
     $_stunnel_opts = { 'nfsd' => { 'tcp' => true, 'udp' => false } }
   } else {
     $_stunnel_opts = {}
@@ -78,6 +84,7 @@ class nfs::server::config
       }
     }
 
+
     if 'RPCMOUNTDARGS' in $::nfs::custom_daemon_args {
       concat::fragment { 'nfs_RPCNFSDARGS':
         order   => 4,
@@ -85,12 +92,32 @@ class nfs::server::config
         content => "RPCMOUNTDARGS=\"${::nfs::custom_daemon_args['RPCMOUNTDARGS']}\""
       }
     }
+
+    # Work around problem when using '/etc/nfs.conf' and '/etc/sysconfig/nfs'.
+    # The config conversion script will set the number of threads on the
+    # rpc.nfsd command line based on a RPCNFSDCOUNT environment variable or
+    # a default value of 8.  Since command line arguments take precedence over
+    # nfs.conf settings, this causes the threads nfsd setting in nfs.conf
+    # to be ignored.
+    if 'threads' in $_merged_opts['nfsd'] {
+      concat::fragment { 'nfs_RPCNFSDCOUNT':
+        order   => 5,
+        target  => '/etc/sysconfig/nfs',
+        content => "RPCNFSDCOUNT=\"${_merged_opts['nfsd']['threads']}\""
+      }
+    }
+
     if 'RPCNFSDARGS' in $::nfs::custom_daemon_args {
       concat::fragment { 'nfs_RPCNFSDARGS':
         order   => 5,
         target  => '/etc/sysconfig/nfs',
         content => "RPCNFSDARGS=\"${::nfs::custom_daemon_args['RPCNFSDARGS']}\""
       }
+    }
+
+    # tcpwrappers was dropped in EL8
+    if $::nfs::server::tcpwrappers {
+      include 'nfs::server::tcpwrappers'
     }
   }
 
@@ -129,10 +156,10 @@ class nfs::server::config
     logoutput   => true,
   }
 
-  #FIXME looks like this should be done on the NFS client
-  #Also, should we persist to file in /etc/modprobe.d so that
-  #it is available at boot time?
   # Tune with the proper number of slot entries.
+  #FIXME Is this still applicable?  Also, should we persist to file
+  # in /etc/modprobe.d so that it is available at boot time, just
+  # like the kernel module settings for nfs(v4)?
   sysctl { 'sunrpc.tcp_slot_table_entries':
     ensure  => 'present',
     val     => $::nfs::server::sunrpc_tcp_slot_table_entries,
@@ -147,9 +174,5 @@ class nfs::server::config
     # Ignore failure if var-lib-nfs-rpc_pipefs.mount is not up yet.
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
-  }
-
-  if $::nfs::server::tcpwrappers {
-    include 'nfs::server::tcpwrappers'
   }
 }

@@ -78,7 +78,6 @@
 
 class nfs::server (
 #FIXME only have attributes that really need to be here
-  Simplib::Netlist $trusted_nets                  = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] }),
   Boolean          $nfsd_vers4                    = true,
   Boolean          $nfsd_vers4_0                  = true,
   Boolean          $nfsd_vers4_1                  = true,
@@ -89,12 +88,35 @@ class nfs::server (
   Boolean          $firewall                      = $::nfs::firewall,
   Boolean          $stunnel                       = $::nfs::stunnel,
   Boolean          $tcpwrappers                   = $::nfs::tcpwrappers,
+  Simplib::Netlist $trusted_nets                  = $::nfs::trusted_nets
 ) inherits ::nfs {
 
   assert_private()
 
+  include 'nfs::base_config'
+  include 'nfs::base_service'
   include 'nfs::server::config'
   include 'nfs::server::service'
 
+  Class['nfs::base_config'] ~> Class['nfs::base_service']
+  Class['nfs::base_config'] ~> Class['nfs::server::service']
+
+  Class['nfs::server::config'] ~> Class['nfs::base_service']
   Class['nfs::server::config'] ~> Class['nfs::server::service']
+
+  Class['nfs::base_service'] ~> Class['nfs::server::service']
+
+  include 'nfs::idmapd::server'
+
+  if $::nfs::server::stunnel {
+    include 'nfs::server::stunnel'
+  }
+
+  if $::nfs::server::firewall {
+    include 'nfs::server::firewall'
+
+    if $::nfs::server::stunnel {
+      Class['nfs::server::firewall'] ~> Class['nfs::server::stunnel']
+    }
+  }
 }

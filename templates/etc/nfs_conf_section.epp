@@ -7,5 +7,5 @@
 <%
   $opts.each |String $param, Variant[Boolean,Integer,Float,String] $value| {
 -%>
-  <%= $param -%> = <%= $value %>
+  <%= $param %> = <%= $value %>
 <% } -%>

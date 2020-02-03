@@ -9,17 +9,19 @@ class nfs::server::service
   service { 'nfs-server.service':
     ensure     => 'running',
     enable     => true,
-    # use the less disruptive reload if possible for a restart
+    # To ensure we pick up config changes, restart nfs-utils and nfs-server
+    # at the same time. Serially restarting the services individually does
+    # not reliably work.
     hasrestart => false,
-    restart    => 'systemctl reload-or-restart nfs-server.service',
-    hasstatus  => true
+    restart    => 'systemctl restart nfs-utils.service nfs-server.service',
   }
 
-  # nfs-mountd is required for both NFSv3 and NFSv4 and is started
-  # when needed, but only has over-the-wire operation in NFSv3
+  # nfs-mountd is required for both NFSv3 and NFSv4, is started when needed,
+  # and only has over-the-wire operation in NFSv3
   svckill::ignore { 'nfs-mountd': }
 
-  # required by rpc-rquotad.service and common NFSv3 services
+  # Required by rpc-rquotad.service, but, since could be required
+  # by non-NFS-related daemons, could managed by elsewhere
   ensure_resource(
     'service',
     'rpcbind.service',
@@ -36,18 +38,4 @@ class nfs::server::service
     hasrestart => true,
   }
 
-  if $::nfs::idmapd {
-    include 'nfs::idmapd::server'
-  }
-
-  if $::nfs::server::firewall {
-    include 'nfs::server::firewall'
-  }
-
-  if $::nfs::server::stunnel {
-    include 'nfs::server::stunnel'
-    if $::nfs::server::firewall {
-      Class['nfs::server::firewall'] ~> Class['nfs::server::stunnel']
-    }
-  }
 }
