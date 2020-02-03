@@ -8,8 +8,8 @@ describe 'nfs::client::mount' do
   end
 
   context 'supported operating systems' do
-    on_supported_os.each do |os, facts|
-      let(:facts) { facts }
+    on_supported_os.each do |os, os_facts|
+      let(:facts) { os_facts }
 
       let(:title) { '/home' }
       let(:clean_title) { 'home' }
@@ -63,7 +63,7 @@ describe 'nfs::client::mount' do
           let(:params) {{
             :nfs_server  => '1.2.3.4',
             :remote_path => '/home',
-            :nfs_version => 'nfs4'
+            :nfs_version => 4
           }}
 
           it_behaves_like "a fact set"
@@ -84,21 +84,36 @@ describe 'nfs::client::mount' do
       end
 
       context 'with firewall enabled' do
-        let(:params) {{
-          :nfs_server  => '1.2.3.4',
-          :remote_path => '/home',
-          :nfs_version => 'nfs4'
-        }}
-
         let(:pre_condition) {
           <<-EOM
             class { 'nfs::client': firewall => true }
           EOM
         }
 
-        it_behaves_like "a fact set"
-        it { is_expected.to contain_class('iptables') }
-        it { is_expected.to contain_iptables__listen__tcp_stateful("nfs_callback_#{params[:nfs_server]}") }
+        context 'NFSv4' do
+          let(:params) {{
+            :nfs_server  => '1.2.3.4',
+            :remote_path => '/home',
+            :nfs_version => 4
+          }}
+
+          it_behaves_like "a fact set"
+          it { is_expected.to contain_class('iptables') }
+          it { is_expected.to contain_iptables__listen__tcp_stateful("nfs_callback_#{params[:nfs_server]}") }
+        end
+
+        context 'NFSv3' do
+          let(:params) {{
+            :nfs_server  => '1.2.3.4',
+            :remote_path => '/home',
+            :nfs_version => 3
+          }}
+
+          it_behaves_like "a fact set"
+          it { is_expected.to contain_class('iptables') }
+          it { is_expected.to contain_iptables__listen__tcp_stateful("nfs_status_tcp_#{params[:nfs_server]}") }
+          it { is_expected.to contain_iptables__listen__tcp_stateful("nfs_status_udp_#{params[:nfs_server]}") }
+        end
       end
 
       context 'when nfs::client::is_server is true but the remote is not the local system' do

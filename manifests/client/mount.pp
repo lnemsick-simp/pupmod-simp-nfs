@@ -92,7 +92,7 @@ define nfs::client::mount (
   Stdlib::Absolutepath                  $remote_path,
   Boolean                               $autodetect_remote    = true,
   Simplib::Port                         $port                 = 2049,
-  Enum[3,4]                             $nfs_version          = 4,
+  Integer[3,4]                          $nfs_version          = 4,
 # set this when you want to specify an explicit minor version of NFSv4 to use
 # Should be set to 0 for NFSv4.0 to open the client delegation callback port
 # through the firewall.

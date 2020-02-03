@@ -17,7 +17,7 @@
 #
 define nfs::client::mount::connection (
   Simplib::Ip             $nfs_server,
-  Enum[3,4]               $nfs_version,
+  Integer[3,4]            $nfs_version,
   Optional[Integer[0]]    $nfs_minor_version = undef,
   Simplib::Port           $nfs_port          = 2049,
   Optional[Simplib::Port] $v4_remote_port    = undef,
@@ -58,16 +58,36 @@ define nfs::client::mount::connection (
   # needed for NFSv4.0, because, beginning with NFSv4.1 delegation does not
   # require a side channel.
   #
-  if $::nfs::client::firewall and ($nfs_version == 4) {
+  if $::nfs::client::firewall  {
     include '::iptables'
 
-    # It is possible that this is called for multiple mounts on the same server
-    ensure_resource('iptables::listen::tcp_stateful',
-      "nfs_callback_${nfs_server_ip}",
-      {
-        trusted_nets => [$nfs_server_ip],
-        dports       => $nfs::client::callback_port
-      }
-    )
+    if ($nfs_version == 4) {
+
+      # It is possible that this is called for multiple mounts on the same server
+      ensure_resource('iptables::listen::tcp_stateful',
+        "nfs_callback_${nfs_server}",
+        {
+          trusted_nets => [$nfs_server],
+          dports       => $nfs::client::callback_port
+        }
+      )
+    } else {
+      # server may reach out the the client in NLM proto
+      ensure_resource('iptables::listen::tcp_stateful',
+        "nfs_status_tcp_${nfs_server}",
+        {
+          trusted_nets => [$nfs_server],
+          dports       => [$nfs::lockd_port, $nfs::statd_port]
+        }
+      )
+
+      ensure_resource('iptables::listen::tcp_stateful',
+        "nfs_status_udp_${nfs_server}",
+        {
+          trusted_nets => [$nfs_server],
+          dports       => [$nfs::lockd_udp_port, $nfs::statd_port]
+        }
+      )
+    }
   }
 }
