@@ -38,7 +38,7 @@ class nfs::client::config {
     # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
     # at the next puppet run.
     #
-    options nfs callback_tcpport=${nfs::client::callback_port}"
+    options nfs callback_tcpport=${nfs::client::callback_port}
     | NFSCONF
 
   file { '/etc/modprobe.d/nfs.conf':

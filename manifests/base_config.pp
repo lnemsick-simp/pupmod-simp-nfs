@@ -30,7 +30,8 @@ class nfs::base_config
     }
   }
 
-  $_merged_opts =  $::nfs::custom_nfs_conf_opts + $_required_nfs_conf_opts
+  $_merged_opts = deep_merge($::nfs::custom_nfs_conf_opts,
+    $_required_nfs_conf_opts)
 
   # Use concat so users can add new sections on their own, in the event NFS
   # configuration changes and this module has not yet been updated.

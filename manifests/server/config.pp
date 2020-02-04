@@ -33,7 +33,8 @@ class nfs::server::config
     $_stunnel_opts = {}
   }
 
-  $_merged_opts =  $::nfs::custom_nfs_conf_opts + $_required_nfs_conf_opts + $_stunnel_opts
+  $_merged_opts = deep_merge($::nfs::custom_nfs_conf_opts,
+    $_required_nfs_conf_opts, $_stunnel_opts)
 
   if 'exportfs' in $_merged_opts {
     concat::fragment { 'nfs_conf_exportfs':
@@ -154,6 +155,11 @@ class nfs::server::config
     command     => '/usr/sbin/exportfs -ra',
     refreshonly => true,
     logoutput   => true,
+    # Don't execute if nfsd kernel module has not been loaded yet, (i.e.,
+    # nfs-server.service is not running) or will fail with obscure
+    # 'Function not implemented' error. The changes will be picked up when
+    # nfs-server.service starts, as its unit file runs 'exportfs -r'.
+    onlyif      => '/sbin/lsmod | /usr/bin/grep -qw nfsd'
   }
 
   # Tune with the proper number of slot entries.

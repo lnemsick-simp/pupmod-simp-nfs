@@ -139,13 +139,6 @@ class nfs (
   }
 
   include 'nfs::install'
-#  include 'nfs::base_config'
-#  include 'nfs::service::nfsv3_base'
-#  include 'nfs::service::secure'
-
-#  Class['nfs::install'] -> Class['nfs::base_config']
-#  Class['nfs::base_config'] ~> Class['nfs::service::nfsv3_base']
-#  Class['nfs::base_config'] ~> Class['nfs::service::secure']
 
   if $kerberos {
     include 'krb5'
