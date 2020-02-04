@@ -152,7 +152,7 @@ define nfs::client::mount (
   if $autofs {
     include 'autofs'
 
-    Class['nfs::install'] -> Class['::autofs::install']
+    Class['nfs::install'] -> Class['autofs::install']
 
     # This is a particular quirk about the autofs service ordering
 #FIXME Is this still required?
@@ -184,7 +184,7 @@ define nfs::client::mount (
       Stunnel::Instance <| tag == 'nfs' |> ~> Exec['refresh_autofs']
     }
 
-    if $_stunnel or ($autodetect_remote and $::nfs::client::is_server) {
+    if $_stunnel or ($autodetect_remote and $nfs::is_server) {
       if $autofs_map_to_user {
         $_location = "127.0.0.1:${remote_path}/&"
       }
@@ -215,7 +215,7 @@ define nfs::client::mount (
     }
   }
   else {
-    if $_stunnel or ($autodetect_remote and $::nfs::client::is_server) {
+    if $_stunnel or ($autodetect_remote and $nfs::is_server) {
       mount { $name:
         ensure   => $ensure,
         atboot   => $at_boot,

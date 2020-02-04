@@ -34,10 +34,10 @@
 class nfs::client (
   Boolean          $blkmap         = false,  # NFSV4.1 or later
   Simplib::Port    $callback_port  = 876,    # NFSV4.0
-  Boolean          $firewall       = $::nfs::firewall,
-  Boolean          $stunnel        = $::nfs::stunnel,
+  Boolean          $firewall       = $nfs::firewall,
+  Boolean          $stunnel        = $nfs::stunnel,
   Integer[0]       $stunnel_verify = 2,
-  Boolean          $tcpwrappers    = $::nfs::tcpwrappers
+  Boolean          $tcpwrappers    = $nfs::tcpwrappers
 ) inherits ::nfs {
 
   assert_private()
@@ -69,7 +69,7 @@ class nfs::client (
     }
   }
 
-  if $::nfs::idmapd {
+  if $nfs::idmapd {
     include 'nfs::idmapd::client'
   }
 }
