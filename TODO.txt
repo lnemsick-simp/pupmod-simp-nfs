@@ -12,15 +12,15 @@
 - FIXED remove intr option in mount, as it doesn't do anything anymore
 - Make sure not to use ephemeral ports lockd on NFS clients.  This port is used when
   multiple NFS clients attempt to lock the same file.
-- FIXED did not set sm-notify port to a non-ephemeral value.  This port is used
-  when a NFS client or server reboots and a file has been locked.
+- FIXED did not set sm-notify port on NFS servers and clients to a non-ephemeral value.
+  This port is used in NFSv3 when a NFS client or server reboots and a file has been locked.
+- FIXED Did not set lockd ports on NFS clients to a no-ephemeral value.  These ports
+  are used in NFSv3 when then NFS servers need to communicate lock status to the NFS client
 
 
 MODULE TODO
 - tcpwrappers nfsv3 client when mount?
 - can client run without rpcbind?, if not, need to open up tcpwrappers on client as well
-- YES do we need to set the lockd ports on NFS clients?
-   verified with a 2-client lock test
 - have to make sure sm-modify's reboot notification goes out when stunnel and firewalls are
   up...so need to make sure firewall service is before stunnel service is before nfs-server
    iptables service is before network service
@@ -29,11 +29,6 @@ MODULE TODO
   (or at least nfs-server socket connection?)
 - Make sure export parameters in nfs::server::export still make sense
 - why was the number of rpc.mountd threads decreased when applied puppet?
-- EL8 only way could get nfs-mountd configured was with a command-line argument.  Did not read
-  /etc/nsf.conf
-- EL8 only way could get lock manager ports correctly read in was to ensure nfsd/nfs module was
-  loaded before rpc-statd was started.
-  This was even with setting the ports on the command line
 - RPCNFSDARGS set ot 8 in /run/sysconfig/nfs-utils el7, which will make setting in /etc/nfs/conf obsolete
 - shouldn't we force TCP for TRANSPORT METHODS when using stunnel?
   YES AS MUCH AS POSSIBLE
@@ -638,3 +633,32 @@ statd and statd-notify does need to be on the client
 client needs to restart nfs-utils to pick up changes
 changes will be picked up even if mounted filesystems
 
+if change NFSV3 lockd ports configuration and mount is in place,
+must remount or reboot to pick up the changes.
+
+
+
+include 'ssh'
+
+nfs::client::mount { '/mnt/el7-server':
+  nfs_server        => '10.255.67.177',
+  remote_path       => '/srv/nfs_share',
+  autodetect_remote => true,
+  autofs            => false
+}
+
+file { '/mnt/el7-server':
+  ensure => 'directory',
+  owner  => 'root',
+  group  => 'root',
+  mode   => '0644'
+}
+
+File['/mnt/el7-server'] -> Nfs::Client::Mount['/mnt/el7-server']
+
+firewall-cmd --list-all
+firewall-cmd --info-service simp_tcp_nfs_client_tcp_ports
+firewall-cmd --info-service simp_udp_nfs_client_udp_ports
+iptables -L -n
+nft list table ip firewalld
+nft -s list ruleset

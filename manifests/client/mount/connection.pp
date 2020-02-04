@@ -58,34 +58,41 @@ define nfs::client::mount::connection (
   # needed for NFSv4.0, because, beginning with NFSv4.1 delegation does not
   # require a side channel.
   #
-  if $::nfs::client::firewall  {
-    include '::iptables'
+  if $nfs::client::firewall  {
+    include 'iptables'
+
+    # WORK AROUND iptables::listen::xxx issue with invalid firewalld services
+    # filenames caused by rules with IP addresses
+    $_safe_nfs_server = regsubst($nfs_server, '[\.:]', '_', 'G')
 
     if ($nfs_version == 4) {
 
       # It is possible that this is called for multiple mounts on the same server
       ensure_resource('iptables::listen::tcp_stateful',
-        "nfs_callback_${nfs_server}",
+        "nfs_callback_${_safe_nfs_server}",
         {
           trusted_nets => [$nfs_server],
           dports       => $nfs::client::callback_port
         }
       )
     } else {
-      # server may reach out the the client in NLM proto
+      # NFS server will reach out to the client in NLM and NSM protos
+      # (i.e., locking and recovery from locking upon server/client reboot)
+      # and uses rpcbind to figure out ports to use on the client
+      $_rpcbind_port = 111
       ensure_resource('iptables::listen::tcp_stateful',
-        "nfs_status_tcp_${nfs_server}",
+        "nfs_status_tcp_${_safe_nfs_server}",
         {
           trusted_nets => [$nfs_server],
-          dports       => [$nfs::lockd_port, $nfs::statd_port]
+          dports       => [$_rpcbind_port, $nfs::lockd_port, $nfs::statd_port]
         }
       )
 
-      ensure_resource('iptables::listen::tcp_stateful',
-        "nfs_status_udp_${nfs_server}",
+      ensure_resource('iptables::listen::udp',
+        "nfs_status_udp_${_safe_nfs_server}",
         {
           trusted_nets => [$nfs_server],
-          dports       => [$nfs::lockd_udp_port, $nfs::statd_port]
+          dports       => [$_rpcbind_port, $nfs::lockd_udp_port, $nfs::statd_port]
         }
       )
     }
