@@ -41,7 +41,7 @@ shared_examples 'a NFS share with distinct roles' do |servers, clients, opts|
     EOM
   }
 
-  let(:nfs_vers) { opts[:nfsv3] ? 3 : 4 }
+  let(:nfs_version) { opts[:nfsv3] ? 3 : 4 }
   let(:client_manifest_base) {
     <<~EOM
       include 'ssh'
@@ -50,10 +50,10 @@ shared_examples 'a NFS share with distinct roles' do |servers, clients, opts|
      $mount_dir = '#MOUNT_DIR#'
 
       nfs::client::mount { $mount_dir:
-        nfs_server        => '#SERVER_IP#',
-        nfs_vers          => #{nfs_vers},
-        remote_path       => '#{exported_dir}',
-        autofs            => $autofs
+        nfs_server  => '#SERVER_IP#',
+        nfs_version => #{nfs_version},
+        remote_path => '#{exported_dir}',
+        autofs      => $autofs
       }
 
       unless $autofs {
@@ -65,13 +65,13 @@ shared_examples 'a NFS share with distinct roles' do |servers, clients, opts|
           mode   => '0644'
         }
 
-        File[$mount_dir] -> Nfs::Client::mount[$mount_dir]
+        File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
       }
     EOM
   }
 
   servers.each do |server|
-    context "as just a NFS server on host #{server}" do
+    context "as just a NFS server #{server}" do
       it 'should apply server manifest to export' do
         server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
         server_hieradata['nfs::is_client'] = false
@@ -92,11 +92,11 @@ shared_examples 'a NFS share with distinct roles' do |servers, clients, opts|
   end
 
   clients.each do |client|
-    context "as just a NFS client on host #{client}" do
-      servers.each do |server|
+    servers.each do |server|
+      context "as just a NFS client #{client} using NFS server #{server}" do
         let(:server_ip) {
           info = internal_network_info(server)
-          expect(info[:ip]).to_not be_nil?
+          expect(info[:ip]).to_not be_nil
           info[:ip]
         }
 
@@ -126,13 +126,21 @@ shared_examples 'a NFS share with distinct roles' do |servers, clients, opts|
           on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
 
-        it 'mount should be re-established after client reboot' do
+        it 'client manifest should be idempotent after reboot' do
           client.reboot
+          apply_manifest_on(client, client_manifest, :catch_changes => true)
+        end
+
+        it 'mount should be re-established after client reboot' do
           on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
 
-        it 'mount should be re-established after server reboot' do
+        it 'server manifest should be idempotent after reboot' do
           server.reboot
+          apply_manifest_on(server, server_manifest, :catch_changes => true)
+        end
+
+        it 'mount should be re-established after server reboot' do
           retry_on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
 
