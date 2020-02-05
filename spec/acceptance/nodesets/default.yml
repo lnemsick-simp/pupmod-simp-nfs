@@ -9,11 +9,8 @@ HOSTS:
   el7-server:
     roles:
       - default
-      - master
-      - client
-      - server
       - nfs_server
-      - el7_nfs_server
+      - nfs_server_and_client
     platform: el-7-x86_64
     box: centos/7
     hypervisor: <%= hypervisor %>
@@ -25,12 +22,11 @@ HOSTS:
 
   el7-client:
     roles:
-      - client
       - nfs_client
-      - el7_nfs_client
     platform: el-7-x86_64
     box: centos/7
     hypervisor: <%= hypervisor %>
+#FIXME is epel required?
     yum_repos:
       epel:
         mirrorlist: 'https://mirrors.fedoraproject.org/mirrorlist?repo=epel-7&arch=$basearch&country=us'
@@ -39,9 +35,8 @@ HOSTS:
 
   el8-server:
     roles:
-      - client
       - nfs_server
-      - el8_nfs_server
+      - nfs_server_and_client
     platform: el-8-x86_64
     box: centos/8
     hypervisor: <%= hypervisor %>
@@ -53,9 +48,7 @@ HOSTS:
 
   el8-client:
     roles:
-      - client
       - nfs_client
-      - el8_nfs_client_
     platform: el-8-x86_64
     box: centos/8
     hypervisor: <%= hypervisor %>

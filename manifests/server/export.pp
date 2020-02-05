@@ -16,6 +16,7 @@
 #   NFS export-compatible clients to which the export should be served.
 #
 #   * The entry will be repeated for each client
+#   * Use ['*'] for client wildcard
 #
 # @param comment
 #   A comment to be added to the entry
