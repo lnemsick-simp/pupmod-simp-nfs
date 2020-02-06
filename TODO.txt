@@ -529,47 +529,9 @@ NSM (Network Status Monitor Protocol)
  - Used in NFSv2 and NFSv3, but not NFSv4 which builds that capability in
  - Used to notify NFS peers of reboots
 
-
-mount 
+mount
   el7.4 and later NFSv4.1 is default and steps down
   el8 NFSv4.2 is default
-man 5 autofs
-root@ws150 etc]# cat auto.master
-# This file is managed by Puppet. DO NOT EDIT.
-/- /etc/autofs/iso.map 
-/- /etc/autofs/misc.map 
-/- /etc/autofs/transfer.map 
-/- /etc/autofs/vagrant.map 
-/home /etc/autofs/home.map 
-[root@ws150 etc]# 
-[root@ws150 etc]# cd autofs
-[root@ws150 autofs]# cat *.map
-# This file is managed by Puppet. DO NOT EDIT.
-*	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/home/&
-# This file is managed by Puppet. DO NOT EDIT.
-/net/ISO	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/ISO
-# This file is managed by Puppet. DO NOT EDIT.
-/net/misc	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/misc
-# This file is managed by Puppet. DO NOT EDIT.
-/net/transfer	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/transfer
-# This file is managed by Puppet. DO NOT EDIT.
-/net/vagrant	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/vagrant
-
-
-
-
-@Trevor Vaughan Shouldn't pupmod-simp-nfs enforce the use of TCP for server and client transport (where configurable) when using stunnel?  In other words, set the proto parameters in the server and mount configs. Or are we assuming that use of TCP will be figured out in the mount negotiation process?
-
-Trevor Vaughan:simp:  4:38 PM
-Yes, it should.
-
-Liz Nemsick:glitch_crab:  4:38 PM
-Yes to which part? (edited) 
-
-Trevor Vaughan:simp:  4:39 PM
-It should force TCP
-4:40
-It probably does the right thing but no reason to try otherwise
 
 Liz Nemsick:glitch_crab:  4:41 PM
 OK.  Now for NSM notifications from the client to the server in NFSv3, which according to the nfs man page are always UDP, do we want to allow those notifications through the firewall unencrypted, as they can't be encrypted with stunnel. (edited) 
@@ -690,22 +652,43 @@ man 5 autofs for map descriptions
 Type      auto.master                  my.map
           Mount point   map [options]  key            [options] location
 Direct    |-            my.map         /the/full/path
-Indirect  /mount-point  my.map
+Indirect  /mount-point  my.map         subdir options location
 
 # This file is managed by Puppet. DO NOT EDIT.
-/- /etc/autofs/iso.map 
-/- /etc/autofs/misc.map 
-/- /etc/autofs/transfer.map 
-/- /etc/autofs/vagrant.map 
-/home /etc/autofs/home.map 
-# This file is managed by Puppet. DO NOT EDIT.
-*	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/home/&
-# This file is managed by Puppet. DO NOT EDIT.
-/net/ISO	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/ISO
-# This file is managed by Puppet. DO NOT EDIT.
-/net/misc	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/misc
-# This file is managed by Puppet. DO NOT EDIT.
-/net/transfer	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/transfer
-# This file is managed by Puppet. DO NOT EDIT.
-/net/vagrant	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/vagrant
+/- /etc/autofs/iso.map
+/- /etc/autofs/misc.map
+/- /etc/autofs/transfer.map
+/- /etc/autofs/vagrant.map
+/home /etc/autofs/home.map
 
+*   -fstype=nfs4,port=2049,hard,intr,sec=sys   nfsserver01.example.com:/home/&
+
+/net/ISO   -fstype=nfs4,port=2049,hard,intr,sec=sys   nfsserver01.example.com:/ISO
+
+/net/misc   -fstype=nfs4,port=2049,hard,intr,sec=sys   nfsserver01.example.com:/misc
+
+/net/transfer   -fstype=nfs4,port=2049,hard,intr,sec=sys   nfsserver01.example.com:/transfer
+
+/net/vagrant   -fstype=nfs4,port=2049,hard,intr,sec=sys   nfsserver01.example.com:/vagrant
+
+name
+  absolute path
+  autofs_indirect_map_key  when unspecified, direct map
+                           when specified, indirect map
+                           - can be wildcard
+
+non autofs mount
+autofs direct mount
+autofs indirect mount no wildcard
+autofs indirect mount wildcard
+
+/srv/nfs_root/dir1/test_file1
+/srv/nfs_root/dir2/test_file2
+/srv/nfs_root/dir3/test_file3
+/srv/nfs_root/dir4/sub1/test_file41
+/srv/nfs_root/dir4/sub2/test_file42
+
+  non autofs mount of /srv/nfs_root/dir1
+  autofs direct mount of /srv/nfs_root/dir1
+  autofs indirect mount of /srv/nfs_root/dir1
+  autofs indirect mount wildcard /srv/nfs_root/dir1

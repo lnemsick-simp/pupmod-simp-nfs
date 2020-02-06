@@ -18,7 +18,6 @@
 define nfs::client::mount::connection (
   Simplib::Ip             $nfs_server,
   Integer[3,4]            $nfs_version,
-  Optional[Integer[0]]    $nfs_minor_version = undef,
   Simplib::Port           $nfs_port          = 2049,
   Optional[Simplib::Port] $v4_remote_port    = undef,
   Optional[Boolean]       $stunnel           = undef,

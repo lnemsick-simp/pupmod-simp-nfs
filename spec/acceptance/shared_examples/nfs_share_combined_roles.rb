@@ -11,10 +11,11 @@ shared_examples 'a NFS share with combined roles' do |servers_with_client, opts|
   let(:exported_dir) { '/srv/nfs_share' }
   let(:filename) { 'test_file' }
   let(:file_content) { 'This is a test file' }
-  let(:server_manifest) {
+  let(:manifest_base) {
     <<~EOM
       include 'ssh'
 
+      # NFS server portion
       file { '#{exported_dir}':
         ensure => 'directory',
         owner  => 'root',
@@ -38,21 +39,16 @@ shared_examples 'a NFS share with combined roles' do |servers_with_client, opts|
       }
 
       File[$exported_file] -> Nfs::Server::Export['nfs_root']
-    EOM
-  }
 
-  let(:nfs_vers) { opts[:nfsv3] ? 3 : 4 }
-  let(:client_manifest_base) {
-    <<~EOM
-      include 'ssh'
-
-     $autofs = #{opts[:autofs]}
-     $mount_dir = '#MOUNT_DIR#'
+      # NFS client portion
+      $autofs = #{opts[:autofs]}
+      $mount_dir = '#MOUNT_DIR#'
 
       nfs::client::mount { $mount_dir:
         nfs_server        => '#SERVER_IP#',
-        nfs_vers          => #{nfs_vers},
+        nfs_version       => #{nfs_vers},
         remote_path       => '#{exported_dir}',
+        autodetect_remote => #AUTODETECT_REMOTE#,
         autofs            => $autofs
       }
 
@@ -65,79 +61,58 @@ shared_examples 'a NFS share with combined roles' do |servers_with_client, opts|
           mode   => '0644'
         }
 
-        File[$mount_dir] -> Nfs::Client::mount[$mount_dir]
+        File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
       }
+
+        Nfs::Server::Export['nfs_root'] -> Nfs::Client::Mount[$mount_dir]
     EOM
   }
 
-  servers.each do |server|
-    context "as just a NFS server on host #{server}" do
-      it 'should apply server manifest to export' do
-        server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-        server_hieradata['nfs::is_client'] = false
-        server_hieradata['nfs::is_server'] = true
-        server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
-        set_hieradata_on(server, server_hieradata)
-        apply_manifest_on(server, server_manifest, :catch_failures => true)
-      end
+  let(:nfs_vers) { opts[:nfsv3] ? 3 : 4 }
 
-      it 'should be idempotent' do
-        apply_manifest_on(server, server_manifest, :catch_changes => true)
-      end
+  servers_with_client.each do |host|
+    [ true, false ].each do |autodetect_remote|
+      let(:mount_dir) { "/mnt/#{host}" }
+      let(:server_ip) {
+        info = internal_network_info(host)
+        expect(info[:ip]).to_not be_nil
+        info[:ip]
+      }
 
-      it 'should export shared dir' do
-        on(server, "exportfs | grep #{exported_dir}")
-      end
-    end
-  end
-
-  clients.each do |client|
-    context "as just a NFS client on host #{client}" do
-      servers.each do |server|
-        let(:server_ip) {
-          info = internal_network_info(server)
-          expect(info[:ip]).to_not be_nil?
-          info[:ip]
+      context "with autodetect_remote=#{autodetect_remote} on host #{host}" do
+        let(:manifest) {
+          manifest = manifest_base.dup
+          manifest.gsub!('#MOUNT_DIR#', mount_dir)
+          manifest.gsub!('#SERVER_IP#', server_ip)
+          manifest.gsub!('#AUTODETECT_REMOTE#', autodetect_remote.to_s)
+          manifest
         }
 
-        let(:mount_dir) { "/mnt/#{server}" }
-        let(:client_manifest) {
-          client_manifest = client_manifest_base.dup
-          client_manifest.gsub!('#MOUNT_DIR#', mount_dir)
-          client_manifest.gsub!('#SERVER_IP#', server_ip)
-          client_manifest
-        }
-
-        it "should apply client manifest to mount dir from #{server}" do
-          client_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-          client_hieradata['nfs::is_client'] = true
-          client_hieradata['nfs::is_server'] = false
-          client_hieradata['nfs::nfsv3'] = opts[:nfsv3]
-          set_hieradata_on(client, client_hieradata)
-
-          apply_manifest_on(client, client_manifest, :catch_failures => true)
+        it 'should apply server+client manifest to export+mount' do
+          hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
+          hieradata['nfs::is_client'] = true
+          hieradata['nfs::is_server'] = true
+          hieradata['nfs::nfsv3'] = opts[:nfsv3]
+          set_hieradata_on(host, hieradata)
+          apply_manifest_on(host, manifest, :catch_failures => true)
         end
 
         it 'should be idempotent' do
-          apply_manifest_on(client, client_manifest, :catch_changes => true)
+          apply_manifest_on(host, manifest, :catch_changes => true)
+        end
+
+        it 'should export shared dir' do
+          on(host, "exportfs | grep #{exported_dir}")
         end
 
         it 'should mount NFS share' do
-          on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+          on(host, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
 
-        it 'mount should be re-established after client reboot' do
-          client.reboot
-          on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
-        end
-
-        it 'mount should be re-established after server reboot' do
-          server.reboot
-          retry_on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
-        end
-
-        it 'should unmount to clean up for follow-on tests' do
-          on(client, %{puppet resource mount #{mount_dir} ensure=absent})
+        it 'should unmount and remove mount config as prep for next test' do
+            # use puppet resource instead of simple umount, in order to remove
+            # persistent mount configuration
+          on(host, %{puppet resource mount #{mount_dir} ensure=absent})
         end
       end
     end

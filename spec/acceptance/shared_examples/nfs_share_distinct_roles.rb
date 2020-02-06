@@ -49,8 +49,8 @@ shared_examples 'a NFS share with distinct roles' do |servers, clients, opts|
     <<~EOM
       include 'ssh'
 
-     $autofs = #{opts[:autofs]}
-     $mount_dir = '#MOUNT_DIR#'
+      $autofs = #{opts[:autofs]}
+      $mount_dir = '#MOUNT_DIR#'
 
       nfs::client::mount { $mount_dir:
         nfs_server  => '#SERVER_IP#',

@@ -1,12 +1,18 @@
 # Set up a NFS client to point to be mounted, optionally using autofs
 #
-# @param name [Variant[Stdlib::Absolutepath, Pattern['^wildcard-']]
-#   The local path to be mounted
+# @param name
+#   The local mount path
 #
-#   * This can also be ``wildcard-<some_unique_string>`` if ``autofs`` is
-#     ``true``. This will create a wildcard autofs entry (``*``) for your
-#     mount.
-#   * **NOTE:** This define will **NOT** create the target file for you
+#   * When not using autofs (``autofs`` is ``false``), this will be a regular
+#     mount and you must ensure the target directory exists.  This define will
+#     **NOT** create the target directory for you.
+#   * When using autofs (``autofs`` is ``true``):
+#     * autofs will create the target directory for you.
+#     * If ``autofs_indirect_map_key`` is unset, a direct mount will be created
+#       for this path.
+#     * If ``autofs_indirect_map_key`` is set, an indirect mount will be created
+#       for which this is the mount point and ``autofs_indirect_map_key`` is the
+#       map key.
 #
 # @param nfs_server
 #   The IP address of the NFS server to which you will be connecting
@@ -64,11 +70,12 @@
 #   Enable automounting with Autofs
 #
 #
-# @param autofs_map_to_user
-#   Ensure that autofs maps automatically map to a directory that matches the
-#   username of the logged in user
+# @param autofs_add_key_subst
+#   This enables map key substitution for a wildcard map key in an indirect map.
 #
-#   * If you are appending your own special maps, make sure this is not set
+#   * Appends '/&' to the remote location.
+#   * Only makes sense if ``autofs_indirect_map_key`` is set to '*', the
+#     wildcard key.
 #
 # @param stunnel
 #   Controls enabling ``stunnel`` for this connection
@@ -85,43 +92,37 @@
 #   The ``systemd`` targets that need ``stunnel`` to be active prior to being
 #   activated
 #
-# @author Trevor Vaughan <mailto:tvaughan@onyxpoint.com>
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 define nfs::client::mount (
-  Simplib::Ip                           $nfs_server,
-  Stdlib::Absolutepath                  $remote_path,
-  Boolean                               $autodetect_remote    = true,
-  Simplib::Port                         $port                 = 2049,
-  Integer[3,4]                          $nfs_version          = 4,
+  Simplib::Ip             $nfs_server,
+  Stdlib::Absolutepath    $remote_path,
+  Boolean                 $autodetect_remote       = true,
+  Simplib::Port           $port                    = 2049,
+  Integer[3,4]            $nfs_version             = 4,
+
 # set this when you want to specify an explicit minor version of NFSv4 to use
 # Should be set to 0 for NFSv4.0 to open the client delegation callback port
 # through the firewall.
-  Optional[Integer[0]]                  $nfs_minor_version    = undef,
-  Optional[Simplib::Port]               $v4_remote_port       = undef,
-  Nfs::SecurityFlavor                   $sec                  = 'sys',
-  String                                $options              = 'hard',
-  Enum['mounted','present','unmounted'] $ensure               = 'mounted',
-  Boolean                               $at_boot              = true,
-  Boolean                               $autofs               = true,
-  Boolean                               $autofs_map_to_user   = false,
-  Optional[Boolean]                     $stunnel              = undef,
-  Boolean                               $stunnel_systemd_deps = true,
-  Array[String]                         $stunnel_wantedby     = ['remote-fs-pre.target']
+  Optional[Integer[0]]    $nfs_minor_version       = undef,
+
+#FIXME this is for v4 stunnel connection...do we want
+# to define here or use dlookup? Would be more clear if v4_stunnel_remote_port
+  Optional[Simplib::Port] $v4_remote_port          = undef,
+  Nfs::SecurityFlavor     $sec                     = 'sys',
+  String                  $options                 = 'hard',
+  Nfs::MountEnsure        $ensure                  = 'mounted',
+  Boolean                 $at_boot                 = true,
+  Boolean                 $autofs                  = true,
+  Optional[String[1]]     $autofs_indirect_map_key = undef,
+  Boolean                 $autofs_add_key_subst    = false,
+  Optional[Boolean]       $stunnel                 = undef,
+  Boolean                 $stunnel_systemd_deps    = true,
+  Array[String]           $stunnel_wantedby        = ['remote-fs-pre.target']
 ) {
-  if $autofs {
-    if ($name !~ Stdlib::Absolutepath) and ($name !~ Pattern['^wildcard-']) {
-      fail('"$name" must be of type Stdlib::Absolutepath or Pattern["^wildcard-"]')
-    }
-  }
-  elsif ($name !~ Stdlib::Absolutepath) {
+  if ($name !~ Stdlib::Absolutepath) {
     fail('"$name" must be of type Stdlib::Absolutepath')
   }
-
-  $_clean_name = regsubst(
-    regsubst(
-      regsubst($name,'wildcard-',''),'^/',''
-    ),'/', '__', 'G'
-  )
 
   include 'nfs::client'
 
@@ -139,10 +140,12 @@ define nfs::client::mount (
     $_stunnel = $nfs::client::stunnel
   }
 
+#FIXME do the same thing with port (nfs::nfsd_port) as witn stunnel?
+#would like to have definitive place for port definitions
+
   nfs::client::mount::connection { $name:
     nfs_server           => $nfs_server,
     nfs_version          => $nfs_version,
-    nfs_minor_version    => $nfs_minor_version,
     nfs_port             => $port,
     v4_remote_port       => $v4_remote_port,
     stunnel              => $_stunnel,
@@ -159,10 +162,16 @@ define nfs::client::mount (
 # autofs.service Wants rpcbind.service and After rpcbind.service
 #    Class['autofs::service'] ~> Service['rpcbind.service']
 
-    # Need to handle the wildcard cases
-    $_mount_point = split($name,'wildcard-')[-1]
+    if $autofs_indirect_map_key {
+      $_mount_point = $name
+      $_map_key = $autofs_indirect_map_key
+    } else {
+      $_mount_point = '/-'
+      $_map_key = $name
+    }
 
     # The map name is very particular
+    $_clean_name = regsubst( regsubst($name, '^/', ''), '/', '__', 'G' )
     $_map_name = sprintf('/etc/autofs/%s.map', $_clean_name)
 
     autofs::map::master { $name:
@@ -185,57 +194,41 @@ define nfs::client::mount (
     }
 
     if $_stunnel or ($autodetect_remote and $nfs::is_server) {
-      if $autofs_map_to_user {
+      if $autofs_add_key_subst {
         $_location = "127.0.0.1:${remote_path}/&"
-      }
-      else {
+      } else {
         $_location = "127.0.0.1:${remote_path}"
       }
-
-      autofs::map::entry { $name:
-        options  => "${_nfs_options}",
-        location => $_location,
-        target   => $_clean_name,
-        require  => Nfs::Client::Mount::Connection[$name]
-      }
-    }
-    else {
-      if $autofs_map_to_user {
+    } else {
+      if $autofs_add_key_subst {
         $_location = "${nfs_server}:${remote_path}/&"
-      }
-      else {
+      } else {
         $_location = "${nfs_server}:${remote_path}"
       }
-      autofs::map::entry { $name:
-        options  => "${_nfs_options}",
-        location => $_location,
-        target   => $_clean_name,
-        require  => Nfs::Client::Mount::Connection[$name]
-      }
+    }
+
+    autofs::map::entry { $_map_key:
+      options  => "${_nfs_options}",
+      location => $_location,
+      target   => $_clean_name,
+      require  => Nfs::Client::Mount::Connection[$name]
     }
   }
   else {
     if $_stunnel or ($autodetect_remote and $nfs::is_server) {
-      mount { $name:
-        ensure   => $ensure,
-        atboot   => $at_boot,
-        device   => "127.0.0.1:${remote_path}",
-        fstype   => 'nfs', # NFS version specified in options
-        options  => $_nfs_options,
-        remounts => false,
-        require  => Nfs::Client::Mount::Connection[$name]
-      }
+      $_device = "127.0.0.1:${remote_path}"
+    } else {
+      $_device = "${nfs_server}:${remote_path}"
     }
-    else {
-      mount { $name:
-        ensure   => $ensure,
-        atboot   => $at_boot,
-        device   => "${nfs_server}:${remote_path}",
-        fstype   => 'nfs', # NFS version specified in options
-        options  => $_nfs_options,
-        remounts => false,
-        require  => Nfs::Client::Mount::Connection[$name]
-      }
+
+    mount { $name:
+      ensure   => $ensure,
+      atboot   => $at_boot,
+      device   => $_device,
+      fstype   => 'nfs', # NFS version specified in options
+      options  => $_nfs_options,
+      remounts => false,
+      require  => Nfs::Client::Mount::Connection[$name]
     }
   }
 }

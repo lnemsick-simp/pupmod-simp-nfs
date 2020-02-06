@@ -19,6 +19,9 @@ class nfs::server::tcpwrappers
 
     $_allow_options = { pattern => $nfs::trusted_nets }
 
+    # Resource in common with nfs::client, which may be on this node.
+    ensure_resource('tcpwrappers::allow', 'rpcbind', $_allow_options)
+
     if $nfs::nfsv3 {
       # Resource in common with nfs::client, which may be on this node.
       ensure_resource('tcpwrappers::allow', 'statd', $_allow_options)
@@ -27,9 +30,6 @@ class nfs::server::tcpwrappers
     } else {
       $_allow = ['rquotad']
     }
-
-    # Resource in common with nfs::client, which may be on this node.
-    ensure_resource('tcpwrappers::allow', 'rpcbind', $_allow_options)
 
     tcpwrappers::allow { $_allow:
       pattern => $nfs::server::trusted_nets

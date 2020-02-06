@@ -99,7 +99,7 @@ describe 'nfs::client::mount' do
 
           it_behaves_like "a fact set"
           it { is_expected.to contain_class('iptables') }
-          it { is_expected.to contain_iptables__listen__tcp_stateful("nfs_callback_#{params[:nfs_server]}") }
+          it { is_expected.to contain_iptables__listen__tcp_stateful('nfs_callback_1_2_3_4') }
         end
 
         context 'NFSv3' do
@@ -111,8 +111,8 @@ describe 'nfs::client::mount' do
 
           it_behaves_like "a fact set"
           it { is_expected.to contain_class('iptables') }
-          it { is_expected.to contain_iptables__listen__tcp_stateful("nfs_status_tcp_#{params[:nfs_server]}") }
-          it { is_expected.to contain_iptables__listen__tcp_stateful("nfs_status_udp_#{params[:nfs_server]}") }
+          it { is_expected.to contain_iptables__listen__tcp_stateful('nfs_status_tcp_1_2_3_4') }
+          it { is_expected.to contain_iptables__listen__udp('nfs_status_udp_1_2_3_4') }
         end
       end
 
