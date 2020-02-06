@@ -545,15 +545,15 @@ root@ws150 etc]# cat auto.master
 [root@ws150 etc]# cd autofs
 [root@ws150 autofs]# cat *.map
 # This file is managed by Puppet. DO NOT EDIT.
-*	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/home/&
+*	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/home/&
 # This file is managed by Puppet. DO NOT EDIT.
-/net/ISO	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/ISO
+/net/ISO	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/ISO
 # This file is managed by Puppet. DO NOT EDIT.
-/net/misc	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/misc
+/net/misc	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/misc
 # This file is managed by Puppet. DO NOT EDIT.
-/net/transfer	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/transfer
+/net/transfer	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/transfer
 # This file is managed by Puppet. DO NOT EDIT.
-/net/vagrant	-fstype=nfs4,port=2049,hard,intr,sec=sys	supermario01.tasty.bacon:/vagrant
+/net/vagrant	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/vagrant
 
 
 
@@ -662,3 +662,50 @@ firewall-cmd --info-service simp_udp_nfs_client_udp_ports
 iptables -L -n
 nft list table ip firewalld
 nft -s list ruleset
+
+/opt/puppetlabs/puppet/bin/ruby
+require 'fcntl'
+
+nfs man page:
+       NLM supports advisory file locks only.  To lock NFS files, use fcntl(2) with
+       the F_GETLK and F_SETLK commands.  The  NFS client converts file locks obtained via
+       flock(2) to advisory locks.
+
+Advisory Locking is a cooperative locking scheme where the participating processes need
+to follow/obey a locking protocol. As long as the processes follow the locking protocol/API
+and respect its return values, the underlying API takes care that file locking semantics
+work correctly.
+
+flock --nonblock
+
+   block_on(agents, :run_in_parallel => false) do |agent|
+        # TODO This is carryover from an earlier version of the test...
+        #      Do we need net-tools?
+        agent.install_package('net-tools')
+      end
+
+
+man 5 autofs for map descriptions
+
+Type      auto.master                  my.map
+          Mount point   map [options]  key            [options] location
+Direct    |-            my.map         /the/full/path
+Indirect  /mount-point  my.map
+
+# This file is managed by Puppet. DO NOT EDIT.
+/- /etc/autofs/iso.map 
+/- /etc/autofs/misc.map 
+/- /etc/autofs/transfer.map 
+/- /etc/autofs/vagrant.map 
+/home /etc/autofs/home.map 
+# This file is managed by Puppet. DO NOT EDIT.
+*	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/home/&
+# This file is managed by Puppet. DO NOT EDIT.
+/net/ISO	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/ISO
+# This file is managed by Puppet. DO NOT EDIT.
+/net/misc	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/misc
+# This file is managed by Puppet. DO NOT EDIT.
+/net/transfer	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/transfer
+# This file is managed by Puppet. DO NOT EDIT.
+/net/vagrant	-fstype=nfs4,port=2049,hard,intr,sec=sys	nfsserver01.example.com:/vagrant
+

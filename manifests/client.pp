@@ -46,7 +46,6 @@ class nfs::client (
   include 'nfs::base_service'
   include 'nfs::client::config'
 
-
   service { 'nfs-client.target':
     ensure     => 'running',
     enable     => true,
@@ -67,9 +66,5 @@ class nfs::client (
       enable     => true,
       hasrestart => true
     }
-  }
-
-  if $nfs::idmapd {
-    include 'nfs::idmapd::client'
   }
 }

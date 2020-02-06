@@ -116,10 +116,6 @@ class nfs::server::config
       }
     }
 
-    # tcpwrappers was dropped in EL8
-    if $::nfs::server::tcpwrappers {
-      include 'nfs::server::tcpwrappers'
-    }
   }
 
   if $::nfs::server::custom_rpcrquotad_opts {
@@ -180,5 +176,9 @@ class nfs::server::config
     # Ignore failure if var-lib-nfs-rpc_pipefs.mount is not up yet.
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
+  }
+
+  if $::nfs::server::tcpwrappers {
+    include 'nfs::server::tcpwrappers'
   }
 }

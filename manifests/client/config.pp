@@ -57,7 +57,7 @@ class nfs::client::config {
       content => "\n"
     }
 
-    if $::nfs::nfsv3 {
+    if $nfs::nfsv3 {
       # Unlike with the NFS server, custom lockd RPC ports are not initially
       # correctly registered with portmapper at NFS client reboot.  Most
       # reliable way to ensure the initial values are correct is to set them
@@ -88,17 +88,11 @@ class nfs::client::config {
     }
   }
 
-  if (versioncmp($facts['os']['release']['major'], '8') < 0) and
-    $::nfs::client::tcpwrappers and $::nfs::nfsv3 {
-    # tcpwrappers was dropped in EL8
-    # Resources in common with nfs::server. Using broader nfs::trusted_nets
-    # to avoid resource conflicts, if host is also a NFS server.
-    $_allow_options = { pattern => $::nfs::trusted_nets }
-    ensure_resource('tcpwrappers::allow', 'statd', $_allow_options)
+  if $nfs::client::tcpwrappers {
+    include 'nfs::client::tcpwrappers'
+  }
 
-    # FIXME:  Can NSM/NLM work without rpcbind on the client?  Should be if we
-    # correctly set all ports that would otherwise be ephemeral. However, if
-    # not, need to open up tcpwrappers to 'rpcbind' and ensure rpcbind.service
-    # is running in nfs::base_service.
+  if $nfs::idmapd {
+    include 'nfs::idmapd::client'
   }
 }
