@@ -2,10 +2,13 @@
 # @param clients Array of Hosts that will only be NFS clients
 #
 # @param opts Hash of test options with the following keys:
-#  * :autofs     - Whether to use autofs in the client mount
-#  * :base_hiera - Base hieradata to be added to nfs-specific hieradata
-#  * :nfsv3      - Whether this is testing NFSv3.  When true, NFSv3 will be
-#                  enabled (server + client) and used in the client mount
+#  * :autofs        - Whether to use autofs in the client mount
+#  * :base_hiera    - Base hieradata to be added to nfs-specific hieradata
+#  * :nfsv3         - Whether this is testing NFSv3.  When true, NFSv3 will be
+#                     enabled (server + client) and used in the client mount
+#  * :verify_reboot - Whether to verify idempotency and mount functionality
+#                     after individually rebooting the client and server
+#                     in each test pair
 #
 shared_examples 'a NFS share with distinct roles' do |servers, clients, opts|
   let(:exported_dir) { '/srv/nfs_share' }
@@ -126,25 +129,38 @@ shared_examples 'a NFS share with distinct roles' do |servers, clients, opts|
           on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
 
-        it 'client manifest should be idempotent after reboot' do
-          client.reboot
-          apply_manifest_on(client, client_manifest, :catch_changes => true)
+        if opts[:verify_reboot]
+          unless opts[:nfsv3]
+            # The nfsv4 kernel module is only automatically loaded when a NFSv4
+            # mount is executed. In the NFSv3 test, we only mount using NFSv3.
+            # So, after reboot, the nfsv4 kernel module will not be loaded.
+            # However, since nfs::client::config pre-emptively loads the nfsv4
+            # kernel module (necessary to ensure config intially prior to
+            # reboot), applying the client manifest in the absence of NFSv4
+            # mount will cause the Exec[modprove_nfsv4] to be executed.
+            it 'client manifest should be idempotent after reboot' do
+              client.reboot
+              apply_manifest_on(client, client_manifest, :catch_changes => true)
+            end
+          end
+
+          it 'mount should be re-established after client reboot' do
+            on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+          end
+
+          it 'server manifest should be idempotent after reboot' do
+            server.reboot
+            apply_manifest_on(server, server_manifest, :catch_changes => true)
+          end
+
+          it 'mount should be re-established after server reboot' do
+            retry_on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+          end
         end
 
-        it 'mount should be re-established after client reboot' do
-          on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
-        end
-
-        it 'server manifest should be idempotent after reboot' do
-          server.reboot
-          apply_manifest_on(server, server_manifest, :catch_changes => true)
-        end
-
-        it 'mount should be re-established after server reboot' do
-          retry_on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
-        end
-
-        it 'should unmount to clean up for follow-on tests' do
+        it 'should unmount and remove mount config as prep for next test' do
+          # use puppet resource instead of simple umount, in order to remove
+          # persistent mount configuration
           on(client, %{puppet resource mount #{mount_dir} ensure=absent})
         end
       end
