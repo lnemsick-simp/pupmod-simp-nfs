@@ -130,10 +130,10 @@ define nfs::client::mount (
   include 'nfs::client'
 
   if ($nfs_version  == 4) {
-    $_nfs_options = "-nfsvers=4,port=${port},${options},sec=${sec}"
+    $_nfs_options = "nfsvers=4,port=${port},${options},sec=${sec}"
   }
   else {
-    $_nfs_options = "-nfsvers=3,port=${port},${options}"
+    $_nfs_options = "nfsvers=3,port=${port},${options}"
   }
 
   if $stunnel !~ Undef {
@@ -211,7 +211,7 @@ define nfs::client::mount (
     }
 
     autofs::map::entry { $_map_key:
-      options  => "${_nfs_options}",
+      options  => "-${_nfs_options}",
       location => $_location,
       target   => $_clean_name,
       require  => Nfs::Client::Mount::Connection[$name]
