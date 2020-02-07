@@ -3,16 +3,19 @@
 # @param name
 #   The local mount path
 #
-#   * When not using autofs (``autofs`` is ``false``), this will be a regular
+#   * When not using autofs (``autofs`` is ``false``), this will be a standard
 #     mount and you must ensure the target directory exists.  This define will
 #     **NOT** create the target directory for you.
+#
 #   * When using autofs (``autofs`` is ``true``):
+#
 #     * autofs will create the target directory for you.
 #     * If ``autofs_indirect_map_key`` is unset, a direct mount will be created
 #       for this path.
-#     * If ``autofs_indirect_map_key`` is set, an indirect mount will be created
-#       for which this is the mount point and ``autofs_indirect_map_key`` is the
-#       map key.
+#     * If ``autofs_indirect_map_key`` is set, an indirect mount will be created:
+#       * ``name`` will be the mount point
+#       * ``autofs_indirect_map_key`` will be the map key and can be '*', the
+#         wildcard map key indicator
 #
 # @param nfs_server
 #   The IP address of the NFS server to which you will be connecting
@@ -75,7 +78,7 @@
 #
 #   * Appends '/&' to the remote location.
 #   * Only makes sense if ``autofs_indirect_map_key`` is set to '*', the
-#     wildcard key.
+#     wildcard map key.
 #
 # @param stunnel
 #   Controls enabling ``stunnel`` for this connection
