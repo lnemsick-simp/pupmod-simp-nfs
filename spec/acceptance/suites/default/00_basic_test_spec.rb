@@ -30,6 +30,8 @@ describe 'nfs basic' do
 
       it_behaves_like 'a NFS share with distinct roles', servers, clients, opts
       it_behaves_like 'a NFS share with combined roles', servers_with_client, opts
+
+      it_behaves_like 'a NFS share using autofs with distinct roles', servers, clients, opts
     end
 
     context 'NFSv3' do
@@ -41,6 +43,8 @@ describe 'nfs basic' do
 
       it_behaves_like 'a NFS share with distinct roles', servers, clients, opts
       it_behaves_like 'a NFS share with combined roles', servers_with_client, opts
+
+      it_behaves_like 'a NFS share using autofs with distinct roles', servers, clients, opts
     end
   end
 
@@ -53,6 +57,7 @@ describe 'nfs basic' do
       }
 
       it_behaves_like 'a NFS share with distinct roles', servers, clients, opts
+      it_behaves_like 'a NFS share using autofs with distinct roles', servers, clients, opts
     end
 
     context 'NFSv3' do
@@ -63,6 +68,7 @@ describe 'nfs basic' do
       }
 
       it_behaves_like 'a NFS share with distinct roles', servers, clients, opts
+      it_behaves_like 'a NFS share using autofs with distinct roles', servers, clients, opts
     end
   end
 =begin

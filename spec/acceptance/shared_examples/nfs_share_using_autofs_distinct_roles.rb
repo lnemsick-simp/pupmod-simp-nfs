@@ -166,7 +166,7 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
           on(server, "exportfs | grep -w #{dir}")
         end
 
-        on(server, "find -type f #{export_root_path} | sort")
+        on(server, "find #{export_root_path} -type f | sort")
       end
     end
   end
@@ -209,10 +209,14 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
             on(client, %(cd #{auto_dir}; grep '#{file_content_base}' #{filename}))
           end
 
-          on(client, "find -type f #{mount_root_path} | sort")
+          on(client, "find #{mount_root_path} -type f | sort")
         end
 
         if opts[:verify_reboot]
+=begin
+This is not true if only have automounted NFSv4 directories.
+The nfsv4 kernel module will only be loaded when the automount
+is executed.
           unless opts[:nfsv3]
             # The nfsv4 kernel module is only automatically loaded when a NFSv4
             # mount is executed. In the NFSv3 test, we only mount using NFSv3.
@@ -226,6 +230,7 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
               apply_manifest_on(client, client_manifest, :catch_changes => true)
             end
           end
+=end
 
           it 'automount should be valid after client reboot' do
             mounted_files.each do |file|
@@ -234,7 +239,7 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
               on(client, %(cd #{auto_dir}; grep '#{file_content_base}' #{filename}))
             end
 
-            on(client, "find -type f #{mount_root_path} | sort")
+            on(client, "find #{mount_root_path} -type f | sort")
           end
 
           it 'server manifest should be idempotent after reboot' do
@@ -249,7 +254,7 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
               on(client, %(cd #{auto_dir}; grep '#{file_content_base}' #{filename}))
             end
 
-            on(client, "find -type f #{mount_root_path} | sort")
+            on(client, "find #{mount_root_path} -type f | sort")
           end
         end
 

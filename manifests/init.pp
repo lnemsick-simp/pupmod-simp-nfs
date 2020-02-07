@@ -1,4 +1,4 @@
-# Provides the base segments for NFS server *and* client services.
+# Provides the base configuration and services for an NFS server and/or client.
 #
 # @param is_server
 #   Explicitly state that this system should be an NFS server
