@@ -2,7 +2,6 @@
 #   NFS server and NFS client.
 #
 # @param opts Hash of test options with the following keys:
-#  * :autofs     - Whether to use autofs in the client mount
 #  * :base_hiera - Base hieradata to be added to nfs-specific hieradata
 #  * :nfsv3      - Whether this is testing NFSv3.  When true, NFSv3 will be
 #                  enabled (server + client) and used in the client mount
@@ -41,7 +40,6 @@ shared_examples 'a NFS share with combined roles' do |servers_with_client, opts|
       File[$exported_file] -> Nfs::Server::Export['nfs_root']
 
       # NFS client portion
-      $autofs = #{opts[:autofs]}
       $mount_dir = '#MOUNT_DIR#'
 
       nfs::client::mount { $mount_dir:
@@ -49,22 +47,20 @@ shared_examples 'a NFS share with combined roles' do |servers_with_client, opts|
         nfs_version       => #{nfs_vers},
         remote_path       => '#{exported_dir}',
         autodetect_remote => #AUTODETECT_REMOTE#,
-        autofs            => $autofs
+        autofs            => false
       }
 
-      unless $autofs {
-        # mount directory must exist if not using autofs
-        file { $mount_dir:
-          ensure => 'directory',
-          owner  => 'root',
-          group  => 'root',
-          mode   => '0644'
-        }
-
-        File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
+      # mount directory must exist if not using autofs
+      file { $mount_dir:
+        ensure => 'directory',
+        owner  => 'root',
+        group  => 'root',
+        mode   => '0644'
       }
 
-        Nfs::Server::Export['nfs_root'] -> Nfs::Client::Mount[$mount_dir]
+      File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
+
+      Nfs::Server::Export['nfs_root'] -> Nfs::Client::Mount[$mount_dir]
     EOM
   }
 
@@ -109,10 +105,11 @@ shared_examples 'a NFS share with combined roles' do |servers_with_client, opts|
           on(host, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
 
-        it 'should unmount and remove mount config as prep for next test' do
+        it 'should remove mount as prep for next test' do
             # use puppet resource instead of simple umount, in order to remove
             # persistent mount configuration
           on(host, %{puppet resource mount #{mount_dir} ensure=absent})
+          on(host, "rm -rf #{mount_dir}")
         end
       end
     end

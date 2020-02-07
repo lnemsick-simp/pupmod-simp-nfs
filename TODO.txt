@@ -682,11 +682,10 @@ autofs direct mount
 autofs indirect mount no wildcard
 autofs indirect mount wildcard
 
-/srv/nfs_root/dir1/test_file1
-/srv/nfs_root/dir2/test_file2
-/srv/nfs_root/dir3/test_file3
-/srv/nfs_root/dir4/sub1/test_file41
-/srv/nfs_root/dir4/sub2/test_file42
+/srv/nfs_root/dir1/test_file
+/srv/nfs_root/dir2/test_file
+/srv/nfs_root/dir3/sub1/test_file
+/srv/nfs_root/dir3/sub2/test_file
 
   non autofs mount of /srv/nfs_root/dir1
   autofs direct mount of /srv/nfs_root/dir1

@@ -21,9 +21,8 @@ describe 'nfs basic' do
   }
 
   context 'with firewall only' do
-    context 'NFSv4 without autofs' do
+    context 'NFSv4' do
       opts = {
-        :autofs        => false,
         :base_hiera    => base_hiera,
         :nfsv3         => false,
         :verify_reboot => true
@@ -33,9 +32,8 @@ describe 'nfs basic' do
       it_behaves_like 'a NFS share with combined roles', servers_with_client, opts
     end
 
-    context 'NFSv3 without autofs' do
+    context 'NFSv3' do
       opts = {
-        :autofs        => false,
         :base_hiera    => base_hiera,
         :nfsv3         => true,
         :verify_reboot => true
@@ -47,9 +45,8 @@ describe 'nfs basic' do
   end
 
   context 'with firewall and tcpwrappers' do
-    context 'NFSv4 without autofs' do
+    context 'NFSv4' do
       opts = {
-        :autofs        => false,
         :base_hiera    => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
         :nfsv3         => false,
         :verify_reboot => false
@@ -58,9 +55,8 @@ describe 'nfs basic' do
       it_behaves_like 'a NFS share with distinct roles', servers, clients, opts
     end
 
-    context 'NFSv3 without autofs' do
+    context 'NFSv3' do
       opts = {
-        :autofs        => false,
         :base_hiera    => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
         :nfsv3         => true,
         :verify_reboot => false
