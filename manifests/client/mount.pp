@@ -3,13 +3,13 @@
 # @param name
 #   The local mount path
 #
-#   * When not using autofs (``autofs`` is ``false``), this will be a standard
+#   * When not using autofs (``autofs`` is ``false``), this will be a static
 #     mount and you must ensure the target directory exists.  This define will
 #     **NOT** create the target directory for you.
 #
 #   * When using autofs (``autofs`` is ``true``):
 #
-#     * autofs will create the target directory for you.
+#     * autofs will create the target directory for you (full path).
 #     * If ``autofs_indirect_map_key`` is unset, a direct mount will be created
 #       for this path.
 #     * If ``autofs_indirect_map_key`` is set, an indirect mount will be created:
@@ -130,10 +130,10 @@ define nfs::client::mount (
   include 'nfs::client'
 
   if ($nfs_version  == 4) {
-    $_nfs_options = "nfsvers=4,port=${port},${options},sec=${sec}"
+    $_nfs_options = "-nfsvers=4,port=${port},${options},sec=${sec}"
   }
   else {
-    $_nfs_options = "nfsvers=3,port=${port},${options}"
+    $_nfs_options = "-nfsvers=3,port=${port},${options}"
   }
 
   if $stunnel !~ Undef {

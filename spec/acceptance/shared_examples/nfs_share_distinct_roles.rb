@@ -150,7 +150,7 @@ shared_examples 'a NFS share with distinct roles' do |servers, clients, opts|
           end
 
           it 'mount should be re-established after server reboot' do
-            retry_on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+            on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
           end
         end
 

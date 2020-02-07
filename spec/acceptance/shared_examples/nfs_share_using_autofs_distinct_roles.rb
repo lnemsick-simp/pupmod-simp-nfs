@@ -13,60 +13,74 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
   export_root_path =  '/srv/nfs_root'
   mount_root_path = '/mnt'
   mount_map = {
-     "#{export_root_path}/for_direct"             => {
-       :files         => [ "#{export_root_path}/for_direct/test_file" ],
-       :mount_name    => "#{mount_root_path}/direct",
-       :map_key,      => nil,
-       :add_key_subst => false,
+     :direct            => {
+       :export_dir     => "#{export_root_path}/for_direct",
+       :exported_files => [ "#{export_root_path}/for_direct/test_file" ],
+       :mount_name     => "#{mount_root_path}/direct",
+       :mounted_files  => [ "#{mount_root_path}/direct/test_file" ]
      },
-     "#{export_root_path}/for_indirect"           => {
-       :files         => [ "#{export_root_path}/for_indirect/sub/test_file" ],
-       :mount_name    => "#{mount_root_path}/indirect",
-       :map_key,      => 'sub',
-       :add_key_subst => false,
+     :indirect          => {
+       :export_dir     => "#{export_root_path}/for_indirect",
+       :exported_files => [ "#{export_root_path}/for_indirect/test_file" ],
+       :mount_name     => "#{mount_root_path}/indirect",
+       :mounted_files  => [ "#{mount_root_path}/indirect/autodir/test_file" ],
+       :map_key        => 'autodir',
+       :add_key_subst  => false,
      },
-     "#{export_root_path}/for_indirect_wildcard" => {
-       :files         => [
+     :indirect_wildcard => {
+       :export_dir     => "#{export_root_path}/for_indirect_wildcard",
+       :exported_files => [
          "#{export_root_path}/for_indirect_wildcard/sub1/test_file",
          "#{export_root_path}/for_indirect_wildcard/sub2/test_file"
        ],
-       :mount_name    => "#{mount_root_path}/indirect_wildcard",
-       :map_key,      => '*',
+       :mount_name     => "#{mount_root_path}/indirect_wildcard",
+       :mounted_files  => [
+         "#{mount_root_path}/indirect_wildcard/sub1/test_file",
+         "#{mount_root_path}/indirect_wildcard/sub2/test_file"
+       ],
+       :map_key       => '*',
        :add_key_subst => true,
     }
   }
 
+  let(:export_dirs) { mount_map.map { |type,info| info[:export_dir] }.flatten }
+  let(:exported_files) { mount_map.map { |type,info| info[:exported_files] }.flatten }
+  let(:mounted_files) { mount_map.map { |type,info| info[:mounted_files] }.flatten }
   let(:file_content_base) { 'This is a test file from' }
   let(:server_manifest) {
     <<~EOM
       include 'ssh'
 
-      file { #{export_root_path}:
+      file { '#{export_root_path}':
         ensure => 'directory',
         owner  => 'root',
         group  => 'root',
         mode   => '0644'
       }
 
-      $export_dirs = ['#{mount_map.keys.join("', '")'}]
+      $export_dirs = [
+        '#{export_dirs.join("',\n  '")}'
+      ]
 
       $export_dirs.each |String $_export_dir| {
-        file { $_export_dir,
+        file { $_export_dir:
           ensure => 'directory',
           owner  => 'root',
           group  => 'root',
           mode   => '0644'
         }
 
-        nfs::server::export { $_export_path:
+        nfs::server::export { $_export_dir:
           clients     => ['*'],
-          export_path => $_export_path,
+          export_path => $_export_dir,
           sec         => ['sys']
         }
       }
 
-FIXME
-      $files = ['#{mount_map.map{ }.join("', '")'}]
+      $files = [
+        '#{exported_files.join("',\n  '")}'
+      ]
+
       $dir_attr = {
         ensure => 'directory',
         owner  => 'root',
@@ -75,7 +89,7 @@ FIXME
       }
 
       $files.each |String $_file| {
-        $_path = $_file.basename
+        $_path = dirname($_file)
         ensure_resource('file', $_path, $dir_attr)
 
         file { $_file:
@@ -83,9 +97,14 @@ FIXME
           owner   => 'root',
           group   => 'root',
           mode    => '0644',
-          content => "#{file_content_base} ${_subdir_path}",
+          content => "#{file_content_base} ${_path}",
         }
       }
+    EOM
+  }
+
+  let(:server_cleanup_manifes) {
+    <<~EOM
     EOM
   }
 
@@ -97,30 +116,31 @@ FIXME
       $mount_root_dir = '#MOUNT_ROOT_DIR#'
 
       # direct mount
-      nfs::client::mount { "${mount_root_dir}/direct":
+      nfs::client::mount { '#{mount_map[:direct][:mount_name]}':
         nfs_server  => '#SERVER_IP#',
         nfs_version => #{nfs_version},
-        remote_path => '#{exported_root_path}/for_direct',
+        remote_path => '#{mount_map[:direct][:export_dir]}',
         autofs      => true,
       }
 
       # indirect mount
-      nfs::client::mount { "${mount_root_dir}/indirect":
+      nfs::client::mount { '#{mount_map[:indirect][:mount_name]}':
         nfs_server              => '#SERVER_IP#',
         nfs_version             => #{nfs_version},
-        remote_path             => '#{exported_root_path}/for_indirect',
+        remote_path             => '#{mount_map[:indirect][:export_dir]}',
         autofs                  => true,
-        autofs_indirect_map_key => 'no_wildcard'
+        autofs_indirect_map_key => '#{mount_map[:indirect][:map_key]}',
+        autofs_add_key_subst    => #{mount_map[:indirect][:add_key_subst].to_s}
       }
 
       # indirect mount with wildcard and map key substitution
-      nfs::client::mount { "${mount_root_dir}/indirect_wildcard":
+      nfs::client::mount { '#{mount_map[:indirect_wildcard][:mount_name]}':
         nfs_server              => '#SERVER_IP#',
         nfs_version             => #{nfs_version},
-        remote_path             => '#{exported_root_path}/for_indirect_wildcard',
+        remote_path             => '#{mount_map[:indirect_wildcard][:export_dir]}',
         autofs                  => true,
-        autofs_indirect_map_key => '*',
-        autofs_add_key_subst    => true
+        autofs_indirect_map_key => '#{mount_map[:indirect_wildcard][:map_key]}',
+        autofs_add_key_subst    => #{mount_map[:indirect_wildcard][:add_key_subst].to_s}
       }
 
     EOM
@@ -142,9 +162,11 @@ FIXME
       end
 
       it 'should export shared dirs' do
-        dirs.each do |dir|
-          on(server, "exportfs | grep #{exported_root_path/dir}")
+        export_dirs.each do |dir|
+          on(server, "exportfs | grep -w #{dir}")
         end
+
+        on(server, "find -type f #{export_root_path} | sort")
       end
     end
   end
@@ -180,16 +202,14 @@ FIXME
           apply_manifest_on(client, client_manifest, :catch_changes => true)
         end
 
-        it 'should automount direct NFS share' do
-          mounted_dir = "#{mount_root_dir}/direct"
-          exported_dir = "#{exported_root_path}/for_direct"
-          on(client, %(cd #{mounted_dir}; grep -q '#{file_content_base} #{exported_dir}' #{filename}))
-        end
+        it 'should automount NFS shares' do
+          mounted_files.each do |file|
+            auto_dir = File.dirname(file)
+            filename = File.basename(file)
+            on(client, %(cd #{auto_dir}; grep '#{file_content_base}' #{filename}))
+          end
 
-        it 'should automount indirect NFS share' do
-          mounted_dir = "#{mount_root_dir}/indirect/"
-          exported_dir = "#{exported_root_path}/for_direct"
-          on(client, %(cd #{mounted_dir}; grep -q '#{file_content_base} #{exported_dir}' #{filename}))
+          on(client, "find -type f #{mount_root_path} | sort")
         end
 
         if opts[:verify_reboot]
@@ -207,8 +227,14 @@ FIXME
             end
           end
 
-          it 'mount should be re-established after client reboot' do
-            on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+          it 'automount should be valid after client reboot' do
+            mounted_files.each do |file|
+              auto_dir = File.dirname(file)
+              filename = File.basename(file)
+              on(client, %(cd #{auto_dir}; grep '#{file_content_base}' #{filename}))
+            end
+
+            on(client, "find -type f #{mount_root_path} | sort")
           end
 
           it 'server manifest should be idempotent after reboot' do
@@ -216,15 +242,19 @@ FIXME
             apply_manifest_on(server, server_manifest, :catch_changes => true)
           end
 
-          it 'mount should be re-established after server reboot' do
-            retry_on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+          it 'automount should be valid after server reboot' do
+            mounted_files.each do |file|
+              auto_dir = File.dirname(file)
+              filename = File.basename(file)
+              on(client, %(cd #{auto_dir}; grep '#{file_content_base}' #{filename}))
+            end
+
+            on(client, "find -type f #{mount_root_path} | sort")
           end
         end
 
-        it 'should unmount and remove mount config as prep for next test' do
-          # use puppet resource instead of simple umount, in order to remove
-          # persistent mount configuration
-          on(client, %{puppet resource mount #{mount_dir} ensure=absent})
+        it 'should stop and disable autofs service as prep for next test' do
+          on(client, %{puppet resource service autofs ensure=stopped enable=false})
         end
       end
     end
