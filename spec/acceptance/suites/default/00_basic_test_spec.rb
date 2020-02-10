@@ -20,31 +20,40 @@ describe 'nfs basic' do
     'simp_options::trusted_nets'            => host_networks(hosts[0]),
   }
 
+  context 'configure firewalld to use iptables backend' do
+# TEMPORARY WORKAROUND
+    hosts.each do |host|
+      if host.hostname.start_with?('el8')
+        on(host, "sed -i 's/FirewallBackend=nftables/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf")
+      end
+    end
+  end
+
   context 'with firewall only' do
     context 'NFSv4' do
       opts = {
         :base_hiera    => base_hiera,
+        :krb5          => false,
         :nfsv3         => false,
         :verify_reboot => true
       }
 
-      it_behaves_like 'a NFS share with distinct roles', servers, clients, opts
-      it_behaves_like 'a NFS share with combined roles', servers_with_client, opts
-
-      it_behaves_like 'a NFS share using autofs with distinct roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
 
     context 'NFSv3' do
       opts = {
         :base_hiera    => base_hiera,
+        :krb5          => false,
         :nfsv3         => true,
         :verify_reboot => true
       }
 
-      it_behaves_like 'a NFS share with distinct roles', servers, clients, opts
-      it_behaves_like 'a NFS share with combined roles', servers_with_client, opts
-
-      it_behaves_like 'a NFS share using autofs with distinct roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
   end
 
@@ -52,23 +61,25 @@ describe 'nfs basic' do
     context 'NFSv4' do
       opts = {
         :base_hiera    => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
+        :krb5          => false,
         :nfsv3         => false,
         :verify_reboot => false
       }
 
-      it_behaves_like 'a NFS share with distinct roles', servers, clients, opts
-      it_behaves_like 'a NFS share using autofs with distinct roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
 
     context 'NFSv3' do
       opts = {
         :base_hiera    => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
+        :krb5          => false,
         :nfsv3         => true,
         :verify_reboot => false
       }
 
-      it_behaves_like 'a NFS share with distinct roles', servers, clients, opts
-      it_behaves_like 'a NFS share using autofs with distinct roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
   end
 =begin

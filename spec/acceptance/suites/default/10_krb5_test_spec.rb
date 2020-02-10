@@ -29,10 +29,6 @@ describe 'nfs krb5' do
     host_ipaddresses.uniq
   end
 
-  let(:puppet_confdir) {
-    on(host, %(puppet config print confdir)).stdout.strip
-  }
-
 
   manifest = <<-EOM
     include 'nfs'
@@ -157,6 +153,11 @@ nfs::is_server: #IS_SERVER#
     servers.each do |server|
       context "as a client" do
         let(:server_fqdn) { fact_on(server, 'fqdn') }
+        let(:server_ip) {
+          info = internal_network_info(server)
+          expect(info[:ip]).to_not be_nil
+          info[:ip]
+        }
 
         let(:krb5_client_manifest) { <<-EOM
           include 'ssh'
@@ -201,7 +202,7 @@ nfs::is_server: #IS_SERVER#
           client_manifest = <<-EOM
             include 'ssh'
             nfs::client::mount { '/mnt/#{server}':
-              nfs_server  => '#{server_fqdn}',
+              nfs_server  => '#{server_ip}',
               remote_path => '/srv/nfs_share',
               sec         => 'krb5p',
               autofs      => false
@@ -224,7 +225,7 @@ nfs::is_server: #IS_SERVER#
           autofs_client_manifest = <<-EOM
             include 'ssh'
             nfs::client::mount { '/mnt/#{server}':
-              nfs_server  => '#{server_fqdn}',
+              nfs_server  => '#{server_ip}',
               remote_path => '/srv/nfs_share'
             }
           EOM

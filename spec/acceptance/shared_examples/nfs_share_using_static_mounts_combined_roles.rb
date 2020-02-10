@@ -6,7 +6,7 @@
 #  * :nfsv3      - Whether this is testing NFSv3.  When true, NFSv3 will be
 #                  enabled (server + client) and used in the client mount
 #
-shared_examples 'a NFS share with combined roles' do |servers_with_client, opts|
+shared_examples 'a NFS share using static mounts with combined client/server roles' do |servers_with_client, opts|
   let(:exported_dir) { '/srv/nfs_share' }
   let(:filename) { 'test_file' }
   let(:file_content) { 'This is a test file' }

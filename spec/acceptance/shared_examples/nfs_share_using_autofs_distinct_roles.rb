@@ -9,7 +9,7 @@
 #                     after individually rebooting the client and server
 #                     in each test pair
 #
-shared_examples 'a NFS share using autofs with distinct roles' do |servers, clients, opts|
+shared_examples 'a NFS share using autofs with distinct client/server roles' do |servers, clients, opts|
   export_root_path =  '/srv/nfs_root'
   mount_root_path = '/mnt'
   mount_map = {
@@ -75,6 +75,8 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
           export_path => $_export_dir,
           sec         => ['sys']
         }
+
+        File["${_export_dir}"] -> Nfs::Server::Export["${_export_dir}"]
       }
 
       $files = [
@@ -100,11 +102,6 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
           content => "#{file_content_base} ${_path}",
         }
       }
-    EOM
-  }
-
-  let(:server_cleanup_manifes) {
-    <<~EOM
     EOM
   }
 
@@ -148,6 +145,10 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
 
   servers.each do |server|
     context "as just a NFS server #{server}" do
+      it 'should ensure vagrant connectivity' do
+        on(hosts, 'date')
+      end
+
       it 'should apply server manifest to export' do
         server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
         server_hieradata['nfs::is_client'] = false
@@ -213,26 +214,12 @@ shared_examples 'a NFS share using autofs with distinct roles' do |servers, clie
         end
 
         if opts[:verify_reboot]
-=begin
-This is not true if only have automounted NFSv4 directories.
-The nfsv4 kernel module will only be loaded when the automount
-is executed.
-          unless opts[:nfsv3]
-            # The nfsv4 kernel module is only automatically loaded when a NFSv4
-            # mount is executed. In the NFSv3 test, we only mount using NFSv3.
-            # So, after reboot, the nfsv4 kernel module will not be loaded.
-            # However, since nfs::client::config pre-emptively loads the nfsv4
-            # kernel module (necessary to ensure config intially prior to
-            # reboot), applying the client manifest in the absence of NFSv4
-            # mount will cause the Exec[modprove_nfsv4] to be executed.
-            it 'client manifest should be idempotent after reboot' do
-              client.reboot
-              apply_manifest_on(client, client_manifest, :catch_changes => true)
-            end
+          it 'should ensure vagrant connectivity' do
+            on(hosts, 'date')
           end
-=end
 
           it 'automount should be valid after client reboot' do
+            client.reboot
             mounted_files.each do |file|
               auto_dir = File.dirname(file)
               filename = File.basename(file)
@@ -242,12 +229,8 @@ is executed.
             on(client, "find #{mount_root_path} -type f | sort")
           end
 
-          it 'server manifest should be idempotent after reboot' do
-            server.reboot
-            apply_manifest_on(server, server_manifest, :catch_changes => true)
-          end
-
           it 'automount should be valid after server reboot' do
+            server.reboot
             mounted_files.each do |file|
               auto_dir = File.dirname(file)
               filename = File.basename(file)
@@ -259,6 +242,7 @@ is executed.
         end
 
         it 'should stop and disable autofs service as prep for next test' do
+          # auto-mounted filesystems are unmounted when autofs service is stopped
           on(client, %{puppet resource service autofs ensure=stopped enable=false})
         end
       end
