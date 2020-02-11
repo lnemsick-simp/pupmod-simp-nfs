@@ -13,24 +13,24 @@ class nfs::base_config
   #   and stunnels will not work otherwise!
   $_required_nfs_conf_opts = {
     'gssd'     => {
-      'avoid-dns'                => $::nfs::gssd_avoid_dns,
-      'limit-to-legacy-enctypes' => $::nfs::gssd_limit_to_legacy_enctypes,
-      'use-gss-proxy'            => $::nfs::gssd_use_gss_proxy
+      'avoid-dns'                => $nfs::gssd_avoid_dns,
+      'limit-to-legacy-enctypes' => $nfs::gssd_limit_to_legacy_enctypes,
+      'use-gss-proxy'            => $nfs::gssd_use_gss_proxy
     },
     'lockd'     => {
-      'port'                     => $::nfs::lockd_port,
-      'udp-port'                 => $::nfs::lockd_udp_port,
+      'port'                     => $nfs::lockd_port,
+      'udp-port'                 => $nfs::lockd_udp_port,
     },
     'sm-notify' => {
-      'outgoing-port'            => $::nfs::sm_notify_outgoing_port
+      'outgoing-port'            => $nfs::sm_notify_outgoing_port
     },
     'statd'     => {
-      'port'                     => $::nfs::statd_port,
-      'outgoing-port'            => $::nfs::statd_outgoing_port
+      'port'                     => $nfs::statd_port,
+      'outgoing-port'            => $nfs::statd_outgoing_port
     }
   }
 
-  $_merged_opts = deep_merge($::nfs::custom_nfs_conf_opts,
+  $_merged_opts = deep_merge($nfs::custom_nfs_conf_opts,
     $_required_nfs_conf_opts)
 
   # Use concat so users can add new sections on their own, in the event NFS
@@ -56,7 +56,7 @@ class nfs::base_config
     }
   }
 
-  if $::nfs::secure_nfs {
+  if $nfs::secure_nfs {
     concat::fragment { 'nfs_conf_gssd':
       order   => 3,
       target  => '/etc/nfs.conf',
@@ -65,7 +65,7 @@ class nfs::base_config
     }
   }
 
-  if $::nfs::nfsv3 {
+  if $nfs::nfsv3 {
     concat::fragment { 'nfs_conf_lockd':
       order   => 4,
       target  => '/etc/nfs.conf',
@@ -108,7 +108,7 @@ class nfs::base_config
       warn           => true
     }
 
-    if $::nfs::secure_nfs and $::nfs::gssd_use_gss_proxy  {
+    if $nfs::secure_nfs and $nfs::gssd_use_gss_proxy  {
       # The 'use-gss-proxy' option in /etc/nfs.conf is not used in EL7.
       # Need to set GSS_USE_PROXY service env variable instead.
       concat::fragment { 'nfs_gss_use_proxy':
@@ -118,7 +118,7 @@ class nfs::base_config
       }
     }
 
-    if 'GSSDARGS' in $::nfs::custom_daemon_args {
+    if 'GSSDARGS' in $nfs::custom_daemon_args {
       concat::fragment { 'nfs_GSSDARGS':
         order   => 2,
         target  => '/etc/sysconfig/nfs',
@@ -126,7 +126,7 @@ class nfs::base_config
       }
     }
 
-    if 'SMNOTIFYARGS' in $::nfs::custom_daemon_args {
+    if 'SMNOTIFYARGS' in $nfs::custom_daemon_args {
       concat::fragment { 'nfs_SMNOTIFYARGS':
         order   => 6,
         target  => '/etc/sysconfig/nfs',
@@ -136,7 +136,7 @@ class nfs::base_config
 
     # The variable in /etc/sysconfig/nfs is $STATDARG but is written to
     # /run/sysconfig/nfs-utils as STATDARGS.
-    if 'STATDARG' in $::nfs::custom_daemon_args {
+    if 'STATDARG' in $nfs::custom_daemon_args {
       concat::fragment { 'nfs_STATDARG':
         order   => 7,
         target  => '/etc/sysconfig/nfs',
@@ -154,7 +154,15 @@ class nfs::base_config
     }
   }
 
-  if $::nfs::idmapd {
+  if $nfs::idmapd {
     include 'nfs::idmapd::config'
+  }
+
+  if $nfs::kerberos {
+    include 'krb5'
+
+    if $nfs::keytab_on_puppet {
+      include 'krb5::keytab'
+    }
   }
 }

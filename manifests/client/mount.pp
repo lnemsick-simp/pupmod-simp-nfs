@@ -113,7 +113,7 @@ define nfs::client::mount (
 # to define here or use dlookup? Would be more clear if v4_stunnel_remote_port
   Optional[Simplib::Port] $v4_remote_port          = undef,
   Nfs::SecurityFlavor     $sec                     = 'sys',
-  String                  $options                 = 'hard',
+  String                  $options                 = 'soft',
   Nfs::MountEnsure        $ensure                  = 'mounted',
   Boolean                 $at_boot                 = true,
   Boolean                 $autofs                  = true,
@@ -143,7 +143,7 @@ define nfs::client::mount (
     $_stunnel = $nfs::client::stunnel
   }
 
-#FIXME do the same thing with port (nfs::nfsd_port) as witn stunnel?
+#FIXME do the same thing with port (nfs::nfsd_port) as with stunnel?
 #would like to have definitive place for port definitions
 
   nfs::client::mount::connection { $name:

@@ -5,7 +5,7 @@
 #  * :base_hiera    - Base hieradata to be added to nfs-specific hieradata
 #  * :krb5          - Whether this is testing Kerberos integration.  When true,
 #                     krb5 security will be used in the server export and client
-#                     mount.
+#                     mount.  Keytabs are assumed to be pre-populated
 #  * :nfsv3         - Whether this is testing NFSv3.  When true, NFSv3 will be
 #                     enabled (server + client) and used in the client mount
 #  * :verify_reboot - Whether to verify idempotency and mount functionality

@@ -26,5 +26,9 @@ fixtures:
     stunnel: https://github.com/simp/pupmod-simp-stunnel
     svckill: https://github.com/simp/pupmod-simp-svckill
     tcpwrappers: https://github.com/simp/pupmod-simp-tcpwrappers
+    vox_selinux:
+      repo: https://github.com/simp/pupmod-voxpupuli-selinux
+      branch: simp-master
+
   symlinks:
     nfs: "#{source_dir}"

@@ -104,6 +104,7 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
         it 'should mount NFS share' do
           on(host, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
+#FIXME add in server reboot tests
 
         it 'should remove mount as prep for next test' do
             # use puppet resource instead of simple umount, in order to remove

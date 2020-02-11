@@ -5,29 +5,25 @@ test_name 'nfs krb5'
 describe 'nfs krb5' do
 
   servers = hosts_with_role( hosts, 'nfs_server' )
+  servers_with_client = hosts_with_role( hosts, 'nfs_server_and_client' )
   clients = hosts_with_role( hosts, 'nfs_client' )
 
-  def trusted_nets(target_hosts = hosts)
-    host_ipaddresses = ['10.0.2.0/24','10.0.0.0/16']
+  base_hiera = {
+    # Set us up for a basic NFS (firewall-only)
+    'simp_options::firewall'                => true,
+    'simp_options::kerberos'                => true,
+    'simp_options::stunnel'                 => false,
+    'simp_options::tcpwrappers'             => true,
+    'ssh::server::conf::permitrootlogin'    => true,
+    'ssh::server::conf::authorizedkeysfile' => '.ssh/authorized_keys',
+    'simp_options::pki'                     => true,
+    'simp_options::pki::source'             => '/etc/pki/simp-testing/pki',
+    'krb5::keytab::keytab_source'           => 'file:///tmp/keytabs'
 
-    target_hosts.each do |host|
-      host_ifaces = fact_on(host, 'interfaces').split(',')
-      host_ifaces.each do |iface|
-        unless iface == 'lo'
-          host_ipaddresses << fact_on(host, "ipaddress_#{iface}")
-        end
-      end
 
-      etc_hosts = on(host, 'puppet resource host').stdout.strip
-      etc_hosts = etc_hosts.lines.map!{|x| x.strip =~ /ip\s+=>\s+(?:'|")(.*)(?:'|")/; x = $1}
-      etc_hosts.delete_if{|x| x.nil? || x.empty? || x == '127.0.0.1'}
-
-      host_ipaddresses = (etc_hosts + host_ipaddresses).flatten.uniq.compact
-      host_ipaddresses.delete_if{|x| x =~ /^\s*$/}
-    end
-
-    host_ipaddresses.uniq
-  end
+    # assuming all hosts configured to have same networks (public and private)
+    'simp_options::trusted_nets'            => host_networks(hosts[0]),
+  }
 
 
   manifest = <<-EOM
@@ -40,7 +36,7 @@ describe 'nfs krb5' do
     <<-EOM
 ---
 simp_options::trusted_nets:
-#{trusted_nets.map{|ip| ip = %(  - '#{ip}')}.join("\n")}
+#{host_networks(hosts[0]).map{|ip| ip = %(  - '#{ip}')}.join("\n")}
 
 
 simp_options::firewall: true
@@ -102,8 +98,28 @@ nfs::is_server: #IS_SERVER#
     File['/srv/nfs_share'] -> Nfs::Server::Export['nfs4_root']
   EOM
 
-  context "as a server" do
-    servers.each do |host|
+  context 'configure firewalld to use iptables backend' do
+# TEMPORARY WORKAROUND. Replicating here so can run 10_krb5_test_spec.rb
+# by itself
+    hosts.each do |host|
+      if host.hostname.start_with?('el8')
+        on(host, "sed -i 's/FirewallBackend=nftables/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf")
+      end
+    end
+  end
+
+  # NFS server also acts as KDC in this test
+  #
+  servers.each do |server|
+=begin
+     # set up Kerberos server and clients
+     # run some NFS mount tests with [ server], clients, opts
+     # =
+=end
+  end
+
+  servers.each do |host|
+    context "as a NFS server #{host}" do
       it 'should pre-build a Kerberos infrastructure' do
         # We need to set up the Kerberos server prior to running NFS.
         # Otherwise, there won't be a keytab to use on the system!
@@ -151,7 +167,7 @@ nfs::is_server: #IS_SERVER#
 
   clients.each do |host|
     servers.each do |server|
-      context "as a client" do
+      context "as a NFS client #{host} of NFS server #{server}" do
         let(:server_fqdn) { fact_on(server, 'fqdn') }
         let(:server_ip) {
           info = internal_network_info(server)
@@ -218,9 +234,10 @@ nfs::is_server: #IS_SERVER#
           host.mkdir_p("/mnt/#{server}")
           apply_manifest_on(host, client_manifest, :catch_failures => true)
           on(host, %(grep -q 'This is a test' /mnt/#{server}/test_file))
-          on(host, %{puppet resource mount /mnt/#{server} ensure=unmounted})
+          on(host, %{puppet resource mount /mnt/#{server} ensure=absent})
         end
 
+=begin
         it "should mount a directory on the #{server} server with autofs" do
           autofs_client_manifest = <<-EOM
             include 'ssh'
@@ -236,12 +253,12 @@ nfs::is_server: #IS_SERVER#
             autofs_client_manifest = autofs_client_manifest + "\n" + krb5_client_manifest
           end
 
-          # apply_manifest_on(host, autofs_client_manifest)
           apply_manifest_on(host, autofs_client_manifest, catch_failures: true)
           apply_manifest_on(host, autofs_client_manifest, catch_changes: true)
 
           on(host, %{puppet resource service autofs ensure=stopped})
         end
+=end
       end
     end
   end

@@ -140,51 +140,30 @@ class nfs (
 
   include 'nfs::install'
 
-  if $kerberos {
-    include 'krb5'
+  if $kerberos and (versioncmp($facts['os']['release']['major'], '8') < 0) {
+# FIXME Must krb5 be installed to build the selinux policy that refers
+# to krb5_conf_t?
+#    include 'krb5'
 
     # This is here because the SELinux rules for directory includes in krb5
-    # are broken.
+    # are broken in selinux-policy < 3.13.1-229.el7_6.9. It does no harm
+    # on an EL7 system with the fixed selinux-policy.
     include 'nfs::selinux_hotfix'
     Class['nfs::selinux_hotfix'] -> Class['nfs::install']
-
-    if $keytab_on_puppet {
-      include 'krb5::keytab'
-    }
   }
 
   if $ensure_latest_lvm2 {
     include 'nfs::lvm2'
-
     Class['nfs::lvm2'] -> Class['nfs::install']
   }
 
   if $is_client {
     include 'nfs::client'
     Class['nfs::install'] -> Class['nfs::client']
-
-    # This notification just makes sure SIMP-provided Kerberos set up
-    # is done before a client mount operation requiring it is executed?
-    # FIXME This won't affect an existing NFS mount.
-    if $kerberos {
-      Class['krb5'] ~> Class['nfs::client']
-
-      if $keytab_on_puppet {
-        Class['krb5::keytab'] ~> Class['nfs::client']
-      }
-    }
   }
 
   if $is_server {
     include 'nfs::server'
     Class['nfs::install'] -> Class['nfs::server']
-
-    if $kerberos {
-      Class['krb5'] ~> Class['nfs::server']
-
-      if $keytab_on_puppet {
-        Class['krb5::keytab'] ~> Class['nfs::server']
-      }
-    }
   }
 }

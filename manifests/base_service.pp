@@ -16,7 +16,7 @@ class nfs::base_service
 #      svckill::ignore{ 'rpc-statd.service': }
 #    }
 
-    # This service gets triggered when the server reboots, executes,
+    # This service gets triggered when a client/server reboots, executes,
     # and then exits.  Doesn't make sense to ensure running, but in
     # the extremely unlikely chance svckill is running when the
     # service runs, make sure svckill leaves it alone.

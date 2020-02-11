@@ -67,4 +67,12 @@ class nfs::client (
       hasrestart => true
     }
   }
+
+  if $nfs::kerberos {
+    Class['krb5'] ~> Class['nfs::base_service']
+
+    if $nfs::keytab_on_puppet {
+      Class['krb5::keytab'] ~> Class['nfs::base_service']
+    }
+  }
 }

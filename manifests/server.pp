@@ -85,10 +85,10 @@ class nfs::server (
   Optional[String] $custom_rpcrquotad_opts        = undef,
   Integer[1]       $sunrpc_udp_slot_table_entries = 128,
   Integer[1]       $sunrpc_tcp_slot_table_entries = 128,
-  Boolean          $firewall                      = $::nfs::firewall,
-  Boolean          $stunnel                       = $::nfs::stunnel,
-  Boolean          $tcpwrappers                   = $::nfs::tcpwrappers,
-  Simplib::Netlist $trusted_nets                  = $::nfs::trusted_nets
+  Boolean          $firewall                      = $nfs::firewall,
+  Boolean          $stunnel                       = $nfs::stunnel,
+  Boolean          $tcpwrappers                   = $nfs::tcpwrappers,
+  Simplib::Netlist $trusted_nets                  = $nfs::trusted_nets
 ) inherits ::nfs {
 
   assert_private()
@@ -108,15 +108,29 @@ class nfs::server (
 
   include 'nfs::idmapd::server'
 
-  if $::nfs::server::stunnel {
+  if $nfs::server::stunnel {
     include 'nfs::server::stunnel'
   }
 
-  if $::nfs::server::firewall {
+  if $nfs::server::firewall {
     include 'nfs::server::firewall'
 
-    if $::nfs::server::stunnel {
+    if $nfs::server::stunnel {
       Class['nfs::server::firewall'] ~> Class['nfs::server::stunnel']
+    }
+  }
+
+   #FIXME Should this be nfs::server::kerberos ?
+   #FIXME Does the nfs::server::servic really need to be restarted or is
+   #      restarting the rpc-gssd and gssproxy services in nfs::base_service
+   #      sufficient?
+  if $nfs::kerberos {
+    Class['krb5'] ~> Class['nfs::base_service']
+    Class['krb5'] ~> Class['nfs::server::service']
+
+    if $nfs::keytab_on_puppet {
+      Class['krb5::keytab'] ~> Class['nfs::base_service']
+      Class['krb5::keytab'] ~> Class['nfs::server::service']
     }
   }
 }

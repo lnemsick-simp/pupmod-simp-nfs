@@ -67,6 +67,7 @@ define nfs::client::mount::connection (
     if ($nfs_version == 4) {
 
       # It is possible that this is called for multiple mounts on the same server
+      # FIXME  this should be in its own stunnel
       ensure_resource('iptables::listen::tcp_stateful',
         "nfs_callback_${_safe_nfs_server}",
         {
@@ -75,6 +76,7 @@ define nfs::client::mount::connection (
         }
       )
     } else {
+#FIXME how much of this can be in a stunnel (TCP-only)
       # NFS server will reach out to the client in NLM and NSM protos
       # (i.e., locking and recovery from locking upon server/client reboot)
       # and uses rpcbind to figure out ports to use on the client

@@ -25,9 +25,22 @@
   - only applies to NFSv4 (logic applied it to NFSv3)
   - manage /etc/idmapd.conf and nfs-idmapd.service on NFS server
   - manage /etc/idmapd.conf and /etc/request-key.conf entry for nfsidmap on NFS client
+- FIXED nfs,nfsv4  old syntax for mounts
+  - mount.nfs used to handle NFSv2/3 exclusively and mount.nfsv4 used to handle NFSv4 exclusively.
+  - FIXME mount.nfs now handles all mount types.
+- FIXED removed OBE intr mount option
+- CHANGE hard -> soft mount option
 
 
 MODULE TODO
+- figure out if include krb5 needed tobuilt policy
+  - should be able to do it on a clean server, but can't do it in the
+    current acceptance test
+- use vox_selinux::module for hotfix in same way as krb5 hotfix does
+- base_service, base_config -> base::service, base::config
+- remove Puppet '->' that are handled by wants/wantedby
+- See if have to start stunnel up after servic
+  client goes beserk? (times out and has issues with hard mount)
 - tcpwrappers nfsv3 client when mount?
 - can client run without rpcbind?, if not, need to open up tcpwrappers on client as well
 - have to make sure sm-modify's reboot notification goes out when stunnel and firewalls are
@@ -72,7 +85,7 @@ MODULE TODO
 - Put stunnel_systemd_wantedby in  hieradata?
   - What do we do with defines?
 - Fix else and elsif curly braces -> make sure consistent
-- README.md
+- README.mdsepolicy
   - has hiera() functions...not sure we are still using them
   - has simp_options::kerberos <-- doesn't exist?
   - is the kerberos discussion still correct? Thought there was a test for it.
@@ -82,10 +95,10 @@ MODULE TODO
   - Why not use sysctl resource?
   rpc-gssd.service). Will have to handle with an override or in Puppet.
 
-- testing
 - selinux_hotfix -> mounts wouldn't work when selinux enabled
-  - make sure systemd dependencies are correct for oldest nfs-utils
-    ***May have to lay down systemd unit files
+  https://access.redhat.com/solutions/3969161
+- make sure systemd dependencies are correct for oldest nfs-utils
+  ***May have to lay down systemd unit files
 - verify that if change config file, everything restarts ok
   - For NFSv3 and NFSv4
     - no stunnel
@@ -93,11 +106,12 @@ MODULE TODO
       - quotas
       - locking (fcntl)
         - locking through NFS server and NFS client reboots
-LOCKING ONLY MAKE SENSE with hard mounts
+LOCKING ONLY MAKE SENSE with hard mounts <-- is this true?
       - tcpwrappers
       - iptables
       - kerberos
       - svckill
+           svckill::mode: enforcing
     - stunnel
       - reboot (NFS server, NFS client)
       - locking
@@ -122,9 +136,6 @@ QUESTIONS
 - Is rpc.mountd required for NFSV4 during startup or otherwise --> don't want svckill to kill it
 - Is rpc.quotad required for NFSv4?
 - exportfs is linked against libwrap.  Does it need to be in the tcp wrappers list?
-- nfs,nfsv4  old syntax for mounts
-  - mount.nfs used to handle NFSv2/3 exclusively and mount.nfsv4 used to handle NFSv4 exclusively.
-  - FIXME mount.nfs now handles all mount types.
 - NSM notifications are over UDP, so when nfsv3 and using stunnel, protocol won't work?
   - what does this mean for iptables and stunnel settings?
 - Class['autofs::service'] ~> Service[$::nfs::service_names::rpcbind]
@@ -270,7 +281,7 @@ TODO
   lvm = The  Logical  Volume Manager (LVM) provides tools to create virtual block devices
         from physical devices.
 
-7.4.1708  nfs-utils-1.3.0-0.48.el7   <-- earliest version have to support
+7.4.1708  nfs-utils-1.3.0-0.48.el7   <-- earliest version have to support, CentOS 7.4
 7.latest nfs-utils-1.3.0-0.65
 
 
@@ -488,3 +499,24 @@ If for some reason you need to revert to the old iptables backend, you can easil
 do so by setting FirewallBackend in /etc/firewalld/firewalld.conf to iptables, then
 restart firewalld. However, please realise that future firewalld development will
 focus on the nftables backend and not iptables.
+
+
+Decrypt integrity check failed
+
+Cause:
+You might have an invalid ticket.
+
+Solution:
+Verify both of these conditions:
+
+Make sure that your credentials are valid. Destroy your tickets with kdestroy, and create new tickets with kinit.
+
+Make sure that the target host has a keytab file with the correct version of the service key. Use kadmin to view the key version number of the service principal (for example, host/FQDN-hostname) in the Kerberos database. Also, use klist -k on the target host to make sure that it has the same key version number.
+
+
+
+el7-server log messages:
+Feb 11 17:59:15 localhost krb5kdc[9140]: AS_REQ (8 etypes {18 17 20 19 16 23 25 26}) 10.255.241.121: ISSUE: authtime 1581443955, etypes {rep=18 tkt=18 ses=18}, nfs/el7-client.example.com@EXAMPLE.COM for krbtgt/EXAMPLE.COM@EXAMPLE.COM
+Feb 11 17:59:15 localhost krb5kdc[9140]: TGS_REQ (8 etypes {18 17 20 19 16 23 25 26}) 10.255.241.121: ISSUE: authtime 1581443955, etypes {rep=18 tkt=18 ses=18}, nfs/el7-client.example.com@EXAMPLE.COM for nfs/el7-server.example.com@EXAMPLE.COM
+Feb 11 17:59:15 localhost kernel: nfsd: nfsv4 idmapping failing: has idmapd not been started?
+
