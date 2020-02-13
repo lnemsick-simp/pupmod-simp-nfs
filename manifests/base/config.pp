@@ -1,7 +1,7 @@
 # @summary Common configuration required by both NFS server and client
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
-class nfs::base_config
+class nfs::base::config
 {
   assert_private()
 

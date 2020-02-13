@@ -145,12 +145,19 @@ define nfs::client::mount (
     $_stunnel = $nfs::client::stunnel
   }
 
-  if $_stunnel
+  if $_stunnel {
     # Ensure as much TCP communication is used as possible.
     $_nfs_options = "${_nfs_base_options},proto=tcp"
   }
   else {
     $_nfs_options = $_nfs_base_options
+  }
+
+  if $_stunnel or ($autodetect_remote and $nfs::is_server) {
+    $_remote = "127.0.0.1:${remote_path}"
+  }
+  else {
+    $_remote = "${nfs_server}:${remote_path}"
   }
 
 #FIXME do the same thing with port (nfs::nfsd_port) as with stunnel?
@@ -201,18 +208,10 @@ define nfs::client::mount (
       Stunnel::Instance <| tag == 'nfs' |> ~> Exec['refresh_autofs']
     }
 
-    if $_stunnel or ($autodetect_remote and $nfs::is_server) {
-      if $autofs_add_key_subst {
-        $_location = "127.0.0.1:${remote_path}/&"
-      } else {
-        $_location = "127.0.0.1:${remote_path}"
-      }
+    if $autofs_add_key_subst {
+      $_location = "${_remote}/&"
     } else {
-      if $autofs_add_key_subst {
-        $_location = "${nfs_server}:${remote_path}/&"
-      } else {
-        $_location = "${nfs_server}:${remote_path}"
-      }
+      $_location = $_remote
     }
 
     autofs::map::entry { $_map_key:
@@ -223,17 +222,11 @@ define nfs::client::mount (
     }
   }
   else {
-    if $_stunnel or ($autodetect_remote and $nfs::is_server) {
-      $_device = "127.0.0.1:${remote_path}"
-    } else {
-      $_device = "${nfs_server}:${remote_path}"
-    }
-
     mount { $name:
       ensure   => $ensure,
       atboot   => $at_boot,
-      device   => $_device,
-      fstype   => 'nfs', # NFS version specified in options
+      device   => $_remote,
+      fstype   => 'nfs', # EL>6 NFS version specified in options
       options  => $_nfs_options,
       remounts => false,
       require  => Nfs::Client::Mount::Connection[$name]

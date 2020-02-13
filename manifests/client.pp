@@ -42,8 +42,8 @@ class nfs::client (
 
   assert_private()
 
-  include 'nfs::base_config'
-  include 'nfs::base_service'
+  include 'nfs::base::config'
+  include 'nfs::base::service'
   include 'nfs::client::config'
 
   service { 'nfs-client.target':
@@ -52,13 +52,13 @@ class nfs::client (
     hasrestart => true
   }
 
-  Class['nfs::base_config'] ~> Class['nfs::base_service']
-  Class['nfs::base_config'] ~> Service['nfs-client.target']
+  Class['nfs::base::config'] ~> Class['nfs::base::service']
+  Class['nfs::base::config'] ~> Service['nfs-client.target']
 
-  Class['nfs::client::config'] ~> Class['nfs::base_service']
+  Class['nfs::client::config'] ~> Class['nfs::base::service']
   Class['nfs::client::config'] ~> Service['nfs-client.target']
 
-  Class['nfs::base_service'] ~> Service['nfs-client.target']
+  Class['nfs::base::service'] ~> Service['nfs-client.target']
 
   if $blkmap {
     service { 'nfs-blkmap.service':
@@ -70,11 +70,11 @@ class nfs::client (
 
   if $nfs::kerberos {
     include 'krb5'
-    Class['krb5'] ~> Class['nfs::base_service']
+    Class['krb5'] ~> Class['nfs::base::service']
 
     if $nfs::keytab_on_puppet {
       include 'krb5::keytab'
-      Class['krb5::keytab'] ~> Class['nfs::base_service']
+      Class['krb5::keytab'] ~> Class['nfs::base::service']
     }
   }
 }

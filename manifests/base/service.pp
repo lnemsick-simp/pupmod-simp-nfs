@@ -1,20 +1,16 @@
-class nfs::base_service
+class nfs::base::service
 {
   assert_private()
 
   if $::nfs::nfsv3 {
 
-# FIXME - remove if block
-#    if $::nfs::is_server {
-      service { 'rpc-statd.service':
-        # static service, so can't enable
-        ensure     => 'running',
-        hasrestart => true
-      }
-#    } else {
-#      # Will be started when needed
-#      svckill::ignore{ 'rpc-statd.service': }
-#    }
+    # Normally started on the client when a NFS filesystem is mounted,
+    # but does no harm to have it running before the mount
+    service { 'rpc-statd.service':
+      # static service, so can't enable
+      ensure     => 'running',
+      hasrestart => true
+    }
 
     # This service gets triggered when a client/server reboots, executes,
     # and then exits.  Doesn't make sense to ensure running, but in

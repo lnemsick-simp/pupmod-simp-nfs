@@ -93,18 +93,18 @@ class nfs::server (
 
   assert_private()
 
-  include 'nfs::base_config'
-  include 'nfs::base_service'
+  include 'nfs::base::config'
+  include 'nfs::base::service'
   include 'nfs::server::config'
   include 'nfs::server::service'
 
-  Class['nfs::base_config'] ~> Class['nfs::base_service']
-  Class['nfs::base_config'] ~> Class['nfs::server::service']
+  Class['nfs::base::config'] ~> Class['nfs::base::service']
+  Class['nfs::base::config'] ~> Class['nfs::server::service']
 
-  Class['nfs::server::config'] ~> Class['nfs::base_service']
+  Class['nfs::server::config'] ~> Class['nfs::base::service']
   Class['nfs::server::config'] ~> Class['nfs::server::service']
 
-  Class['nfs::base_service'] ~> Class['nfs::server::service']
+  Class['nfs::base::service'] ~> Class['nfs::server::service']
 
   include 'nfs::idmapd::server'
 
@@ -121,16 +121,16 @@ class nfs::server (
   }
 
    #FIXME Does the nfs::server::service really need to be restarted or is
-   #      restarting the rpc-gssd and gssproxy services in nfs::base_service
+   #      restarting the rpc-gssd and gssproxy services in nfs::base::service
    #      sufficient?
   if $nfs::kerberos {
     include 'krb5'
-    Class['krb5'] ~> Class['nfs::base_service']
+    Class['krb5'] ~> Class['nfs::base::service']
     Class['krb5'] ~> Class['nfs::server::service']
 
     if $nfs::keytab_on_puppet {
       include 'krb5::keytab'
-      Class['krb5::keytab'] ~> Class['nfs::base_service']
+      Class['krb5::keytab'] ~> Class['nfs::base::service']
       Class['krb5::keytab'] ~> Class['nfs::server::service']
     }
   }
