@@ -3,14 +3,21 @@
 #
 # @param opts Hash of test options with the following keys:
 #  * :base_hiera    - Base hieradata to be added to nfs-specific hieradata
-#  * :krb5          - Whether this is testing Kerberos integration.  When true,
-#                     krb5 security will be used in the server export and client
-#                     mount.  Keytabs are assumed to be pre-populated
+#  * :server_custom - Additional content to be added to the NFS server manifest
+#  * :client_custom - Additional content to be added to the NFS client manifest
 #  * :nfsv3         - Whether this is testing NFSv3.  When true, NFSv3 will be
 #                     enabled (server + client) and used in the client mount
+#  * :nfs_sec       - NFS security option to use in both the server export and
+#                     the client mount
 #  * :verify_reboot - Whether to verify idempotency and mount functionality
 #                     after individually rebooting the client and server
 #                     in each test pair
+#
+# NOTE:  The following token substitutions are supported in the :client_custom
+#  manifest:
+#
+#  * #MOUNT_DIR#
+#  * #SERVER_IP#
 #
 shared_examples 'a NFS share using static mounts with distinct client/server roles' do |servers, clients, opts|
   let(:exported_dir) { '/srv/nfs_share' }
@@ -19,7 +26,6 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
   let(:server_manifest) {
     <<~EOM
       include 'ssh'
-      #{opts[:krb5] ? "include 'krb5::kdc' # Keep KRB5 ports open" : ''}
 
       file { '#{exported_dir}':
         ensure => 'directory',
@@ -40,22 +46,16 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
       nfs::server::export { 'nfs_root':
         clients     => ['*'],
         export_path => '#{exported_dir}',
-        sec         => ['#{opts[:krb5] ? 'krb5p' : 'sys'}']
+        sec         => ['#{opts[:nfs_sec]}']
       }
 
       File['#{exported_dir}'] -> Nfs::Server::Export['nfs_root']
+
+      #{opts[:server_custom]}
     EOM
   }
 
   let(:nfs_version) { opts[:nfsv3] ? 3 : 4 }
-  let(:krb5_client_manifest_base) {
-    <<~EOM
-      krb5::setting::realm { $facts['domain'] :
-        admin_server => '#SERVER_FQDN#'
-      }
-    EOM
-  }
-
   let(:client_manifest_base) {
     <<~EOM
       include 'ssh'
@@ -66,7 +66,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
         nfs_server  => '#SERVER_IP#',
         nfs_version => #{nfs_version},
         remote_path => '#{exported_dir}',
-        sec         => '#{opts[:krb5] ? 'krb5p' : 'sys'}',
+        sec         => '#{opts[:nfs_sec]}',
         autofs      => false
       }
 
@@ -79,6 +79,8 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
       }
 
       File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
+
+      #{opts[:client_custom]}
     EOM
   }
 
@@ -110,7 +112,6 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
   clients.each do |client|
     servers.each do |server|
       context "as just a NFS client #{client} using NFS server #{server}" do
-        let(:server_fqdn) { fact_on(server, 'fqdn') }
         let(:server_ip) {
           info = internal_network_info(server)
           expect(info[:ip]).to_not be_nil
@@ -120,10 +121,6 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
         let(:mount_dir) { "/mnt/#{server}" }
         let(:client_manifest) {
           client_manifest = client_manifest_base.dup
-          if opts[:krb5]
-            client_manifest += krb5_client_manifest_base
-            client_manifest.gsub!('#SERVER_FQDN#', server_fqdn)
-          end
           client_manifest.gsub!('#MOUNT_DIR#', mount_dir)
           client_manifest.gsub!('#SERVER_IP#', server_ip)
           client_manifest

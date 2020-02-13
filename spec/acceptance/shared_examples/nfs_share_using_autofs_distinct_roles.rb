@@ -3,11 +3,21 @@
 #
 # @param opts Hash of test options with the following keys:
 #  * :base_hiera    - Base hieradata to be added to nfs-specific hieradata
+#  * :server_custom - Additional content to be added to the NFS server manifest
+#  * :client_custom - Additional content to be added to the NFS client manifest
 #  * :nfsv3         - Whether this is testing NFSv3.  When true, NFSv3 will be
 #                     enabled (server + client) and used in the client mount
+#  * :nfs_sec       - NFS security option to use in both the server exports and
+#                     the client mounts
 #  * :verify_reboot - Whether to verify idempotency and mount functionality
 #                     after individually rebooting the client and server
 #                     in each test pair
+#
+# NOTE:  The following token substitutions are supported in the :client_custom
+#  manifest:
+#
+#  * #MOUNT_DIR#
+#  * #SERVER_IP#
 #
 shared_examples 'a NFS share using autofs with distinct client/server roles' do |servers, clients, opts|
   export_root_path =  '/srv/nfs_root'
@@ -102,6 +112,8 @@ shared_examples 'a NFS share using autofs with distinct client/server roles' do 
           content => "#{file_content_base} ${_path}",
         }
       }
+
+      #{opts[:server_custom]}
     EOM
   }
 
@@ -140,6 +152,7 @@ shared_examples 'a NFS share using autofs with distinct client/server roles' do 
         autofs_add_key_subst    => #{mount_map[:indirect_wildcard][:add_key_subst].to_s}
       }
 
+      #{opts[:client_custom]}
     EOM
   }
 

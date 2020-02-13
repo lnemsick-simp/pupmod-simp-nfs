@@ -4,12 +4,15 @@ test_name 'nfs krb5'
 
 describe 'nfs krb5' do
 
+  # This test only uses hosts that have distinct NFS server/client roles,
+  # because we don't have a separate KDC in the test's Kerberos infrastructure.
+  # Instead, each NFS server also acts as the KDC.
   servers = hosts_with_role( hosts, 'nfs_server' )
-  servers_with_client = hosts_with_role( hosts, 'nfs_server_and_client' )
   clients = hosts_with_role( hosts, 'nfs_client' )
 
   base_hiera = {
-    # Set us up for a basic NFS (firewall-only)
+    # Set us up for a NFS using Kerberos
+    'simp_options::audit'                   => false,
     'simp_options::firewall'                => true,
     'simp_options::kerberos'                => true,
     'simp_options::stunnel'                 => false,
@@ -18,85 +21,23 @@ describe 'nfs krb5' do
     'ssh::server::conf::authorizedkeysfile' => '.ssh/authorized_keys',
     'simp_options::pki'                     => true,
     'simp_options::pki::source'             => '/etc/pki/simp-testing/pki',
-    'krb5::keytab::keytab_source'           => 'file:///tmp/keytabs'
 
-
-    # assuming all hosts configured to have same networks (public and private)
+    # Assuming all hosts configured to have same networks (public and private)
     'simp_options::trusted_nets'            => host_networks(hosts[0]),
+
+    # Fake out sync source, as this is not a full SIMP server
+    'krb5::keytab::keytab_source'           => 'file:///tmp/keytabs',
+
+     # Config for KDC on NFS server (unused on NFS clients)
+    'krb5::kdc::ldap'                          => false,
+    'krb5::kdc::auto_keytabs::introspect'      => false,
+    'krb5::kdc::auto_keytabs::hosts'           =>
+      # Generate keytabs for everyone
+      hosts.map{|host| [ fact_on(host,'fqdn'), {'ensure' => 'present'} ]}.to_h,
+    'krb5::kdc::auto_keytabs::global_services' => [ 'nfs' ],
+
+    'nfs::secure_nfs'                       => true
   }
-
-
-  manifest = <<-EOM
-    include 'nfs'
-    include 'krb5'
-    include 'ssh'
-  EOM
-
-  let(:hieradata) {
-    <<-EOM
----
-simp_options::trusted_nets:
-#{host_networks(hosts[0]).map{|ip| ip = %(  - '#{ip}')}.join("\n")}
-
-
-simp_options::firewall: true
-simp_options::stunnel: false
-simp_options::tcpwrappers: true
-simp_options::kerberos: true
-simp_options::audit: false
-
-ssh::server::conf::permitrootlogin: true
-ssh::server::conf::authorizedkeysfile: '.ssh/authorized_keys'
-
-simp_options::pki: true
-simp_options::pki::source: /etc/pki/simp-testing/pki
-
-krb5::kdc::ldap: false
-krb5::keytab::keytab_source: 'file:///tmp/keytabs'
-
-# Generate keytabs for everyone
-krb5::kdc::auto_keytabs::hosts:
-#{hosts.map{|host| host = %(  '#{fact_on(host,'fqdn')}' :\n    'ensure': 'present')}.join("\n")}
-
-krb5::kdc::auto_keytabs::global_services :
-  - 'nfs'
-
-# These two need to be paired in our case since we expect to manage the Kerberos
-# infrastructure for our tests.
-nfs::secure_nfs: true
-nfs::is_server: #IS_SERVER#
-    EOM
-  }
-
-  server_manifest = <<-EOM
-    # Keep the KRB5 ports open
-    include 'krb5::kdc'
-    include 'nfs'
-    include 'ssh'
-
-    file { '/srv/nfs_share':
-      ensure => 'directory',
-      owner  => 'root',
-      group  => 'root',
-      mode   => '0644'
-    }
-
-    file { '/srv/nfs_share/test_file':
-      ensure  => 'file',
-      owner   => 'root',
-      group   => 'root',
-      mode    => '0644',
-      content => 'This is a test'
-    }
-
-    nfs::server::export { 'nfs4_root':
-      clients     => ['*'],
-      export_path => '/srv/nfs_share',
-      sec         => ['krb5p']
-    }
-
-    File['/srv/nfs_share'] -> Nfs::Server::Export['nfs4_root']
-  EOM
 
   context 'configure firewalld to use iptables backend' do
 # TEMPORARY WORKAROUND. Replicating here so can run 10_krb5_test_spec.rb
@@ -108,16 +49,108 @@ nfs::is_server: #IS_SERVER#
     end
   end
 
-  # NFS server also acts as KDC in this test
+  # We need to set up the Kerberos server prior to running NFS.
+  # Otherwise, there won't be a keytab to use on the system!
   #
+  # In this setup, the NFS server also acts as KDC.  But we are going to
+  # copy the keytabs from the KDC onto each node manually, instead of
+  # finding them in the module path (in /var/simp/environments....) of
+  # the Puppet master.
   servers.each do |server|
-=begin
-     # set up Kerberos server and clients
-     # run some NFS mount tests with [ server], clients, opts
-     # =
-=end
-  end
+    context "with server #{server} as NFS server and KDC" do
+      let(:server_fqdn) { fact_on(server, 'fqdn') }
 
+      context 'Kerberos infrastructure set up' do
+        let(:kdc_manifest) {
+          <<~EOM
+            include 'krb5::kdc'
+            include 'ssh'
+          EOM
+        }
+
+        let(:krb5_client_manifest) {
+          <<~EOM
+            include 'krb5'
+            include 'ssh'
+
+            krb5::setting::realm { $facts['domain'] :
+              admin_server => '#{server_fqdn}'
+            }
+          EOM
+        }
+
+        it "should create a KDC on NFS server #{server} with keytabs for all hosts" do
+          set_hieradata_on(server, base_hiera)
+          apply_manifest_on(server, kdc_manifest, :catch_failures => true)
+        end
+
+        it "should set up #{server} keytab and fake keytab sync source" do
+          keytab_src = %(/var/kerberos/krb5kdc/generated_keytabs/#{fact_on(server,'fqdn')}/krb5.keytab)
+          on(server, %(cp #{keytab_src} /etc))
+          server.mkdir_p('/tmp/keytabs')
+          on(server, "cp #{keytab_src} /tmp/keytabs/")
+        end
+
+        clients.each do |client|
+          # FIXME SIMP-7561
+          it "should clear the gssproxy credential cache on client #{client}" do
+            on(client, "if [ -f /var/lib/gssproxy/clients/krb5cc_0 ]; then /usr/bin/kdestroy -c /var/lib/gssproxy/clients/krb5cc_0 ; fi")
+          end
+
+          it "should copy keytabs from KDC to fake keytab sync source on client #{client}" do
+            keytab_src = %(/var/kerberos/krb5kdc/generated_keytabs/#{fact_on(client,'fqdn')}/krb5.keytab)
+            tmpdir = Dir.mktmpdir
+
+            begin
+              # This, combined with the krb5::keytab::keytab_source Hiera
+              # parameter allow us to mock out what the Puppet server would be
+              # doing.
+              server.do_scp_from(keytab_src, tmpdir, {})
+              client.mkdir_p('/tmp/keytabs')
+              client.do_scp_to(File.join(tmpdir, File.basename(keytab_src)), "/tmp/keytabs/", {})
+            ensure
+              FileUtils.remove_entry_secure(tmpdir)
+            end
+          end
+
+          it "should set the Kerberos realm on client #{client}" do
+            set_hieradata_on(client, base_hiera)
+            apply_manifest_on(client, krb5_client_manifest, :catch_failures => true)
+          end
+        end
+      end
+
+      context 'Secure NFSv4' do
+        server_krb5_manifest_extras = <<~EOM
+          # Keep KRB5 (kadmin & krb5kdc) ports open in firewall so clients can
+          # talk to KDC
+          include 'krb5::kdc'
+        EOM
+
+        client_krb5_manifest_extras = <<~EOM
+          # Keep Kerberos realm configured to know location of KDC
+          krb5::setting::realm { $facts['domain'] :
+            admin_server => '#{fact_on(server,'fqdn')}'
+          }
+        EOM
+
+        opts = {
+          :base_hiera    => base_hiera,
+          :server_custom => server_krb5_manifest_extras,
+          :client_custom => client_krb5_manifest_extras,
+          :nfs_sec       => 'krb5p',
+          :nfsv3         => false,
+          :verify_reboot => true
+        }
+
+        it_behaves_like 'a NFS share using static mounts with distinct client/server roles', [ server ], clients, opts
+        it_behaves_like 'a NFS share using autofs with distinct client/server roles', [ server ], clients, opts
+      end
+    end
+  end
+end
+
+=begin
   servers.each do |host|
     context "as a NFS server #{host}" do
       it 'should pre-build a Kerberos infrastructure' do
@@ -128,10 +161,6 @@ nfs::is_server: #IS_SERVER#
         # orchestrate this via a profile somewhere.
         keytab_src = %(/var/kerberos/krb5kdc/generated_keytabs/#{fact_on(host,'fqdn')}/krb5.keytab)
 
-        krb5_manifest = <<-EOM
-          include 'krb5::kdc'
-          include 'ssh'
-        EOM
 
         set_hieradata_on(host, hieradata)
         apply_manifest_on(host, krb5_manifest)
@@ -194,9 +223,6 @@ nfs::is_server: #IS_SERVER#
 
           keytab_src = %(/var/kerberos/krb5kdc/generated_keytabs/#{fact_on(host,'fqdn')}/krb5.keytab)
 
-          # Pulling this directly over so that we don't have to worry about
-          # Puppet server-fu in the middle of all of this. That should be
-          # tested separately.
           tmpdir = Dir.mktmpdir
 
           begin
@@ -237,7 +263,6 @@ nfs::is_server: #IS_SERVER#
           on(host, %{puppet resource mount /mnt/#{server} ensure=absent})
         end
 
-=begin
         it "should mount a directory on the #{server} server with autofs" do
           autofs_client_manifest = <<-EOM
             include 'ssh'
@@ -259,7 +284,3 @@ nfs::is_server: #IS_SERVER#
           on(host, %{puppet resource service autofs ensure=stopped})
         end
 =end
-      end
-    end
-  end
-end
