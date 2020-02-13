@@ -51,9 +51,11 @@
 #   * Only valid with NFSv4
 #
 # @param options
-#   The mount options string that should be used
+#   String containing comma-separated list of additional mount options
 #
-#   * fstype and port will already be set for you
+#   * fstype, nfsvers, and port will already be set for you
+#   * sec will be set for you for NFSv4
+#   * if using stunnel, proto will be set to tcp for you
 #
 # @param ensure
 #   The mount state of the specified mount point
@@ -130,10 +132,10 @@ define nfs::client::mount (
   include 'nfs::client'
 
   if ($nfs_version  == 4) {
-    $_nfs_options = "nfsvers=4,port=${port},${options},sec=${sec}"
+    $_nfs_base_options = "nfsvers=4,port=${port},${options},sec=${sec}"
   }
   else {
-    $_nfs_options = "nfsvers=3,port=${port},${options}"
+    $_nfs_base_options = "nfsvers=3,port=${port},${options}"
   }
 
   if $stunnel !~ Undef {
@@ -141,6 +143,14 @@ define nfs::client::mount (
   }
   else {
     $_stunnel = $nfs::client::stunnel
+  }
+
+  if $_stunnel
+    # Ensure as much TCP communication is used as possible.
+    $_nfs_options = "${_nfs_base_options},proto=tcp"
+  }
+  else {
+    $_nfs_options = $_nfs_base_options
   }
 
 #FIXME do the same thing with port (nfs::nfsd_port) as with stunnel?
@@ -159,11 +169,6 @@ define nfs::client::mount (
     include 'autofs'
 
     Class['nfs::install'] -> Class['autofs::install']
-
-    # This is a particular quirk about the autofs service ordering
-#FIXME Is this still required?
-# autofs.service Wants rpcbind.service and After rpcbind.service
-#    Class['autofs::service'] ~> Service['rpcbind.service']
 
     if $autofs_indirect_map_key {
       $_mount_point = $name

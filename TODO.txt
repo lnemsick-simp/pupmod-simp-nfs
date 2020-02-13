@@ -475,8 +475,19 @@ nfs::client::mount { $mount_dir:
   remote_path => '/srv/nfs_share',
   autofs      => false
 }
+
+nfs::client::mount { $mount_dir:
+  nfs_server  => '10.255.177.188',
+  nfs_version => 4,
+  options     => 'soft,proto=tcp,minorversion=0',
+  remote_path => '/srv/nfs_share',
+  sec         => 'krb5p',
+  autofs      => false
+}
+
 soft mount doesn't change behavior, even with soft,retrans,timeo options specified
  -- wrap in a timeout?
+
 
 
    block_on(agents, :run_in_parallel => false) do |agent|

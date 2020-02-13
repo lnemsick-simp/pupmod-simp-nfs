@@ -69,9 +69,11 @@ class nfs::client (
   }
 
   if $nfs::kerberos {
+    include 'krb5'
     Class['krb5'] ~> Class['nfs::base_service']
 
     if $nfs::keytab_on_puppet {
+      include 'krb5::keytab'
       Class['krb5::keytab'] ~> Class['nfs::base_service']
     }
   }

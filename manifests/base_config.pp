@@ -157,12 +157,4 @@ class nfs::base_config
   if $nfs::idmapd {
     include 'nfs::idmapd::config'
   }
-
-  if $nfs::kerberos {
-    include 'krb5'
-
-    if $nfs::keytab_on_puppet {
-      include 'krb5::keytab'
-    }
-  }
 }
