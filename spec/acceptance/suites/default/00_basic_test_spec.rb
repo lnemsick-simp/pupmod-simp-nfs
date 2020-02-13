@@ -21,7 +21,7 @@ describe 'nfs basic' do
   }
 
   context 'configure firewalld to use iptables backend' do
-# TEMPORARY WORKAROUND
+    # FIXME. Temporary workaround until can configure via firewalld module
     hosts.each do |host|
       if host.hostname.start_with?('el8')
         on(host, "sed -i 's/FirewallBackend=nftables/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf")
@@ -30,10 +30,10 @@ describe 'nfs basic' do
   end
 
   context 'with firewall only' do
-    context 'NFSv4' do
+    context 'NFSv4 with firewall' do
       opts = {
         :base_hiera    => base_hiera,
-        :krb5          => false,
+        :nfs_sec       => 'sys',
         :nfsv3         => false,
         :verify_reboot => true
       }
@@ -43,10 +43,10 @@ describe 'nfs basic' do
       it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
 
-    context 'NFSv3' do
+    context 'NFSv3 with firewall' do
       opts = {
         :base_hiera    => base_hiera,
-        :krb5          => false,
+        :nfs_sec       => 'sys',
         :nfsv3         => true,
         :verify_reboot => true
       }
@@ -58,10 +58,10 @@ describe 'nfs basic' do
   end
 
   context 'with firewall and tcpwrappers' do
-    context 'NFSv4' do
+    context 'NFSv4 with firewall and tcpwrappers' do
       opts = {
         :base_hiera    => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
-        :krb5          => false,
+        :nfs_sec       => 'sys',
         :nfsv3         => false,
         :verify_reboot => false
       }
@@ -70,10 +70,10 @@ describe 'nfs basic' do
       it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
 
-    context 'NFSv3' do
+    context 'NFSv3 with firewall and tcpwrappers' do
       opts = {
         :base_hiera    => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
-        :krb5          => false,
+        :nfs_sec       => 'sys',
         :nfsv3         => true,
         :verify_reboot => false
       }
@@ -82,24 +82,4 @@ describe 'nfs basic' do
       it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
   end
-=begin
-
-  context 'server changes' do
-    servers.each do |server|
-      it 'should restart all services correctly when configuration changes' do
-      end
-
-      it 'should start all NFS services when all have been killed' do
-        on(server, 'systemctl stop nfs-server')
-      end
-
-      it 'should start missing NFS services some have been killed' do
-      end
-    end
-  end
-# for lock
-# SEC=10;for ((i=SEC;i>=0;i--));do echo -ne "\r$(date -d"0+$i sec" +%H:%M:%S)";sleep 1;done
-# flock test_file -c 'SEC=10;for ((i=SEC;i>=0;i--));do echo -ne "\r$(date -d"0+$i sec" +%H:%M:%S)";sleep 1;done'
-
-=end
 end

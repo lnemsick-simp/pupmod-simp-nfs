@@ -40,8 +40,8 @@ describe 'nfs krb5' do
   }
 
   context 'configure firewalld to use iptables backend' do
-# TEMPORARY WORKAROUND. Replicating here so can run 10_krb5_test_spec.rb
-# by itself
+    # FIXME. Temporary workaround until can configure firewalld module to use
+    # iptables in lieu of nftables.
     hosts.each do |host|
       if host.hostname.start_with?('el8')
         on(host, "sed -i 's/FirewallBackend=nftables/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf")
