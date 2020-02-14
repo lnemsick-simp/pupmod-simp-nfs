@@ -2,7 +2,7 @@ class nfs::base::service
 {
   assert_private()
 
-  if $::nfs::nfsv3 {
+  if $nfs::nfsv3 {
 
     # Normally started on the client when a NFS filesystem is mounted,
     # but does no harm to have it running before the mount
@@ -40,7 +40,7 @@ class nfs::base::service
     }
   }
 
-  if $::nfs::secure_nfs {
+  if $nfs::secure_nfs {
     # static service, so don't attempt to enable
     service { 'rpc-gssd.service':
       ensure     => 'running',
@@ -53,7 +53,7 @@ class nfs::base::service
       notify  => Service['rpc-gssd.service']
     }
 
-    if $::nfs::gssd_use_gss_proxy {
+    if $nfs::gssd_use_gss_proxy {
       # gssproxy may be being used by other filesystem services and thus
       # managed elsewhere
       $_gssproxy_params = {

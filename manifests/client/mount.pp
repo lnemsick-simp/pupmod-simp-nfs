@@ -55,7 +55,9 @@
 #
 #   * fstype, nfsvers, and port will already be set for you
 #   * sec will be set for you for NFSv4
-#   * if using stunnel, proto will be set to tcp for you
+#   * If using stunnel with NFSv4, proto will be set to tcp for you
+#   * If using stunnel with NFSv3, proto and mountproto will both be set to
+#     tcp for you.
 #
 # @param ensure
 #   The mount state of the specified mount point
@@ -147,7 +149,12 @@ define nfs::client::mount (
 
   if $_stunnel {
     # Ensure as much TCP communication is used as possible.
-    $_nfs_options = "${_nfs_base_options},proto=tcp"
+    if ($nfs_version  == 4) {
+      $_nfs_options = "${_nfs_base_options},proto=tcp"
+    }
+    else {
+      $_nfs_options = "${_nfs_base_options},proto=tcp,mountproto=tcp"
+    }
   }
   else {
     $_nfs_options = $_nfs_base_options

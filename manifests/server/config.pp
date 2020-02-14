@@ -12,20 +12,20 @@ class nfs::server::config
   #   will not work otherwise!
   $_required_nfs_conf_opts = {
     'mountd' => {
-      'mountd_port' => $::nfs::mountd_port,
+      'mountd_port' => $nfs::mountd_port,
     },
     'nfsd'   => {
-      'port'        => $::nfs::nfsd_port,
+      'port'        => $nfs::nfsd_port,
       'vers2'       => false,
-      'vers3'       => $::nfs::nfsv3,
-      'vers4'       => $::nfs::server::nfsd_vers4,
-      'vers4.0'     => $::nfs::server::nfsd_vers4_1,
-      'vers4.1'     => $::nfs::server::nfsd_vers4_1,
-      'vers4.2'     => $::nfs::server::nfsd_vers4_2
+      'vers3'       => $nfs::nfsv3,
+      'vers4'       => $nfs::server::nfsd_vers4,
+      'vers4.0'     => $nfs::server::nfsd_vers4_0,
+      'vers4.1'     => $nfs::server::nfsd_vers4_1,
+      'vers4.2'     => $nfs::server::nfsd_vers4_2
     },
   }
 
-  if $::nfs::server::stunnel {
+  if $nfs::server::stunnel {
     # UDP can't be encapsulated by stunnel, so we have to force this
     # setting.
     $_stunnel_opts = { 'nfsd' => { 'tcp' => true, 'udp' => false } }
@@ -33,7 +33,7 @@ class nfs::server::config
     $_stunnel_opts = {}
   }
 
-  $_merged_opts = deep_merge($::nfs::custom_nfs_conf_opts,
+  $_merged_opts = deep_merge($nfs::custom_nfs_conf_opts,
     $_required_nfs_conf_opts, $_stunnel_opts)
 
   if 'exportfs' in $_merged_opts {
@@ -45,7 +45,7 @@ class nfs::server::config
     }
   }
 
-  if $::nfs::nfsv3 {
+  if $nfs::nfsv3 {
     if 'mountd' in $_merged_opts {
       concat::fragment { 'nfs_conf_mountd':
         order   => 5,
@@ -77,7 +77,7 @@ class nfs::server::config
     # /etc/sysconfig/nfs is still needed to allow configuration of a handful of NFS
     # daemon command line options that were not yet migrated to /etc/nfs.conf.
 
-    if 'RPCIDMAPDARGS' in $::nfs::custom_daemon_args {
+    if 'RPCIDMAPDARGS' in $nfs::custom_daemon_args {
       concat::fragment { 'nfs_RPCIDMAPDARGS':
         order   => 3,
         target  => '/etc/sysconfig/nfs',
@@ -86,7 +86,7 @@ class nfs::server::config
     }
 
 
-    if 'RPCMOUNTDARGS' in $::nfs::custom_daemon_args {
+    if 'RPCMOUNTDARGS' in $nfs::custom_daemon_args {
       concat::fragment { 'nfs_RPCNFSDARGS':
         order   => 4,
         target  => '/etc/sysconfig/nfs',
@@ -108,7 +108,7 @@ class nfs::server::config
       }
     }
 
-    if 'RPCNFSDARGS' in $::nfs::custom_daemon_args {
+    if 'RPCNFSDARGS' in $nfs::custom_daemon_args {
       concat::fragment { 'nfs_RPCNFSDARGS':
         order   => 5,
         target  => '/etc/sysconfig/nfs',
@@ -118,7 +118,7 @@ class nfs::server::config
 
   }
 
-  if $::nfs::server::custom_rpcrquotad_opts {
+  if $nfs::server::custom_rpcrquotad_opts {
     $_rpcrquotadopts = "${::nfs::server::custom_rpcrquotad_opts} -p ${::nfs::rquotad_port}"
   } else {
     $_rpcrquotadopts = "-p ${::nfs::rquotad_port}"
@@ -164,7 +164,7 @@ class nfs::server::config
   # like the kernel module settings for nfs(v4)?
   sysctl { 'sunrpc.tcp_slot_table_entries':
     ensure  => 'present',
-    val     => $::nfs::server::sunrpc_tcp_slot_table_entries,
+    val     => $nfs::server::sunrpc_tcp_slot_table_entries,
     # Ignore failure if var-lib-nfs-rpc_pipefs.mount is not up yet.
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
@@ -172,13 +172,13 @@ class nfs::server::config
 
   sysctl { 'sunrpc.udp_slot_table_entries':
     ensure  => 'present',
-    val     => $::nfs::server::sunrpc_udp_slot_table_entries,
+    val     => $nfs::server::sunrpc_udp_slot_table_entries,
     # Ignore failure if var-lib-nfs-rpc_pipefs.mount is not up yet.
     silent  => true,
     comment => 'Managed by simp-nfs Puppet module'
   }
 
-  if $::nfs::server::tcpwrappers {
+  if $nfs::server::tcpwrappers {
     include 'nfs::server::tcpwrappers'
   }
 }

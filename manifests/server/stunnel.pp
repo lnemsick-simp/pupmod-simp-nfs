@@ -15,19 +15,28 @@
 #
 #   * Set to 'any' or 'ALL' to allow the world
 #
-# param statd_port
 # @param nfs_accept_address
 #   The address upon which the NFS server will listen
 #
 #   * You should be set this to ``0.0.0.0`` for all interfaces
 #
 # @param nfs_accept_port
+#   Stunnel listening port mapped to the nfsd listening port
 #
 # @param portmapper_accept_port
+#   Stunnel listening port mapped to the rpcbind service listening port
+#
 # @param rquotad_accept_port
+#   Stunnel listening port mapped to the rpc-rquotad service listening port
+#
 # @param nlockmgr_accept_port
+#   Stunnel listening port mapped to the NFSv3 lockd listening port
+#
 # @param mountd_accept_port
+#   Stunnel listening port mapped to the NFSv3 nfs-mountd service listening port
+#
 # @param status_accept_port
+#   Stunnel listening port mapped to the NFSv3 rpc-statd service listening port
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
@@ -60,17 +69,47 @@ assert_private()
     stunnel::instance { 'nfs':
       client           => false,
       trusted_nets     => $trusted_nets,
-      connect          => [2049],
+      connect          => [$nfs::nfsd_port],
       accept           => "${nfs_accept_address}:${nfs_accept_port}",
       verify           => $verify,
-      socket_options   => $::nfs::_stunnel_socket_options,
+      socket_options   => $nfs::_stunnel_socket_options,
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
 
-    $stunnel_port_override = [ $nfs_accept_port ]
+    stunnel::instance { 'portmapper':
+      client           => false,
+      trusted_nets     => $trusted_nets,
+      connect          => [111],
+      accept           => "${nfs_accept_address}:${portmapper_accept_port}",
+      verify           => $verify,
+      socket_options   => $nfs::_stunnel_socket_options,
+      systemd_wantedby => $_stunnel_wantedby,
+      tag              => ['nfs']
+    }
+    stunnel::instance { 'rquotad':
+      client           => false,
+      trusted_nets     => $trusted_nets,
+      connect          => [$nfs::rquotad_port],
+      accept           => "${nfs_accept_address}:${rquotad_accept_port}",
+      verify           => $verify,
+      socket_options   => $nfs::_stunnel_socket_options,
+      systemd_wantedby => $_stunnel_wantedby,
+      tag              => ['nfs']
+    }
 
+    $stunnel_port_override = [
+      $nfs_accept_port,
+      $portmapper_accept_port,
+      $rquotad_accept_port,
+    ]
+
+    #FIXME need other part of tunnel for callback port
+
+    #FIXME this is the opposite of the systemd_wantedby
     Service['nfs-server.service'] -> Stunnel::Instance['nfs']
+    Service['nfs-server.service'] -> Stunnel::Instance['portmapper']
+    Service['nfs-server.service'] -> Stunnel::Instance['rquotad']
   }
   else {
     $_nfsv3_services = $_common_services + [
@@ -82,65 +121,65 @@ assert_private()
     stunnel::instance { 'nfs':
       client           => false,
       trusted_nets     => $trusted_nets,
-      connect          => ['2049'],
+      connect          => [$nfs::nfsd_port],
       accept           => "${nfs_accept_address}:${nfs_accept_port}",
       verify           => $verify,
-      socket_options   => $::nfs::_stunnel_socket_options,
+      socket_options   => $nfs::_stunnel_socket_options,
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
     stunnel::instance { 'portmapper':
       client           => false,
       trusted_nets     => $trusted_nets,
-      connect          => ['111'],
+      connect          => [111],
       accept           => "${nfs_accept_address}:${portmapper_accept_port}",
       verify           => $verify,
-      socket_options   => $::nfs::_stunnel_socket_options,
+      socket_options   => $nfs::_stunnel_socket_options,
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
     stunnel::instance { 'rquotad':
       client           => false,
       trusted_nets     => $trusted_nets,
-      connect          => [$::nfs::rquotad_port],
+      connect          => [$nfs::rquotad_port],
       accept           => "${nfs_accept_address}:${rquotad_accept_port}",
       verify           => $verify,
-      socket_options   => $::nfs::_stunnel_socket_options,
+      socket_options   => $nfs::_stunnel_socket_options,
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
     stunnel::instance { 'nlockmgr':
       client           => false,
       trusted_nets     => $trusted_nets,
-      connect          => [$::nfs::lockd_port],
+      connect          => [$nfs::lockd_port],
       accept           => "${nfs_accept_address}:${nlockmgr_accept_port}",
       verify           => $verify,
-      socket_options   => $::nfs::_stunnel_socket_options,
+      socket_options   => $nfs::_stunnel_socket_options,
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
     stunnel::instance { 'mountd':
       client           => false,
       trusted_nets     => $trusted_nets,
-      connect          => [$::nfs::mountd_port],
+      connect          => [$nfs::mountd_port],
       accept           => "${nfs_accept_address}:${mountd_accept_port}",
       verify           => $verify,
-      socket_options   => $::nfs::_stunnel_socket_options,
+      socket_options   => $nfs::_stunnel_socket_options,
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
     stunnel::instance { 'status':
       client           => false,
       trusted_nets     => $trusted_nets,
-      connect          => [$::nfs::statd_port],
+      connect          => [$nfs::statd_port],
       accept           => "${nfs_accept_address}:${status_accept_port}",
       verify           => $verify,
-      socket_options   => $::nfs::_stunnel_socket_options,
+      socket_options   => $nfs::_stunnel_socket_options,
       systemd_wantedby => $_stunnel_wantedby,
       tag              => ['nfs']
     }
-    #FIXME what about sm-notify?
 
+    #FIXME this is the opposite of the systemd_wantedby
     Service['nfs-server.service'] -> Stunnel::Instance['nfs']
     Service['nfs-server.service'] -> Stunnel::Instance['portmapper']
     Service['nfs-server.service'] -> Stunnel::Instance['rquotad']

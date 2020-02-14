@@ -22,7 +22,7 @@
   - terminology matches autofs man pages
   - simp_nfs will need to change
 - FIXED idmapd
-  - only applies to NFSv4 (logic applied it to NFSv3)
+  - only applies to NFSv4 (logic previously applied it to NFSv3)
   - manage /etc/idmapd.conf and nfs-idmapd.service on NFS server
   - manage /etc/idmapd.conf and /etc/request-key.conf entry for nfsidmap on NFS client
 - FIXED nfs,nfsv4  old syntax for mounts
@@ -30,91 +30,101 @@
   - FIXME mount.nfs now handles all mount types.
 - FIXED removed OBE intr mount option
 - CHANGE hard -> soft mount option
-
+- FIXED use vox_selinux::module to build gss_hotfix selinux policy
+- DONE (need to verify this was a fix) add tcpwrappers to client tcpbind
+- RESOLVED Do we need the selinux gss_hotfix
+  - mounts wouldn't work when selinux enabled
+  - Fixed in later nfs-utils versions https://access.redhat.com/solutions/3969161
+  - building it on EL7
+- NEW TICKET CREATED Do we need to do anything with gssproxy configuration?
+  - Should we (are we) managing /etc/gssproxy/gssproxy.conf
+  - Do we need to manage /etc/gssproxy/24-nfs-server.conf from nfs-utils RPM
+  - Do we need to manage /etc/gssproxy/99-nfs-client.conf from gssproxy RPM
+  - htps://pagure.io/gssproxy/
+- FIXED Do we need to handle pNFS (nfs-blkmap.service)?
+  - allow management of the client service
+  - no daemon configuration required
+- RESOLVED Is the sysctl fs.nfs.nfs_callback_tcpport and /etc/modprobe.d/nfs.conf still required?
+    "The NFSv4 client sends a port to the server for delegation callbacks.  The server attempts to
+     open a connection to the client on this port. By default, this port is ephemeral, and will be
+     blocked if the client is running a firewall."
+     the sysctl does not become available until *after* the mount has been created
+     YES ^-- hence the need for the /etc/modprobe/nfs.conf
+- RESOLVED mount security options:  Why not supporting krb5 for NFSv3?
+ - RPCGSS auth can be supported, but does not protect side channels
+ - Too much trouble.  Only supporting NFSv3 for some legacy appliances.
+- FIXED stunnels for rpcbind and rpc-rquotad service were not created
+  in NFSv4
 
 MODULE TODO
-- figure out if include krb5 needed tobuilt policy
+- figure out if include krb5 needed to build policy
   - should be able to do it on a clean server, but can't do it in the
     current acceptance test
-- use vox_selinux::module for hotfix in same way as krb5 hotfix does
-- base_service, base_config -> base::service, base::config
-- remove Puppet '->' that are handled by wants/wantedby
-- See if have to start stunnel up after servic
+- See if have to start stunnel up after service
   client goes beserk? (times out and has issues with hard mount)
-- tcpwrappers nfsv3 client when mount?
-- can client run without rpcbind?, if not, need to open up tcpwrappers on client as well
-- have to make sure sm-modify's reboot notification goes out when stunnel and firewalls are
-  up...so need to make sure firewall service is before stunnel service is before nfs-server
-   iptables service is before network service
-   firewalld.service before network-pre.target
-  if stunnel wants network service/target, we are golden
-  (or at least nfs-server socket connection?)
+- have to make sure sm-modify's reboot notification goes out when stunnels
+  up...so need to make sure stunnel service is before nfs-server?
+  - This conflicts with server coming up before stunnel...notifications
+    won't actually go out.
+  - If notifications don't actually go out (blocked by firewall), will NFS retry
+    later or will they be lost
 - Make sure export parameters in nfs::server::export still make sense
+- Is export logic with seboolean required
 - why was the number of rpc.mountd threads decreased when applied puppet?
-- shouldn't we force TCP for TRANSPORT METHODS when using stunnel?
-  YES AS MUCH AS POSSIBLE
-  from man nfs
-       Using the mountproto mount option
-       This section applies only to NFS version 2 and version 3 mounts since
-       NFS version 4 does not use a separate protocol for mount requests.
-
-       The Linux NFS client can use a different transport for contacting  an
-       NFS  server's  rpcbind  service, its mountd service, its Network Lock
-       Manager (NLM) service, and its NFS  service.   The  exact  transports
-       employed  by the Linux NFS client for each mount point depends on the
-       settings of the transport mount options, which include proto,  mount‐
-       proto, udp, and tcp.
+- make sure UDP open on the server statd port even when using stunnel
 
        The  client  sends Network Status Manager (NSM) notifications via UDP
        no matter what transport  options  are  specified,  but  listens  for
        server NSM notifications on both UDP and TCP.  The NFS Access Control
        List (NFSACL) protocol shares the same transport as the main NFS ser‐
        vice.
+- use systemd directly to fix any dependency bugs
+  - remove Puppet '->' that are handled by wants/wantedby
+  - override unit file for gssproxy removing secure targets and having a After that has network.target
+     - ^^^ is a bug fix to be picked up.
+  - nfs-utils does not Consist of nfs-blkmap.service in el7
+    el8:
+    ConsistsOf=rpc-statd.service rpc-gssd.service nfs-blkmap.service rpc-statd-notify.service
+    ^__ if nfs-utils is restarted, those services will be restarted
 
-       If  no transport options are specified, the Linux NFS client uses UDP
-       to contact the server's mountd service, and TCP to  contact  its  NLM
-       and NFS services by default.
-
-  if force on the server, will be negotiated to TCP with the client
-- man nfs and tcpdump
-- override unit file for gssproxy removing secure targets and having a After that has network.target
+    el7:
+    ConsistsOf=rpc-statd.service rpc-gssd.service rpc-statd-notify.service
 - what is correct ordering?
-  nfs-server.service -> stunnel -> firewall
+  - Are all the notifies sufficient?
+  - nfs-server.service -> stunnel -> firewall ?
 - nfs is not idempotent...takes 2 runs for sysctl for client
 - Replace $::nfs::.. with $nfs::
-- Put stunnel_systemd_wantedby in  hieradata?
-  - What do we do with defines?
+- fix problem with stunnel_systemd_deps and stunnel_wantedby
+  - hard to understand what is being set where
+  - dlookup
 - Fix else and elsif curly braces -> make sure consistent
-- README.mdsepolicy
+- README.md
   - has hiera() functions...not sure we are still using them
   - has simp_options::kerberos <-- doesn't exist?
   - is the kerberos discussion still correct? Thought there was a test for it.
-- fix problem with stunnel_systemd_deps and stunnel_wantedby
 - regenerate REFERENCE.md
 - Move lockd configuration out of /etc/modprobe.d/nfs.conf to /etc/modprobe.d/lockd.conf
   - Why not use sysctl resource?
-  rpc-gssd.service). Will have to handle with an override or in Puppet.
-
-- selinux_hotfix -> mounts wouldn't work when selinux enabled
-  https://access.redhat.com/solutions/3969161
-- make sure systemd dependencies are correct for oldest nfs-utils
-  ***May have to lay down systemd unit files
+- Should we be blocking rpcbind's port 111 and just use known ports?
+  - May work on client, but would have to be tested
+    - need to pass mountport as a mount option
+  - Cannot be done for server because no mechanism to specify the rquotad
+    port in the client's mount command.  Client has to query rpcbind to
+    determine the port.  So even though the port is fixed, it is not
+    configurable in the client.
 - verify that if change config file, everything restarts ok
   - For NFSv3 and NFSv4
     - no stunnel
-      - reboot (NFS server, NFS client)
       - quotas
-      - locking (fcntl)
+      - NFSFv3 locking (flock)
         - locking through NFS server and NFS client reboots
-LOCKING ONLY MAKE SENSE with hard mounts <-- is this true?
-      - tcpwrappers
-      - iptables
-      - kerberos
+        - ? LOCKING ONLY MAKE SENSE with hard mounts <-- is this true?
+      - NFSV4 side channel?
       - svckill
            svckill::mode: enforcing
     - stunnel
       - reboot (NFS server, NFS client)
-      - locking
+      - NFSV3 locking
         - locking through NFS server and NFS client reboots
       - tcpwrappers
       - iptables
@@ -127,29 +137,15 @@ LOCKING ONLY MAKE SENSE with hard mounts <-- is this true?
       i.e., when server config is customized, we haven't missed a corresponding client
       config that would be have to be set
 
-NFSv2 not supported RHEL8
-  https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/managing_file_systems/mounting-nfs-shares_managing-file-systemsto
-
 QUESTIONS
-- use systemd directly to fix any dependency bugs
-- how to set up and use nfs root (see dev system)
-- Is rpc.mountd required for NFSV4 during startup or otherwise --> don't want svckill to kill it
-- Is rpc.quotad required for NFSv4?
-- exportfs is linked against libwrap.  Does it need to be in the tcp wrappers list?
 - NSM notifications are over UDP, so when nfsv3 and using stunnel, protocol won't work?
   - what does this mean for iptables and stunnel settings?
-- Class['autofs::service'] ~> Service[$::nfs::service_names::rpcbind]
-  is the Wants in the autofs.service insufficient?
 - What should the initial nfs.conf look like?
   - Should settings be explicit and match defaults?
 - Should we manage nfsmount.conf with the module?
   - looks like client mount config
   - How does this affect compliance validation?  Do options here not get reported
     when the security scans are done?
-- Is export logic with seboolean required
-- Are all the notifies sufficient?
-
-- Do we need to handle pNFS (nfs-blkmap.service)?
 - Do we need to handle RDMA?
   - Install the rdma-core package:
     # yum install rdma-core
@@ -162,130 +158,15 @@ QUESTIONS
     default, which requests the rdma service to load the NFSoRDMA client module.
   - Restart the nfs-server service:
     # systemctl restart nfs-server
-- Do we need to do anything with gssproxy configuration?
-  - Should we (are we) managing /etc/gssproxy/gssproxy.conf
-  - Do we need to manage /etc/gssproxy/24-nfs-server.conf from nfs-utils RPM
-  - Do we need to manage /etc/gssproxy/99-nfs-client.conf from gssproxy RPM
-  - htps://pagure.io/gssproxy/
-
-
-- What does the nfs::secure_nfs=true do? How does it relate to Kerberos?
-  looks like secure_nfs=true can go hand-in-hand with kerberos.  SIMP doesn't have to
-  manage those credentials, but can manage those credentials with the krb5 module.
-- Is there a case in which a nfs server would not be a nfs client? Do we fully support that?
-- Is modprobe required?
-- Is the sysctl fs.nfs.nfs_callback_tcpport and /etc/modprobe.d/nfs.conf still required?
-    "The NFSv4 client sends a port to the server for delegation callbacks.  The server attempts to
-     open a connection to the client on this port. By default, this port is ephemeral, and will be
-     blocked if the client is running a firewall."
-     the sysctl does not become available until *after* the mount has been created
-     ^-- hence the need for the /etc/modprobe/nfs.conf
-
-  - INFO https://wiki.archlinux.org/index.php/Kernel_module#Automatic_module_loading_with_systemd
-  - ANSWERED Why were these set? To get through firewalls or stunnel
-  - INFO RPM no longer delivers a sample file for /etc/modprobe.d/nfs.conf (as of nfs-utils 1.2.6-10)
-    ****But may be needed because of dynamic module loading and the fact that sysctl doesn't work
-    with dynamic file loading.
-    https://bugzilla.redhat.com/show_bug.cgi?id=1076255
-  - Why does the sysctl resource fail if the parameter is not yet available?  Will it still
-    write out the config so that it will be picked up when the kernel module is loaded and
-    available?  Will it have to wait until the next puppet run?
-  - Should this be set on both the client and the server or just the server?
-- Why are we not setting fs.nfs.nlm_tcpport and fs.nfs.nlm_udpport?
-  SOLUTION: fs.nfs.nlm_tcpport and fs.nfs.nlm_udpport are set by values in /etc/nfs.conf
-    - Had to restart nfs-utils and then nfs-server in order to pick up the changes as shown by
-      sysctl -a | grep nlm
-      fs.nfs.nlm_tcpport -> [lockd] port
-      fs.nfs.nlm_udpport -> [lockd] udp-port
-      rpcinfo -p | grep nlockmgr
-
-      Other mappings
-      fs.nfs.nlm_grace_period -> [nfsd] grace-time
-      fs.nfs.nlm_max_connections -> ???
-      fs.nfs.nlm_timeout -> ???
-
-  NOT NECESSARY Is that necessary with nfs.conf? Shouldn't it be in lockd.conf?
-  NOT NECESSARY What about /etc/modprobe.d/lockd.conf?
-   ****LOCKD configuration has been moved to  /etc/modprobe.d/lockd.conf
-   https://bugzilla.redhat.com/show_bug.cgi?id=1264387 indicates that this is the way to
-   configure.  Don't understand how that differs from nfs.conf
-
-      cat /etc/modprobe.d/lockd.conf
-      #
-      # Set the NFS lock manager grace period. n is measured in seconds. 
-      #options lockd nlm_grace_period=90
-      #
-      # Set the TCP port that the NFS lock manager should use. 
-      # port must be a valid TCP port value (1-65535).
-      #options lockd nlm_tcpport
-      #
-      # Set the UDP port that the NFS lock manager should use.
-      # port must be a valid UDP port value (1-65535).
-      #options lockd nlm_udpport
-      #
-      # Set the maximum number of outstanding connections 
-      #options lockd nlm_max_connections=1024
-      #
-      # Set the default time value for the NFS lock manager
-      # in seconds. Default is 10 secs (min 3 max 20)
-      #options lockd nlm_timeout=10
-      #
-      # Choose whether to record the caller_name or IP address
-      # this peer in the local rpc.statd's database.
-      #options lockd nsm_use_hostnames=0
-
-  modinfo lockd
-    el8
-parm:           nsm_use_hostnames:bool
-parm:           nlm_max_connections:uint
-
-    el7
-parm:           nsm_use_hostnames:bool
-parm:           nlm_max_connections:uint
-
-
-  modinfo nfs
-    el8
-parm:           callback_tcpport:portnr
-NEW parm:           callback_nr_threads:Number of threads that will be assigned to the NFSv4 callback channels. (ushort)
-parm:           nfs_idmap_cache_timeout:int
-parm:           nfs4_disable_idmapping:Turn off NFSv4 idmapping when using 'sec=sys' (bool)
-parm:           max_session_slots:Maximum number of outstanding NFSv4.1 requests the client will negotiate (ushort)
-NEW parm:           max_session_cb_slots:Maximum number of parallel NFSv4.1 callbacks the client will process for a given server (ushort)
-parm:           send_implementation_id:Send implementation ID with NFSv4.1 exchange_id (ushort)
-parm:           nfs4_unique_id:nfs_client_id4 uniquifier string (string)
-parm:           recover_lost_locks:If the server reports that a lock might be lost, try to recover it risking data corruption. (bool)
-parm:           enable_ino64:bool
-parm:           nfs_access_max_cachesize:NFS access maximum total cache length (ulong)
-
-
-    el7
-parm:           callback_tcpport:portnr
-parm:           nfs_idmap_cache_timeout:int
-parm:           nfs4_disable_idmapping:Turn off NFSv4 idmapping when using 'sec=sys' (bool)
-parm:           max_session_slots:Maximum number of outstanding NFSv4.1 requests the client will negotiate (ushort)
-parm:           send_implementation_id:Send implementation ID with NFSv4.1 exchange_id (ushort)
-parm:           nfs4_unique_id:nfs_client_id4 uniquifier string (string)
-parm:           recover_lost_locks:If the server reports that a lock might be lost, try to recover it risking data corruption. (bool)
-parm:           enable_ino64:bool
-parm:           nfs_access_max_cachesize:NFS access maximum total cache length (ulong)
-
-To see what a setting is
-sysctl fs.nfs.nsm_use_hostnames
-or
-cat /sys/module/lockd/parameters/nsm_use_hostnames
-
-
-TODO
 - Is lvm2 workaround (lvm2.pp) still required?
   lvm = The  Logical  Volume Manager (LVM) provides tools to create virtual block devices
         from physical devices.
 
-7.4.1708  nfs-utils-1.3.0-0.48.el7   <-- earliest version have to support, CentOS 7.4
-7.latest nfs-utils-1.3.0-0.65
+###############################################################################################
+BACKGROUND
+ - 7.4.1708  nfs-utils-1.3.0-0.48.el7   <-- earliest version have to support, CentOS 7.4
+   7.latest = nfs-utils-1.3.0-0.65
 
-
-###########################################
 SERVICE and KERNEL MODULE NOTES
 https://www.thegeekdiary.com/beginners-guide-to-nfs-in-centos-rhel/
 Service             Use
@@ -329,24 +210,6 @@ nfs module is loaded when mount.nfs is called and also depends upon lockd module
   So lockd gets loaded by modprobe in this client case.
 nfs turns on specific kernel modules (e.g., nfsv3, nfsv4) when a mount requires it
 
-lsmod | grep nfs
-nfsd                  425984  11
-auth_rpcgss            73728  1 nfsd
-nfs_acl                16384  1 nfsd
-lockd                 118784  1 nfsd
-grace                  16384  2 nfsd,lockd
-sunrpc                434176  17 nfsd,auth_rpcgss,lockd,nfs_acl
-
-  el8:
-  ConsistsOf=rpc-statd.service rpc-gssd.service nfs-blkmap.service rpc-statd-notify.service
-  ^__ if nfs-utils is restarted, those services will be restarted
-
-  el7:
-  ConsistsOf=rpc-statd.service rpc-gssd.service rpc-statd-notify.service
-
-stop all services and see if start nfs-server back up it works
-stop some services and see if restart nfs-server starts up correctly
-
 https://serverfault.com/questions/530908/nfsv4-not-able-to-set-any-sockets-for-nfsd-without-running-rpcbind
 The quoted documentation from RedHat was wrong and got fixed by Bug 521215: rpc.mountd still must be used to setup NFSv4, but strictly speaking it is not required to be running after that.
 
@@ -354,15 +217,6 @@ nfs: Server for all versions of NFS: v2, v3, v4, v4.1
 rpcbind/portmapper: Server, strictly only for NFS <= v3. But also for NFS v4 as the Linux Kernel NFS server tries to register itself and fails to start if rpcbind is not running.
 rpc.mountd: Server, strictly only for NFS <=3. But also for NFS v4 as the Linux Kernel uses it to check, if the connecting client is allowed to connect.
 nfslock: Server only for NFS <= v3
-rpc.idmapd: Optional Server (and older Clients) for NFS v4
-rpc.quotad: Server for using disk quota
-rpc.statd: Server only for NFS <= v3
-When using Kerberos (sec=krb/krb5i/krb5p) the following services are required:
-
-rpc.gssd: Client
-rpc.svcgssd: Server
-Please note that even they carry rpc. in their name, they use the Linux kernel internal mechanism rpc_pipef for communication between the Linux kernel and the user space helper; so rpcbind AKA portmapper is not needed for them.
-
 
 PROTOCOLS
 NLM (Network Lock Manager Protocol)
@@ -379,59 +233,15 @@ mount
   el7.4 and later NFSv4.1 is default and steps down
   el8 NFSv4.2 is default
 
-Liz Nemsick:glitch_crab:  4:41 PM
-OK.  Now for NSM notifications from the client to the server in NFSv3, which according to the nfs man page are always UDP, do we want to allow those notifications through the firewall unencrypted, as they can't be encrypted with stunnel. (edited) 
-
-Trevor Vaughan:simp:  4:42 PM
-We'll have to
-
-Liz Nemsick:glitch_crab:  4:43 PM
-I think they are reboot notifications.  If they are being sent via UDP, are they critical?
-4:43
-The server can send the same notification to the client via TCP.
-
-Trevor Vaughan:simp:  4:44 PM
-If it can go over TCP that would be best. They might not be critical but it makes sense to let them through
-
-Liz Nemsick:glitch_crab:  4:45 PM
-Only can go TCP from server to client, not client to server.  That's why I was wondering how critical they are.
-4:45
-(client to server criticality)
-
-Trevor Vaughan:simp:  4:45 PM
-No idea honestly
-
-4:45
-May be useful for releasing file locks or the like
-
-Liz Nemsick:glitch_crab:  4:46 PM
-
 
 mount -t nfs  -o nfsvers=3,port=2049,hard 10.255.67.177:/srv/nfs_share /srv/el7-server
 
-mount proto options:
-- should mount command proto=tcp and mountproto=tcp be set when using stunnel and NFSv3?
-   if proto is set and mountproto is not, will be used for mountproto
-   FIXME:  specify proto=tcp on very rightmost, last one wins
-- should mount command proto=tcp be set when using stunnel and NFSv4
-- is the proto negotiated to tcp automatically otherwise?
 
-mount security options:  Why not supporting krb5 for NFSv3?
- - RPCGSS auth can be supported, but does not protect side channels
-
-Should we be blocking rpcbind's port 111 and just use known ports?
-- No, No mechanism to specify the quota port? So, allow port 111 and
-  then fix the ports and allow those ports.
 
 flock on client really long
 reboot server
  tcpdump -i eth1 -nn tcp or udp -w nfs.pkts
  tcpdump -r nfs.pkts -nn -t > nfs.pkts.txt
-
-from packet dumps, lockd config does not need to be on the client
-statd and statd-notify does need to be on the client
-client needs to restart nfs-utils to pick up changes
-changes will be picked up even if mounted filesystems
 
 if change NFSV3 lockd ports configuration and mount is in place,
 must remount or reboot to pick up the changes.
@@ -467,6 +277,7 @@ comms are not set appropriately
     requiring a 'kill -9'
  -- --nonblock option when comms are down or also just hangs, but can be killed
     with an interrupt
+
 nfs::client::mount { $mount_dir:
   nfs_server  => '10.255.13.6',
   nfs_version => 3,
