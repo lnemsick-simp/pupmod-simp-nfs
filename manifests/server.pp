@@ -118,16 +118,12 @@ class nfs::server (
 
   if $nfs::kerberos {
     include 'krb5'
-    # make sure gssproxy service is restarted if we are using it
-    # FIXME remove this when gssproxy is part of nfs-utils
-    Class['krb5'] ~> Class['nfs::base::service']
+
     Class['krb5'] ~> Class['nfs::server::service']
 
     if $nfs::keytab_on_puppet {
       include 'krb5::keytab'
-      # make sure gssproxy service is restarted if we are using it
-      # FIXME remove this when gssproxy is part of nfs-utils
-      Class['krb5::keytab'] ~> Class['nfs::base::service']
+
       Class['krb5::keytab'] ~> Class['nfs::server::service']
     }
   }

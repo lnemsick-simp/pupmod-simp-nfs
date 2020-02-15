@@ -55,17 +55,12 @@ class nfs::client (
   if $nfs::kerberos {
     include 'krb5'
 
-    # make sure gssproxy service is restarted if we are using it
-    # FIXME replace with notify of nfs::client::service when gssproxy
-    # is part of nfs-utils
-    Class['krb5'] ~> Class['nfs::base::service']
+    Class['krb5'] ~> Class['nfs::client::service']
 
     if $nfs::keytab_on_puppet {
       include 'krb5::keytab'
-      # make sure gssproxy service is restarted if we are using it
-      # FIXME replace with notify of nfs::client::service when gssproxy
-      # is part of nfs-utils
-      Class['krb5::keytab'] ~> Class['nfs::base::service']
+
+      Class['krb5::keytab'] ~> Class['nfs::client::service']
     }
   }
 }

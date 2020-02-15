@@ -64,6 +64,8 @@ class nfs::server::stunnel::nfsv3and4 {
     verify           => $nfs::server::stunnel::verify,
     socket_options   => $nfs::_stunnel_socket_options,
     systemd_wantedby => $_stunnel_wantedby,
+    firewall         => $nfs::server::stunnel::firewall,
+    tcpwrappers      => $nfs::server::stunnel::tcpwrappers,
     tag              => ['nfs']
   }
 

@@ -14,6 +14,9 @@
     "pki"
   ],
   "dependencies": [
+    { "name": "camptocamp/systemd",
+      "version_requirement": ">= 2.2.0 < 3.0.0"
+    },
     {
       "name": "puppetlabs/concat",
       "version_requirement": ">= 2.2.0 < 7.0.0"

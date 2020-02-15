@@ -25,6 +25,7 @@ fixtures:
     stdlib: https://github.com/simp/puppetlabs-stdlib
     stunnel: https://github.com/simp/pupmod-simp-stunnel
     svckill: https://github.com/simp/pupmod-simp-svckill
+    systemd: https://github.com/simp/puppet-systemd
     tcpwrappers: https://github.com/simp/pupmod-simp-tcpwrappers
     vox_selinux:
       repo: https://github.com/simp/pupmod-voxpupuli-selinux

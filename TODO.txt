@@ -8,7 +8,9 @@
   - on NFS server only
   - Install quota-rpc on el8 and enable service if quotad args are specified
   - Create /etc/sysconfig/rpc-rquotad file and remove any such config from /etc/sysconfig/nfs
-- gssproxy.service has wrong Before (old name nfs-secure.service, nfs-secure-server.service ->
+- RESOLVED gssproxy.service has wrong Before (old name nfs-secure.service,
+  nfs-secure-server.service in el7
+    nfs-secure.service is link to rpc-gssd.service in el7
 - FIXED remove intr option in mount, as it doesn't do anything anymore
 - Make sure not to use ephemeral ports lockd on NFS clients.  This port is used when
   multiple NFS clients attempt to lock the same file.
@@ -57,10 +59,17 @@
   in NFSv4
 - FIXED bug in which nfs::server::stunnel::version had to be set to 3 in
   hieradata for NFSv3
+- RESOLVED with systemd, make sure gssproxy is part of nfs-utils so we can restart nfs-utils
+  and ensure it is picked up as well
+- RESOLVED NO Should we be blocking rpcbind's port 111 and just use known ports?
+  - May work on client, but would have to be tested
+    - need to pass mountport as a mount option
+  - Cannot be done for server because no mechanism to specify the rquotad
+    port in the client's mount command.  Client has to query rpcbind to
+    determine the port.  So even though the port is fixed, it is not
+    configurable in the client.
 
 MODULE TODO
-- with systemd, make sure gssproxy is part of nfs-utils so we can restart nfs-utils
-  and ensure it is picked up as well
 - note in readme that we are intentionally not stunneling rpcbind and rquotad because
   can't stunnel them and support multiple servers
 - test with a client mounting NFSv4 from 2 servers
@@ -91,13 +100,6 @@ MODULE TODO
   - remove Puppet '->' that are handled by wants/wantedby
   - override unit file for gssproxy removing secure targets and having a After that has network.target
      - ^^^ is a bug fix to be picked up.
-  - nfs-utils does not Consist of nfs-blkmap.service in el7
-    el8:
-    ConsistsOf=rpc-statd.service rpc-gssd.service nfs-blkmap.service rpc-statd-notify.service
-    ^__ if nfs-utils is restarted, those services will be restarted
-
-    el7:
-    ConsistsOf=rpc-statd.service rpc-gssd.service rpc-statd-notify.service
 - what is correct ordering?
   - Are all the notifies sufficient?
   - nfs-server.service -> stunnel -> firewall ?
@@ -113,14 +115,7 @@ MODULE TODO
   - is the kerberos discussion still correct? Thought there was a test for it.
 - regenerate REFERENCE.md
 - Move lockd configuration out of /etc/modprobe.d/nfs.conf to /etc/modprobe.d/lockd.conf
-  - Why not use sysctl resource?
-- Should we be blocking rpcbind's port 111 and just use known ports?
-  - May work on client, but would have to be tested
-    - need to pass mountport as a mount option
-  - Cannot be done for server because no mechanism to specify the rquotad
-    port in the client's mount command.  Client has to query rpcbind to
-    determine the port.  So even though the port is fixed, it is not
-    configurable in the client.
+  - Should we use a sysctl resource as well?
 - verify that if change config file, everything restarts ok
   - For NFSv3 and NFSv4
     - no stunnel

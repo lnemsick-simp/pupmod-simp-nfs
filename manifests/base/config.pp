@@ -154,6 +154,23 @@ class nfs::base::config
     }
   }
 
+  # make sure gssproxy gets restarted in the correct order along with
+  # all the other NFS services
+  if $nfs::secure_nfs and $nfs::gssd_use_gss_proxy  {
+    $_override = @(OVERRIDE)
+      # This file is managed by Puppet, simp-nfs module
+
+      [Unit]
+
+      PartOf=nfs-utils.service
+      | OVERRIDE
+
+    systemd::dropin_file { 'unit.conf':
+      unit    => 'gssproxy.service',
+      content => $_override
+    }
+  }
+
   if $nfs::idmapd {
     include 'nfs::idmapd::config'
   }
