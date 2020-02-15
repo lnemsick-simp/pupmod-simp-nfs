@@ -87,6 +87,8 @@ class nfs::server (
   Integer[1]       $sunrpc_tcp_slot_table_entries = 128,
   Boolean          $firewall                      = $nfs::firewall,
   Boolean          $stunnel                       = $nfs::stunnel,
+#FIXME default and get all params from nfs::server::stunnel
+  Array[String]    $stunnel_wantedby              = [],
   Boolean          $tcpwrappers                   = $nfs::tcpwrappers,
   Simplib::Netlist $trusted_nets                  = $nfs::trusted_nets
 ) inherits ::nfs {
@@ -99,37 +101,32 @@ class nfs::server (
   include 'nfs::server::service'
 
   Class['nfs::base::config'] ~> Class['nfs::base::service']
-  Class['nfs::base::config'] ~> Class['nfs::server::service']
-
-  Class['nfs::server::config'] ~> Class['nfs::base::service']
   Class['nfs::server::config'] ~> Class['nfs::server::service']
-
   Class['nfs::base::service'] ~> Class['nfs::server::service']
 
   include 'nfs::idmapd::server'
 
   if $nfs::server::stunnel {
     include 'nfs::server::stunnel'
+# Will this work? See server::stunnel::nfs*
+    Class['nfs::server::stunnel'] -> Class['nfs::server::service']
   }
 
   if $nfs::server::firewall {
     include 'nfs::server::firewall'
-
-    if $nfs::server::stunnel {
-      Class['nfs::server::firewall'] ~> Class['nfs::server::stunnel']
-    }
   }
 
-   #FIXME Does the nfs::server::service really need to be restarted or is
-   #      restarting the rpc-gssd and gssproxy services in nfs::base::service
-   #      sufficient?
   if $nfs::kerberos {
     include 'krb5'
+    # make sure gssproxy service is restarted if we are using it
+    # FIXME remove this when gssproxy is part of nfs-utils
     Class['krb5'] ~> Class['nfs::base::service']
     Class['krb5'] ~> Class['nfs::server::service']
 
     if $nfs::keytab_on_puppet {
       include 'krb5::keytab'
+      # make sure gssproxy service is restarted if we are using it
+      # FIXME remove this when gssproxy is part of nfs-utils
       Class['krb5::keytab'] ~> Class['nfs::base::service']
       Class['krb5::keytab'] ~> Class['nfs::server::service']
     }

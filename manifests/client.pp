@@ -32,12 +32,13 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client (
-  Boolean          $blkmap         = false,  # NFSV4.1 or later
-  Simplib::Port    $callback_port  = 876,    # NFSV4.0
-  Boolean          $firewall       = $nfs::firewall,
-  Boolean          $stunnel        = $nfs::stunnel,
-  Integer[0]       $stunnel_verify = 2,
-  Boolean          $tcpwrappers    = $nfs::tcpwrappers
+  Boolean          $blkmap           = false,  # NFSV4.1 or later
+  Simplib::Port    $callback_port    = 876,    # NFSV4.0
+  Boolean          $firewall         = $nfs::firewall,
+  Boolean          $stunnel          = $nfs::stunnel,
+  Integer[0]       $stunnel_verify   = 2,
+  Array[String]    $stunnel_wantedby = ['remote-fs-pre.target'],
+  Boolean          $tcpwrappers      = $nfs::tcpwrappers
 ) inherits ::nfs {
 
   assert_private()
@@ -45,35 +46,25 @@ class nfs::client (
   include 'nfs::base::config'
   include 'nfs::base::service'
   include 'nfs::client::config'
-
-  service { 'nfs-client.target':
-    ensure     => 'running',
-    enable     => true,
-    hasrestart => true
-  }
+  include 'nfs::client::service'
 
   Class['nfs::base::config'] ~> Class['nfs::base::service']
-  Class['nfs::base::config'] ~> Service['nfs-client.target']
-
-  Class['nfs::client::config'] ~> Class['nfs::base::service']
-  Class['nfs::client::config'] ~> Service['nfs-client.target']
-
-  Class['nfs::base::service'] ~> Service['nfs-client.target']
-
-  if $blkmap {
-    service { 'nfs-blkmap.service':
-      ensure     => 'running',
-      enable     => true,
-      hasrestart => true
-    }
-  }
+  Class['nfs::client::config'] ~> Class['nfs::client::service']
+  Class['nfs::base::service'] ~> Class['nfs::client::service']
 
   if $nfs::kerberos {
     include 'krb5'
+
+    # make sure gssproxy service is restarted if we are using it
+    # FIXME replace with notify of nfs::client::service when gssproxy
+    # is part of nfs-utils
     Class['krb5'] ~> Class['nfs::base::service']
 
     if $nfs::keytab_on_puppet {
       include 'krb5::keytab'
+      # make sure gssproxy service is restarted if we are using it
+      # FIXME replace with notify of nfs::client::service when gssproxy
+      # is part of nfs-utils
       Class['krb5::keytab'] ~> Class['nfs::base::service']
     }
   }

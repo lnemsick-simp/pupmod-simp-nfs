@@ -58,10 +58,10 @@ class nfs::client::config {
     }
 
     if $nfs::nfsv3 {
-      # Unlike with the NFS server, custom lockd RPC ports are not initially
-      # correctly registered with portmapper at NFS client reboot.  Most
-      # reliable way to ensure the initial values are correct is to set them
-      # in a kernel module config file.
+      # Unlike with the NFS server, custom lockd RPC ports from /etc/nfs.conf
+      # are not initially correctly registered with rpcbind (portmapper) at
+      # NFS client reboot. Most reliable way to ensure the initial values are
+      # correct is to set them in a kernel module config file.
       $_modprobe_d_lockd_conf = @("LOCKDCONF")
         # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
         # at the next puppet run.

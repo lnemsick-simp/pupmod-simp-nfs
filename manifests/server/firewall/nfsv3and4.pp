@@ -1,7 +1,7 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 
-class nfs::server::firewall::nfsv3
+class nfs::server::firewall::nfsv3and4
 {
   assert_private()
 

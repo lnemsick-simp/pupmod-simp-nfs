@@ -56,8 +56,8 @@ describe 'nfs::client::mount' do
         it_behaves_like "a fact set"
 
         it { is_expected.to contain_autofs__map__entry(title).with_location("127.0.0.1:#{params[:remote_path]}") }
-        it { is_expected.to contain_exec('refresh_autofs') }
-        it { is_expected.to contain_stunnel__instance("nfs4_#{params[:nfs_server]}:2049_client").that_notifies('Exec[refresh_autofs]') }
+        it { is_expected.to contain_exec('reload_autofs') }
+        it { is_expected.to contain_stunnel__instance("nfs4_#{params[:nfs_server]}:2049_client").that_notifies('Exec[reload_autofs]') }
 
         context 'with nfsv4' do
           let(:params) {{

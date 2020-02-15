@@ -6,7 +6,7 @@ class nfs::server::firewall
   if $nfs::server::stunnel {
     contain 'nfs::server::firewall::stunnel'
   } elsif $nfs::nfsv3 {
-    contain 'nfs::server::firewall::nfsv3'
+    contain 'nfs::server::firewall::nfsv3and4'
   } else {
     contain 'nfs::server::firewall::nfsv4'
   }

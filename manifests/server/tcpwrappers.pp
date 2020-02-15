@@ -36,15 +36,14 @@ class nfs::server::tcpwrappers
     }
 
     if $nfs::server::stunnel {
-      # stunnel also uses TCP wrappers with a service name that matches the tunnel's
-      # service name. Here, we allow ALL not just the trusted nets, because there
-      # seems to be a bug that doesn't allow trusted nets.
+      # stunnel also uses TCP wrappers with a service name that matches the
+      # tunnel's service name. The tcpwrappers::allow is handled by the stunnel
+      # module. However, here, we allow ALL not just the trusted nets, because
+      # there seems to be a bug that doesn't allow trusted nets.
       # TODO verify this is still true
+      #FIXME What about other NFSv4 and NFSv3 stunnels? Do they need this workaround?
       # tcpwrappers::allow { 'nfs': pattern => $nfs::server::stunnel::trusted_nets }
       tcpwrappers::allow { 'nfs': pattern => 'ALL' }
-
-      #FIXME What about NFSv3 stunnels?  all tagged with 'nfs'...Is this the
-      # stunnel service name?
     }
   }
 }

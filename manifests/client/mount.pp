@@ -167,9 +167,6 @@ define nfs::client::mount (
     $_remote = "${nfs_server}:${remote_path}"
   }
 
-#FIXME do the same thing with port (nfs::nfsd_port) as with stunnel?
-#would like to have definitive place for port definitions
-
   nfs::client::mount::connection { $name:
     nfs_server           => $nfs_server,
     nfs_version          => $nfs_version,
@@ -204,15 +201,15 @@ define nfs::client::mount (
 
     if $_stunnel {
       # This is a workaround for issues with hooking into stunnel
-      exec { 'refresh_autofs':
-        command     => '/usr/bin/pkill -HUP -x automount',
+      exec { 'reload_autofs':
+        command     => '/usr/bin/systemctl reload autofs',
         refreshonly => true,
         require     => Class['autofs::service']
       }
 
-      # This is so that the automounter gets refreshed when *any* of the
+      # This is so that the automounter gets reloaded when *any* of the
       # related stunnel instances are refreshed
-      Stunnel::Instance <| tag == 'nfs' |> ~> Exec['refresh_autofs']
+      Stunnel::Instance <| tag == 'nfs' |> ~> Exec['reload_autofs']
     }
 
     if $autofs_add_key_subst {

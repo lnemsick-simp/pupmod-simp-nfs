@@ -55,9 +55,18 @@
  - Too much trouble.  Only supporting NFSv3 for some legacy appliances.
 - FIXED stunnels for rpcbind and rpc-rquotad service were not created
   in NFSv4
+- FIXED bug in which nfs::server::stunnel::version had to be set to 3 in
+  hieradata for NFSv3
 
 MODULE TODO
-- figure out if include krb5 needed to build policy
+- with systemd, make sure gssproxy is part of nfs-utils so we can restart nfs-utils
+  and ensure it is picked up as well
+- note in readme that we are intentionally not stunneling rpcbind and rquotad because
+  can't stunnel them and support multiple servers
+- test with a client mounting NFSv4 from 2 servers
+- stunnel workaround
+- figure out if include krb5 needed (i.e., kerberos packages installed) to
+  build policy
   - should be able to do it on a clean server, but can't do it in the
     current acceptance test
 - See if have to start stunnel up after service
@@ -344,3 +353,4 @@ Feb 11 17:59:15 localhost kernel: nfsd: nfsv4 idmapping failing: has idmapd not 
 
 
 kdestroy -c /var/lib/gssproxy/clients/krb5cc_0
+problems.txt

@@ -57,12 +57,11 @@ class nfs::client::stunnel (
   Simplib::Port $mountd_connect_port     = 8920,
   Simplib::Port $statd_connect_port      = 6620,
   Integer[0]    $stunnel_verify          = $nfs::client::stunnel_verify,
-  Array[String] $stunnel_wantedby        = $nfs::stunnel_wantedby
+#FIXME dlookup? move all params to nfs::client::mount
+  Array[String] $stunnel_wantedby        = $nfs::client::stunnel_wantedby
 ) inherits ::nfs::client {
 
   assert_private()
-
-  $_stunnel_wantedby = unique( ['remote-fs-pre.target'] + $stunnel_wantedby )
 
   # Don't do this if you're running on yourself because, well, it's bad!
   if !simplib::host_is_me($nfs_server) {
@@ -71,7 +70,7 @@ class nfs::client::stunnel (
       accept           => "127.0.0.1:${nfs_accept_port}",
       verify           => $stunnel_verify,
       socket_options   => $::nfs::_stunnel_socket_options,
-      systemd_wantedby => $_stunnel_wantedby,
+      systemd_wantedby => $stunnel_wantedby,
       tag              => ['nfs']
     }
 
@@ -81,7 +80,7 @@ class nfs::client::stunnel (
       verify           => $stunnel_verify,
       require          => Service['rpcbind.service'],
       socket_options   => $::nfs::_stunnel_socket_options,
-      systemd_wantedby => $_stunnel_wantedby,
+      systemd_wantedby => $stunnel_wantedby,
       tag              => ['nfs']
     }
 
@@ -90,7 +89,7 @@ class nfs::client::stunnel (
       accept           => "127.0.0.1:${::nfs::rquotad_port}",
       verify           => $stunnel_verify,
       socket_options   => $::nfs::_stunnel_socket_options,
-      systemd_wantedby => $_stunnel_wantedby,
+      systemd_wantedby => $stunnel_wantedby,
       tag              => ['nfs']
     }
 
@@ -99,7 +98,7 @@ class nfs::client::stunnel (
       accept           => "127.0.0.1:${::nfs::lockd_port}",
       verify           => $stunnel_verify,
       socket_options   => $::nfs::_stunnel_socket_options,
-      systemd_wantedby => $_stunnel_wantedby,
+      systemd_wantedby => $stunnel_wantedby,
       tag              => ['nfs']
     }
     stunnel::instance { 'nfs_client_mountd':
@@ -107,7 +106,7 @@ class nfs::client::stunnel (
       accept           => "127.0.0.1:${::nfs::mountd_port}",
       verify           => $stunnel_verify,
       socket_options   => $::nfs::_stunnel_socket_options,
-      systemd_wantedby => $_stunnel_wantedby,
+      systemd_wantedby => $stunnel_wantedby,
       tag              => ['nfs']
     }
     stunnel::instance { 'nfs_client_status':
@@ -115,7 +114,7 @@ class nfs::client::stunnel (
       accept           => "127.0.0.1:${::nfs::statd_port}",
       verify           => $stunnel_verify,
       socket_options   => $::nfs::_stunnel_socket_options,
-      systemd_wantedby => $_stunnel_wantedby,
+      systemd_wantedby => $stunnel_wantedby,
       tag              => ['nfs']
     }
   }

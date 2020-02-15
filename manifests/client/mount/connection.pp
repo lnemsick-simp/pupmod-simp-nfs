@@ -55,7 +55,9 @@ define nfs::client::mount::connection (
 
   # Set up the NFSv4.0 delegation callback port IPTables opening.  This is only
   # needed for NFSv4.0, because, beginning with NFSv4.1 delegation does not
-  # require a side channel.
+  # require a side channel. However, unless the mount specifies the minor NFSv4
+  # version, we cannot be assured NFSv4.0 will not be the version agreed upon
+  # with the NFS server.
   #
   if $nfs::client::firewall  {
     include 'iptables'

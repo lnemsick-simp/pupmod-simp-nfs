@@ -3,52 +3,36 @@
 # @param is_server
 #   Explicitly state that this system should be an NFS server
 #
-#   * Further configuration will need to be made via the ``nfs::server``
-#     classes
+#   * Further configuration can be made via the ``nfs::server`` classes
 #
 # @param is_client
 #   Explicitly state that this system should be an NFS client
 #
-#   * Further configuration will need to be made via the ```nfs::client``
-#     classes
+#   * Further configuration can be be made via the ```nfs::client`` classes
 #
 # @param nfsv3
-#   Allow use NFSv3 for connections.
-#
-# @param mountd_nfs_v2
-#   Act as an ``NFSv2`` server
-#
-# @param mountd_nfs_v3
-#   Act as an ``NFSv3`` server
+#   Allow use of NFSv3.  When false, only NFSv4 will be supported.
 #
 # @param rquotad_port
 #   The port upon which ``rquotad`` on the NFS server should listen
 #
-# @param rpcrquotadopts
-#   Options that should be passed to ``rquotad`` at start time.
-#
 # @param lockd_port
-#   The TCP port upon which ``lockd`` should listen (NFSv3)
+#   The TCP port upon which ``lockd`` should listen on both the
+#   server and the client (NFSv3)
 #
 # @param lockd_udpport
-#   The UDP port upon which ``lockd`` should listen (NFSv3)
-#
-# @param rpcnfsdargs
-#   Arbitrary arguments to pass to ``nfsd``
-#
-#   * The defaults disable ``NFSv2`` from being served to clients
-#
-# @param rpcnfsdcount
-#   The number of NFS server threads to start by default
+#   The UDP port upon which ``lockd`` should listen on both the
+#   server and the client (NFSv3)
 #
 # @param mountd_port
-#   The port upon which ``mountd`` should listen
+#   The port upon which ``mountd`` should listen on the server (NFSv3)
 #
 # @param statd_port
-#   The port upon which ``statd`` should listen
+#   The port upon which ``statd`` should listen on both the server
+#   and the client (NFSv3)
 #
 # @param statd_outgoing_port
-#   The port that ``statd`` will use when connecting to client systems
+#   The port that ``statd`` will use when connecting to NFSv3 peers
 #
 # @param secure_nfs
 #   Enable secure NFS mounts
@@ -63,11 +47,12 @@
 #     if you do not like the defaults.
 #
 # @param keytab_on_puppet
-#   Whether the NFS server will pull its  keytab directly from the Puppet server.
+#   Whether the NFS server will pull its keytab directly from the Puppet server.
 #
 #   * Only applicable if ``$kerberos` is ``true.
 #   * If ``false``, you will need to ensure the appropriate services are restarted
-#     when the keytab is changed.
+#     and caches credentials are destroyed (e.g., gssproxy cache), when the keytab
+#     is changed.
 #
 # @param firewall
 #   Use the SIMP ``iptables`` module to manage firewall connections
@@ -76,19 +61,21 @@
 #   Use the SIMP ``tcpwrappers`` module to manage tcpwrappers
 #
 # @param stunnel
-#   Wrap ``stunnel`` around the NFS server connections
+#   Wrap ``stunnel`` around critical NFS connections
 #
-#   * This is ideally suited for environments without a working Kerberos setup
+#   * This is intended for environments without a working Kerberos setup
 #     and may cause issues when used with Kerberos.
+#   * Use of Kerberos is preferred.
 #   * This will configure the NFS server to only use TCP communication
+#   * The following connections will not be secured, due to stunnel
+#     limitations
+#     - Connections to the rbcbind service on the server and client
 #
 # @param stunnel_tcp_nodelay
 #   Enable TCP_NODELAY for all stunnel connections
 #
 # @param stunnel_socket_options
-#   Additional socket options to set for stunnel connections
-#
-# @param stunnel_wantedby
+#   Additional socket options to set for all stunnel connections
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
@@ -118,7 +105,6 @@ class nfs (
   Boolean               $stunnel                      = simplib::lookup('simp_options::stunnel', { 'default_value' => false }),
   Boolean               $stunnel_tcp_nodelay          = true,
   Array[String]         $stunnel_socket_options       = [],
-  Array[String]         $stunnel_wantedby             = [],
   Boolean               $tcpwrappers                  = simplib::lookup('simp_options::tcpwrappers', { 'default_value' => false }),
   Simplib::Netlist      $trusted_nets                 = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] })
 ) {

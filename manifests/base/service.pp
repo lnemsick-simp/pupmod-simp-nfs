@@ -3,6 +3,21 @@ class nfs::base::service
   assert_private()
 
   if $nfs::nfsv3 {
+    # Supposed to be able to run without rpcbind when all NFS service ports that
+    # by default are ephemeral are pinned down. However, that scenario doesn't
+    # necessarily work well in practice.  Furthermore, we can't be assured some
+    # other application isn't using rpcbind. So we will allow rpcbind, but
+    # still pin down the ports. Then, when the firewall is enabled, restrict
+    # communication to the pinned-down ports.
+    ensure_resource(
+      'service',
+      'rpcbind.service',
+      {
+        ensure     => 'running',
+        enable     => true,
+        hasrestart => true
+      }
+    )
 
     # Normally started on the client when a NFS filesystem is mounted,
     # but does no harm to have it running before the mount
