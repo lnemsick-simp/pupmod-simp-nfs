@@ -16,20 +16,30 @@
 # @param rquotad_port
 #   The port upon which ``rquotad`` on the NFS server should listen
 #
+#   * The ``rquotad`` service port reported by ``rpcinfo``
+#
 # @param lockd_port
 #   The TCP port upon which ``lockd`` should listen on both the
 #   server and the client (NFSv3)
+#
+#   * The ``nlockmgr`` service TCP port reported by ``rpcinfo``
 #
 # @param lockd_udpport
 #   The UDP port upon which ``lockd`` should listen on both the
 #   server and the client (NFSv3)
 #
+#   * The ``nlockmgr`` service UDP port reported by ``rpcinfo``
+#
 # @param mountd_port
 #   The port upon which ``mountd`` should listen on the server (NFSv3)
+#
+#   * The ``mountd`` service port reported by ``rpcinfo``
 #
 # @param statd_port
 #   The port upon which ``statd`` should listen on both the server
 #   and the client (NFSv3)
+#
+#   * The ``status`` service port reported by ``rpcinfo``
 #
 # @param statd_outgoing_port
 #   The port that ``statd`` will use when connecting to NFSv3 peers
@@ -47,11 +57,11 @@
 #     if you do not like the defaults.
 #
 # @param keytab_on_puppet
-#   Whether the NFS server will pull its keytab directly from the Puppet server.
+#   Whether the NFS server will pull its keytab directly from the Puppet server
 #
 #   * Only applicable if ``$kerberos` is ``true.
 #   * If ``false``, you will need to ensure the appropriate services are restarted
-#     and caches credentials are destroyed (e.g., gssproxy cache), when the keytab
+#     and cached credentials are destroyed (e.g., gssproxy cache), when the keytab
 #     is changed.
 #
 # @param firewall
@@ -69,7 +79,12 @@
 #   * This will configure the NFS server to only use TCP communication
 #   * The following connections will not be secured, due to stunnel
 #     limitations
-#     - Connections to the rbcbind service on the server and client
+#
+#     - Connections to the rbcbind service
+#     - Connections to the rpc-rquotad service
+#     - The NFSv4.0 client callback side channel used in NFS delegations.
+#     - Client NSM (network status manager) messages which are exclusively
+#       sent over UDP.
 #
 # @param stunnel_tcp_nodelay
 #   Enable TCP_NODELAY for all stunnel connections
@@ -103,8 +118,13 @@ class nfs (
   Boolean               $keytab_on_puppet             = simplib::lookup('simp_options::kerberos', { 'default_value' => true}),
   Boolean               $firewall                     = simplib::lookup('simp_options::firewall', { 'default_value' => false}),
   Boolean               $stunnel                      = simplib::lookup('simp_options::stunnel', { 'default_value' => false }),
-  Boolean               $stunnel_tcp_nodelay          = true,
-  Array[String]         $stunnel_socket_options       = [],
+  Simplib::Port         $stunnel_lockd_port           = 32804,
+  Simplib::Port         $stunnel_mountd_port          = 8920,
+  Simplib::Port         $stunnel_nfsd_port            = 20490,
+  Simplib::Port         $stunnel_rquotad_port         = 8750,
+  Simplib::Port         $stunnel_statd_port           = 6620,
+  Array[String]         $stunnel_socket_options       = ['l:TCP_NODELAY=1','r:TCP_NODELAY=1'],
+  Integer               $stunnel_verify               = 2,
   Boolean               $tcpwrappers                  = simplib::lookup('simp_options::tcpwrappers', { 'default_value' => false }),
   Simplib::Netlist      $trusted_nets                 = simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] })
 ) {
@@ -112,16 +132,6 @@ class nfs (
   simplib::assert_metadata($module_name)
   if (versioncmp($facts['os']['release']['full'], '7.4') < 0) {
     warning("This version of simp-nfs may not work with ${facts['os']['name']} ${facts['os']['release']['full']}. Use simp-nfs module version < 7.0.0 instead")
-  }
-
-  if $stunnel_tcp_nodelay {
-    $_stunnel_socket_options = $stunnel_socket_options + [
-      'l:TCP_NODELAY=1',
-      'r:TCP_NODELAY=1'
-    ]
-  }
-  else {
-    $_stunnel_socket_options = $stunnel_socket_options
   }
 
   include 'nfs::install'

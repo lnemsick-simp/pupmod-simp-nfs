@@ -34,16 +34,10 @@
 #   your mount is not set to ``127.0.0.1`` based on the detection that you are
 #   also an NFS server.
 #
-# @param port
-#   The NFS port to which to connect
-#
 # @param nfs_version
 #   The NFS major version that you want to use.  If you need to specify
 #   an explicit minor version of NFSv4, include 'minorversion=<#>'in
 #   `$options`.
-#
-# @param v4_remote_port
-#   If using NFSv4, specify the remote port to which to connect
 #
 # @param sec
 #   The sec mode for the mount
@@ -76,13 +70,15 @@
 # @param autofs
 #   Enable automounting with Autofs
 #
-#
 # @param autofs_add_key_subst
 #   This enables map key substitution for a wildcard map key in an indirect map.
 #
 #   * Appends '/&' to the remote location.
 #   * Only makes sense if ``autofs_indirect_map_key`` is set to '*', the
 #     wildcard map key.
+#
+# @param nfsd_port
+#   The NFS port to which to connect
 #
 # @param stunnel
 #   Controls enabling ``stunnel`` for this connection
@@ -92,12 +88,11 @@
 #     this connection
 #   * May be set to ``true`` to force the use of ``stunnel`` on this connection
 #
-# @param stunnel_systemd_deps
-#   Add the appropriate ``systemd`` dependencies on systems that use ``systemd``
-#
 # @param stunnel_wantedby
 #   The ``systemd`` targets that need ``stunnel`` to be active prior to being
 #   activated
+#
+#   * If left unset, the value will be taken from ``nfs::client::stunnel_wantedby``
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
@@ -107,15 +102,6 @@ define nfs::client::mount (
   Boolean                 $autodetect_remote       = true,
   Simplib::Port           $port                    = 2049,
   Integer[3,4]            $nfs_version             = 4,
-
-# set this when you want to specify an explicit minor version of NFSv4 to use
-# Should be set to 0 for NFSv4.0 to open the client delegation callback port
-# through the firewall.
-  Optional[Integer[0]]    $nfs_minor_version       = undef,
-
-#FIXME this is for v4 stunnel connection...do we want
-# to define here or use dlookup? Would be more clear if v4_stunnel_remote_port
-  Optional[Simplib::Port] $v4_remote_port          = undef,
   Nfs::SecurityFlavor     $sec                     = 'sys',
   String                  $options                 = 'soft',
   Nfs::MountEnsure        $ensure                  = 'mounted',
@@ -123,9 +109,22 @@ define nfs::client::mount (
   Boolean                 $autofs                  = true,
   Optional[String[1]]     $autofs_indirect_map_key = undef,
   Boolean                 $autofs_add_key_subst    = false,
+  # server's ports
+  Optional[Simplib::Port] $lockd_port              = undef,
+  Optional[Simplib::Port] $mountd_port             = undef,
+  Optional[Simplib::Port] $nfsd_port               = undef,
+  Optional[Simplib::Port] $rquotad_port            = undef,
+  Optional[Simplib::Port] $statd_port              = undef,
   Optional[Boolean]       $stunnel                 = undef,
-  Boolean                 $stunnel_systemd_deps    = true,
-  Array[String]           $stunnel_wantedby        = ['remote-fs-pre.target']
+  # server's stunnel ports
+  Optional[Simplib::Port] $stunnel_lockd_port      = undef,
+  Optional[Simplib::Port] $stunnel_mountd_port     = undef,
+  Optional[Simplib::Port] $stunnel_nfsd_port       = undef,
+  Optional[Simplib::Port] $stunnel_rquotad_port    = undef,
+  Optional[Simplib::Port] $stunnel_statd_port      = undef,
+  Optional[Array[String]] $stunnel_socket_options  = undef,
+  Optional[Integer]       $stunnel_verify          = undef,
+  Optional[Array[String]] $stunnel_wantedby        = undef
 ) {
   if ($name !~ Stdlib::Absolutepath) {
     fail('"$name" must be of type Stdlib::Absolutepath')
@@ -133,47 +132,143 @@ define nfs::client::mount (
 
   include 'nfs::client'
 
-  if ($nfs_version  == 4) {
-    $_nfs_base_options = "nfsvers=4,port=${port},${options},sec=${sec}"
+  #############################################################
+  # Pull in defaults from nfs and nfs::client classes as needed
+  #############################################################
+  if $lockd_port !~ Undef {
+    $_lockd_port = $lockd_port
+  } else {
+    $_lockd_port = $nfs::lockd_port
   }
-  else {
-    $_nfs_base_options = "nfsvers=3,port=${port},${options}"
+
+  if $mountd_port !~ Undef {
+    $_mountd_port = $mountd_port
+  } else {
+    $_mountd_port = $nfs::mountd_port
+  }
+
+  if $nfsd_port !~ Undef {
+    $_nfsd_port = $nfsd_port
+  } else {
+    $_nfsd_port = $nfs::nfsd_port
+  }
+
+  if $rquotad_port !~ Undef {
+    $_rquotad_port = $rquotad_port
+  } else {
+    $_rquotad_port = $nfs::rquotad_port
+  }
+
+  if $statd_port !~ Undef {
+    $_statd_port = $statd_port
+  } else {
+    $_statd_port = $nfs::statd_port
   }
 
   if $stunnel !~ Undef {
     $_stunnel = $stunnel
-  }
-  else {
+  } else {
     $_stunnel = $nfs::client::stunnel
+  }
+
+  if $stunnel_lockd_port !~ Undef {
+    $_stunnel_lockd_port = $stunnel_lockd_port
+  } else {
+    $_stunnel_lockd_port = $nfs::stunnel_lockd_port
+  }
+
+  if $stunnel_mountd_port !~ Undef {
+    $_stunnel_mountd_port = $stunnel_mountd_port
+  } else {
+    $_stunnel_mountd_port = $nfs::stunnel_mountd_port
+  }
+
+  if $stunnel_nfsd_port !~ Undef {
+    $_stunnel_nfsd_port = $stunnel_nfsd_port
+  } else {
+    $_stunnel_nfsd_port = $nfs::stunnel_nfsd_port
+  }
+
+  if $stunnel_rquotad_port !~ Undef {
+    $_stunnel_rquotad_port = $stunnel_rquotad_port
+  } else {
+    $_stunnel_rquotad_port = $nfs::stunnel_rquotad_port
+  }
+
+  if $stunnel_statd_port !~ Undef {
+    $_stunnel_statd_port = $stunnel_statd_port
+  } else {
+    $_stunnel_statd_port = $nfs::stunnel_statd_port
+  }
+
+  if $stunnel_socket_options !~ Undef {
+    $_stunnel_socket_options = $stunnel_socket_options
+  } else {
+    $_stunnel_socket_options = $nfs::client::stunnel_socket_options
+  }
+
+  if $stunnel_verify !~ Undef {
+    $_stunnel_verify = $stunnel_verify
+  } else {
+    $_stunnel_verify = $nfs::client::stunnel_verify
+  }
+
+  if $stunnel_wantedby !~ Undef {
+    $_stunnel_wantedby = $stunnel_wantedby
+  } else {
+    $_stunnel_wantedby = $nfs::client::stunnel_wantedby
+  }
+
+  #################################
+  # Configure connection and mount
+  #################################
+
+  if ($nfs_version  == 4) {
+    $_nfs_base_options = "nfsvers=4,port=${_nfsd_port},${options},sec=${sec}"
+  } else {
+    $_nfs_base_options = "nfsvers=3,port=${_nfsd_port},mountport=${_mountd_port},${options}"
   }
 
   if $_stunnel {
     # Ensure as much TCP communication is used as possible.
     if ($nfs_version  == 4) {
       $_nfs_options = "${_nfs_base_options},proto=tcp"
-    }
-    else {
+    } else {
       $_nfs_options = "${_nfs_base_options},proto=tcp,mountproto=tcp"
     }
-  }
-  else {
+  } else {
     $_nfs_options = $_nfs_base_options
   }
 
   if $_stunnel or ($autodetect_remote and $nfs::is_server) {
     $_remote = "127.0.0.1:${remote_path}"
-  }
-  else {
+  } else {
     $_remote = "${nfs_server}:${remote_path}"
   }
 
   nfs::client::mount::connection { $name:
-    nfs_server           => $nfs_server,
-    nfs_version          => $nfs_version,
-    nfs_port             => $port,
-    v4_remote_port       => $v4_remote_port,
-    stunnel              => $_stunnel,
-    stunnel_wantedby     => $stunnel_wantedby
+    nfs_server             => $nfs_server,
+    nfs_version            => $nfs_version,
+    lockd_port             => $_lockd_port,
+    mountd_port            => $_mountd_port,
+    nfsd_port              => $_nfsd_port,
+    rquotad_port           => $_rquotad_port,
+    statd_port             => $_statd_port,
+    client_callback_port   => $nfs::client::callback_port,
+    client_lockd_port      => $nfs::lockd_port,
+    client_lockd_udp_port  => $nfs::lockd_udp_port,
+    client_statd_port      => $nfs::statd_port,
+    firewall               => $nfs::firewall,
+    stunnel                => $_stunnel,
+    stunnel_lockd_port     => $_stunnel_lockd_port,
+    stunnel_mountd_port    => $_stunnel_mountd_port,
+    stunnel_nfsd_port      => $_stunnel_nfsd_port,
+    stunnel_rquotad_port   => $_stunnel_rquotad_port,
+    stunnel_statd_port     => $_stunnel_statd_port,
+    stunnel_socket_options => $_stunnel_socket_options,
+    stunnel_verify         => $_stunnel_verify,
+    stunnel_wantedby       => $_stunnel_wantedby,
+    tcpwrappers            => $nfs::tcpwrappers,
   }
 
   if $autofs {
@@ -224,13 +319,12 @@ define nfs::client::mount (
       target   => $_clean_name,
       require  => Nfs::Client::Mount::Connection[$name]
     }
-  }
-  else {
+  } else {
     mount { $name:
       ensure   => $ensure,
       atboot   => $at_boot,
       device   => $_remote,
-      fstype   => 'nfs', # EL>6 NFS version specified in options
+      fstype   => 'nfs', # EL>6 NFS version specified in options not fstype
       options  => $_nfs_options,
       remounts => false,
       require  => Nfs::Client::Mount::Connection[$name]

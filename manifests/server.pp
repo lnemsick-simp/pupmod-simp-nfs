@@ -70,8 +70,39 @@
 #
 #   * This will configure the NFS server to only use TCP communication
 #
+# @param stunnel_accept_address
+#   The address upon which the NFS server will listen
+#
+#   * You should be set this to ``0.0.0.0`` for all interfaces
+#
+# @param stunnel_nfsd_accept_port
+#   Stunnel listening port to be forwarded to the nfsd listening port,
+#   ``nfs::nfsd_port``
+#
+# @param stunnel_lockd_accept_port
+#   Stunnel listening port to be forwarded to the NFSv3 lockd listening port,
+#   ``nfs::lockd_port``
+#
+# @param stunnel_mountd_accept_port
+#   Stunnel listening port to be forwarded to the NFSv3 nfs-mountd service,
+#   ``nfs::mountd_port``
+#
+# @param stunnel_statd_accept_port
+#   Stunnel listening port to be forwarded to the NFSv3 rpc-statd service
+#   listening port, ``nfs::statd_port``
+#
+# @param stunnel_verify
+#   The verification level that should be done on the clients
+#
+#   * See ``stunnel::instance::verify`` for details
+#
 # @param tcpwrappers
 #   Use the SIMP ``tcpwrappers`` module to manage tcpwrappers
+#
+# @param trusted_nets
+#   The systems that are allowed to connect to this service
+#
+#   * Set to 'any' or 'ALL' to allow the world
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
@@ -85,10 +116,26 @@ class nfs::server (
   Optional[String] $custom_rpcrquotad_opts        = undef,
   Integer[1]       $sunrpc_udp_slot_table_entries = 128,
   Integer[1]       $sunrpc_tcp_slot_table_entries = 128,
-  Boolean          $firewall                      = $nfs::firewall,
   Boolean          $stunnel                       = $nfs::stunnel,
-#FIXME default and get all params from nfs::server::stunnel
-  Array[String]    $stunnel_wantedby              = [],
+  Simplib::IP      $stunnel_accept_address        = '0.0.0.0',
+  Simplib::Port    $stunnel_lockd_accept_port     = $nfs::stunnel_lockd_port,
+  Simplib::Port    $stunnel_mountd_accept_port    = $nfs::stunnel_mountd_port,
+  Simplib::Port    $stunnel_nfsd_accept_port      = $nfs::stunnel_nfsd_port,
+  Simplib::Port    $stunnel_rquotad_accept_port   = $nfs::stunnel_rquotad_port,
+  Simplib::Port    $stunnel_statd_accept_port     = $nfs::stunnel_statd_port,
+  Array[String]    $stunnel_socket_options        = $nfs::stunnel_socket_options,
+  Integer          $stunnel_verify                = $nfs::stunnel_verify,
+  Array[String]    $stunnel_wantedby              = [
+    'gssproxy.service',         # secure NFS
+    'nfs-idmapd.service',       # NFSv4
+    'nfs-mountd.service',       # NFSv3
+    'nfs-server.service',       # NFSv3+NFSv4
+    'rpc-gssd.service',         # secure NFS
+    'rpc-rquotad.service',      # NFSv3+NFSv4
+    'rpc-statd.service',        # NFSv3
+    'rpc-statd-notify.service', # NFSv3
+    'rpcbind.service',          # NFSv3+NFSv4
+  ],
   Boolean          $tcpwrappers                   = $nfs::tcpwrappers,
   Simplib::Netlist $trusted_nets                  = $nfs::trusted_nets
 ) inherits ::nfs {
@@ -112,7 +159,7 @@ class nfs::server (
     Class['nfs::server::stunnel'] -> Class['nfs::server::service']
   }
 
-  if $nfs::server::firewall {
+  if $nfs::firewall {
     include 'nfs::server::firewall'
   }
 

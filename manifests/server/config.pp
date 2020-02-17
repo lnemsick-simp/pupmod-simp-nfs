@@ -178,7 +178,7 @@ class nfs::server::config
     comment => 'Managed by simp-nfs Puppet module'
   }
 
-  if $nfs::server::tcpwrappers {
+  if $nfs::tcpwrappers {
     include 'nfs::server::tcpwrappers'
   }
 }

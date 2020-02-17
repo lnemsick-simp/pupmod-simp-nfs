@@ -32,13 +32,12 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client (
-  Boolean          $blkmap           = false,  # NFSV4.1 or later
-  Simplib::Port    $callback_port    = 876,    # NFSV4.0
-  Boolean          $firewall         = $nfs::firewall,
-  Boolean          $stunnel          = $nfs::stunnel,
-  Integer[0]       $stunnel_verify   = 2,
-  Array[String]    $stunnel_wantedby = ['remote-fs-pre.target'],
-  Boolean          $tcpwrappers      = $nfs::tcpwrappers
+  Boolean          $blkmap                 = false,  # NFSV4.1 or later
+  Simplib::Port    $callback_port          = 876,    # NFSV4.0
+  Boolean          $stunnel                = $nfs::stunnel,
+  Array[String]    $stunnel_socket_options = $nfs::stunnel_socket_options,
+  Integer[0]       $stunnel_verify         = $nfs::stunnel_verify,
+  Array[String]    $stunnel_wantedby       = ['remote-fs-pre.target'],
 ) inherits ::nfs {
 
   assert_private()

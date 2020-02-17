@@ -43,6 +43,7 @@ class nfs::server::tcpwrappers
       # TODO verify this is still true
       #FIXME What about other NFSv4 and NFSv3 stunnels? Do they need this workaround?
       # tcpwrappers::allow { 'nfs': pattern => $nfs::server::stunnel::trusted_nets }
+#FIXME should this be nfsd because name of server stunnel to nfsd has changed
       tcpwrappers::allow { 'nfs': pattern => 'ALL' }
     }
   }

@@ -7,9 +7,8 @@ class nfs::server::firewall::nfsv3and4
 
   include 'iptables'
 
-  $_rpcbind_port = 111
   $_base_ports = [
-    $_rpcbind_port,
+    111, # rpcbind port
     $nfs::nfsd_port,
     $nfs::rquotad_port,
     $nfs::mountd_port,

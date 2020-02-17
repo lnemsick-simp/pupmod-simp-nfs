@@ -68,10 +68,16 @@
     port in the client's mount command.  Client has to query rpcbind to
     determine the port.  So even though the port is fixed, it is not
     configurable in the client.
+- RESOLVED NO:does the server use rpcbind for the callback port or is that sent another way?
+- FIXED move tcpwrappers and firewall settings out of nfs::server and nfs::client, as they
+  must be the same for both when on the same machine.
 
 MODULE TODO
-- note in readme that we are intentionally not stunneling rpcbind and rquotad because
+- handle stunnel when on server correctly and same way for NFSv3and4 and NFSv3 client
+  mount connections
+- note in readme that we are intentionally not stunneling rpcbind because
   can't stunnel them and support multiple servers
+  - rpcbind port is not intended to be configured (but could munge with unit drop-in file)
 - test with a client mounting NFSv4 from 2 servers
 - stunnel workaround
 - figure out if include krb5 needed (i.e., kerberos packages installed) to

@@ -60,8 +60,12 @@ class nfs::client::config {
     if $nfs::nfsv3 {
       # Unlike with the NFS server, custom lockd RPC ports from /etc/nfs.conf
       # are not initially correctly registered with rpcbind (portmapper) at
-      # NFS client reboot. Most reliable way to ensure the initial values are
-      # correct is to set them in a kernel module config file.
+      # NFS client reboot. In fact, they will show the wrong value for nlockmgr
+      # in 'rpcinfo -p' output, UNTIL the lock protocol is engaged (e.g., when
+      # the user flocks a file on the NFS share). This is super confusing to
+      # end-users trying to debug problems. So, to minimize that confusion,
+      # set the lockd ports in a kernel module config file. This ensures the
+      # reported ports have the correct values after a reboot.
       $_modprobe_d_lockd_conf = @("LOCKDCONF")
         # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
         # at the next puppet run.
@@ -88,7 +92,7 @@ class nfs::client::config {
     }
   }
 
-  if $nfs::client::tcpwrappers {
+  if $nfs::tcpwrappers {
     include 'nfs::client::tcpwrappers'
   }
 
