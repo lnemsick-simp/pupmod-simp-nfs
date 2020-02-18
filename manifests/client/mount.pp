@@ -132,13 +132,18 @@ define nfs::client::mount (
 
   include 'nfs::client'
 
+  if ($nfs_version == 3) and !$nfs::nfsv3 {
+    fail('Cannot mount NFSv3 when not NFSv3 has not been configured.  Set nfs::nfsv3 to true to fix.')
+  }
+
+
   #############################################################
   # Pull in defaults from nfs and nfs::client classes as needed
   #############################################################
   if $lockd_port !~ Undef {
     $_lockd_port = $lockd_port
   } else {
-    $_lockd_port = $nfs::lockd_port
+    $_lockd_port = $nfs::lockd_port_server
   }
 
   if $mountd_port !~ Undef {
@@ -162,7 +167,7 @@ define nfs::client::mount (
   if $statd_port !~ Undef {
     $_statd_port = $statd_port
   } else {
-    $_statd_port = $nfs::statd_port
+    $_statd_port = $nfs::statd_port_server
   }
 
   if $stunnel !~ Undef {
@@ -254,6 +259,10 @@ define nfs::client::mount (
     nfsd_port              => $_nfsd_port,
     rquotad_port           => $_rquotad_port,
     statd_port             => $_statd_port,
+    # Client ports are required to open up the firewall for this specific
+    # connection. The NFSv3 client ports are those that have been configured
+    # for this host, i.e., the ports set based on whether this is a NFS client
+    # or both a NFS client and a NFS server.
     client_callback_port   => $nfs::client::callback_port,
     client_lockd_port      => $nfs::lockd_port,
     client_lockd_udp_port  => $nfs::lockd_udp_port,

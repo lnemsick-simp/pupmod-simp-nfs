@@ -4,7 +4,7 @@ class nfs::server::stunnel::nfsv4 {
 
   $_accept_addr = $nfs::server::stunnel_accept_address
 
-  stunnel::instance { 'nfs':
+  stunnel::instance { 'nfsd':
     client           => false,
     trusted_nets     => $nfs::server::trusted_nets,
     connect          => [$nfs::nfsd_port],
@@ -29,7 +29,4 @@ class nfs::server::stunnel::nfsv4 {
     tcpwrappers      => $nfs::tcpwrappers,
     tag              => ['nfs']
   }
-
-  #FIXME this is the opposite of the systemd_wantedby
-#  Service['nfs-server.service'] -> Stunnel::Instance['nfs']
 }

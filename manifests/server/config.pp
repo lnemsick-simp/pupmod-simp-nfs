@@ -81,7 +81,7 @@ class nfs::server::config
       concat::fragment { 'nfs_RPCIDMAPDARGS':
         order   => 3,
         target  => '/etc/sysconfig/nfs',
-        content => "RPCIDMAPDARGS=\"${::nfs::custom_daemon_args['RPCIDMAPDARGS']}\""
+        content => "RPCIDMAPDARGS=\"${nfs::custom_daemon_args['RPCIDMAPDARGS']}\""
       }
     }
 
@@ -90,7 +90,7 @@ class nfs::server::config
       concat::fragment { 'nfs_RPCNFSDARGS':
         order   => 4,
         target  => '/etc/sysconfig/nfs',
-        content => "RPCMOUNTDARGS=\"${::nfs::custom_daemon_args['RPCMOUNTDARGS']}\""
+        content => "RPCMOUNTDARGS=\"${nfs::custom_daemon_args['RPCMOUNTDARGS']}\""
       }
     }
 
@@ -112,16 +112,16 @@ class nfs::server::config
       concat::fragment { 'nfs_RPCNFSDARGS':
         order   => 5,
         target  => '/etc/sysconfig/nfs',
-        content => "RPCNFSDARGS=\"${::nfs::custom_daemon_args['RPCNFSDARGS']}\""
+        content => "RPCNFSDARGS=\"${nfs::custom_daemon_args['RPCNFSDARGS']}\""
       }
     }
 
   }
 
   if $nfs::server::custom_rpcrquotad_opts {
-    $_rpcrquotadopts = "${::nfs::server::custom_rpcrquotad_opts} -p ${::nfs::rquotad_port}"
+    $_rpcrquotadopts = "${nfs::server::custom_rpcrquotad_opts} -p ${nfs::rquotad_port}"
   } else {
-    $_rpcrquotadopts = "-p ${::nfs::rquotad_port}"
+    $_rpcrquotadopts = "-p ${nfs::rquotad_port}"
   }
 
   $_sysconfig_rpc_rquotad = @("SYSCONFIGRPCRQUOTAD")

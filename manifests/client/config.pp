@@ -72,11 +72,11 @@ class nfs::client::config {
         #
         # Set the TCP port that the NFS lock manager should use.
         # port must be a valid TCP port value (1-65535).
-        options lockd nlm_tcpport=${::nfs::lockd_port}
+        options lockd nlm_tcpport=${nfs::lockd_port}
 
         # Set the UDP port that the NFS lock manager should use.
         # port must be a valid UDP port value (1-65535).
-        options lockd nlm_udpport=${::nfs::lockd_udp_port}
+        options lockd nlm_udpport=${nfs::lockd_udp_port}
         | LOCKDCONF
 
       file { '/etc/modprobe.d/lockd.conf':

@@ -1,3 +1,4 @@
+=begin
 require 'spec_helper_acceptance'
 
 test_name 'nfs with stunnel'
@@ -5,9 +6,6 @@ test_name 'nfs with stunnel'
 describe 'nfs stunnel' do
   servers = hosts_with_role( hosts, 'nfs_server' )
   clients = hosts_with_role( hosts, 'nfs_client' )
-
-  let(:el6_nfs_server) { only_host_with_role(hosts, 'el6_nfs_server') }
-  let(:el7_nfs_server) { only_host_with_role(hosts, 'el7_nfs_server') }
 
   ssh_allow = <<-EOM
     if !defined(Iptables::Listen::Tcp_stateful['i_love_testing']) {
@@ -178,3 +176,4 @@ nfs::is_server : #IS_SERVER#
     end
   end
 end
+=end

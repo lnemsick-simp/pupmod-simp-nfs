@@ -3,7 +3,7 @@
 class nfs::idmapd::server
 {
   assert_private()
-  if $::nfs::idmapd {
+  if $nfs::idmapd {
     include 'nfs::idmapd::config'
 
     service { 'nfs-idmapd.service':

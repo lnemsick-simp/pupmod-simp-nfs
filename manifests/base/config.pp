@@ -122,7 +122,7 @@ class nfs::base::config
       concat::fragment { 'nfs_GSSDARGS':
         order   => 2,
         target  => '/etc/sysconfig/nfs',
-        content => "GSSDARGS=\"${::nfs::custom_daemon_args['GSSDARGS']}\""
+        content => "GSSDARGS=\"${nfs::custom_daemon_args['GSSDARGS']}\""
       }
     }
 
@@ -130,7 +130,7 @@ class nfs::base::config
       concat::fragment { 'nfs_SMNOTIFYARGS':
         order   => 6,
         target  => '/etc/sysconfig/nfs',
-        content => "SMNOTIFYARGS=\"${::nfs::custom_daemon_args['SMNOTIFYARGS']}\""
+        content => "SMNOTIFYARGS=\"${nfs::custom_daemon_args['SMNOTIFYARGS']}\""
       }
     }
 
@@ -140,7 +140,7 @@ class nfs::base::config
       concat::fragment { 'nfs_STATDARG':
         order   => 7,
         target  => '/etc/sysconfig/nfs',
-        content => "STATDARG=\"${::nfs::custom_daemon_args['STATDARG']}\""
+        content => "STATDARG=\"${nfs::custom_daemon_args['STATDARG']}\""
       }
     }
   } else {

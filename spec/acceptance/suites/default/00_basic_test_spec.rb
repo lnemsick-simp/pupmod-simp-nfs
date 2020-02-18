@@ -32,10 +32,11 @@ describe 'nfs basic' do
   context 'with firewall only' do
     context 'NFSv4 with firewall' do
       opts = {
-        :base_hiera    => base_hiera,
-        :nfs_sec       => 'sys',
-        :nfsv3         => false,
-        :verify_reboot => true
+        :base_hiera      => base_hiera,
+        :export_insecure => false,
+        :nfs_sec         => 'sys',
+        :nfsv3           => false,
+        :verify_reboot   => true
       }
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
@@ -45,10 +46,11 @@ describe 'nfs basic' do
 
     context 'NFSv3 with firewall' do
       opts = {
-        :base_hiera    => base_hiera,
-        :nfs_sec       => 'sys',
-        :nfsv3         => true,
-        :verify_reboot => true
+        :base_hiera      => base_hiera,
+        :export_insecure => false,
+        :nfs_sec         => 'sys',
+        :nfsv3           => true,
+        :verify_rebootbb => true
       }
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
@@ -60,10 +62,11 @@ describe 'nfs basic' do
   context 'with firewall and tcpwrappers' do
     context 'NFSv4 with firewall and tcpwrappers' do
       opts = {
-        :base_hiera    => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
-        :nfs_sec       => 'sys',
-        :nfsv3         => false,
-        :verify_reboot => false
+        :base_hiera      => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
+        :export_insecure => false,
+        :nfs_sec         => 'sys',
+        :nfsv3           => false,
+        :verify_reboot   => false
       }
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
@@ -72,10 +75,11 @@ describe 'nfs basic' do
 
     context 'NFSv3 with firewall and tcpwrappers' do
       opts = {
-        :base_hiera    => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
-        :nfs_sec       => 'sys',
-        :nfsv3         => true,
-        :verify_reboot => false
+        :base_hiera      => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
+        :export_insecure => false,
+        :nfs_sec         => 'sys',
+        :nfsv3           => true,
+        :verify_reboot   => false
       }
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts

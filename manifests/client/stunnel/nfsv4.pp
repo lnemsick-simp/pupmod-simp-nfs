@@ -44,9 +44,9 @@ define nfs::client::stunnel::nfsv4 (
       tag              => ['nfs']
     }
 
-    stunnel::instance { 'nfs_${name}_client_rquotad':
+    stunnel::instance { "nfs_${name}_client_rquotad":
       connect          => ["${nfs_server}:${rquotad_connect_port}"],
-      accept           => "127.0.0.1:${::nfs::rquotad_port}",
+      accept           => "127.0.0.1:${nfs::rquotad_port}",
       verify           => $stunnel_verify,
       socket_options   => $stunnel_socket_options,
       systemd_wantedby => $stunnel_wantedby,

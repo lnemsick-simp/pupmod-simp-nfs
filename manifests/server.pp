@@ -108,7 +108,6 @@
 #
 
 class nfs::server (
-#FIXME only have attributes that really need to be here
   Boolean          $nfsd_vers4                    = true,
   Boolean          $nfsd_vers4_0                  = true,
   Boolean          $nfsd_vers4_1                  = true,
@@ -155,8 +154,7 @@ class nfs::server (
 
   if $nfs::server::stunnel {
     include 'nfs::server::stunnel'
-# Will this work? See server::stunnel::nfs*
-    Class['nfs::server::stunnel'] -> Class['nfs::server::service']
+    Class['nfs::server::stunnel'] ~> Class['nfs::server::service']
   }
 
   if $nfs::firewall {

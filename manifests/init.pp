@@ -101,13 +101,19 @@ class nfs (
   Boolean               $gssd_avoid_dns                = true, # false is considered a security hole
   Boolean               $gssd_limit_to_legacy_enctypes = false, # do not want old ciphers
   Boolean               $gssd_use_gss_proxy           = true,
-  Simplib::Port         $lockd_port                   = 32803,
-  Simplib::Port         $lockd_udp_port               = 32769,
+  Simplib::Port         $lockd_port_client            = 32802,
+  Simplib::Port         $lockd_port_server            = 32803,
+  Simplib::Port         $lockd_udp_port_server        = 32768,
+  Simplib::Port         $lockd_udp_port_client        = 32769,
+  Simplib::Port         $lockd_port                   = $is_server ? { 'true' => $lockd_port_server, default => $lockd_port_client},
+  Simplib::Port         $lockd_udp_port               = $is_server ? { 'true' => $lockd_udp_port_server, default => $lockd_udp_port_client},
   Simplib::Port         $mountd_port                  = 20048,
   Simplib::Port         $nfsd_port                    = 2049,
   Simplib::Port         $rquotad_port                 = 875,
-  Simplib::Port         $sm_notify_outgoing_port      = 661,
-  Simplib::Port         $statd_port                   = 662,
+  Simplib::Port         $sm_notify_outgoing_port      = 2021,
+  Simplib::Port         $statd_port_client            = 661,
+  Simplib::Port         $statd_port_server            = 662,
+  Simplib::Port         $statd_port                   = $is_server ? { 'true' => $statd_port_server, default => $statd_port_client},
   Simplib::Port         $statd_outgoing_port          = 2020,
   Nfs::NfsConfHash      $custom_nfs_conf_opts         = {},
   Nfs::LegacyDaemonArgs $custom_daemon_args           = {},  # only applies to EL7

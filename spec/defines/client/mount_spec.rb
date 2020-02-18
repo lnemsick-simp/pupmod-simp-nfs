@@ -72,6 +72,11 @@ describe 'nfs::client::mount' do
         end
 
         context 'with NFSv3' do
+          let(:pre_condition) {
+            <<-EOM
+              class { 'nfs': nfsv3 => true }
+            EOM
+          }
           context 'with default server ports' do
             let(:params) {{
               :nfs_server  => '1.2.3.4',
@@ -202,6 +207,12 @@ describe 'nfs::client::mount' do
         end
 
         context 'NFSv3' do
+          let(:pre_condition) {
+            <<-EOM
+              class { 'nfs': firewall=> true, nfsv3 => true }
+            EOM
+          }
+
           let(:params) {{
             :nfs_server  => '1.2.3.4',
             :remote_path => '/home',

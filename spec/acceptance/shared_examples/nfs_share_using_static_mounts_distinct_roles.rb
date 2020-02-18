@@ -9,6 +9,7 @@
 #                     enabled (server + client) and used in the client mount
 #  * :nfs_sec       - NFS security option to use in both the server export and
 #                     the client mount
+#  * :export_insecure - insecure setting for NFS export
 #  * :verify_reboot - Whether to verify idempotency and mount functionality
 #                     after individually rebooting the client and server
 #                     in each test pair
@@ -46,7 +47,8 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
       nfs::server::export { 'nfs_root':
         clients     => ['*'],
         export_path => '#{exported_dir}',
-        sec         => ['#{opts[:nfs_sec]}']
+        sec         => ['#{opts[:nfs_sec]}'],
+        insecure    => #{opts[:export_insecure]}
       }
 
       File['#{exported_dir}'] -> Nfs::Server::Export['nfs_root']
@@ -104,7 +106,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
       end
 
       it 'should export shared dir' do
-        on(server, "exportfs | grep #{exported_dir}")
+        on(server, "exportfs -v | grep #{exported_dir}")
       end
     end
   end

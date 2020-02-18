@@ -68,10 +68,4 @@ class nfs::server::stunnel::nfsv3and4 {
     tcpwrappers      => $nfs::tcpwrappers,
     tag              => ['nfs']
   }
-
-  #FIXME this is the opposite of the systemd_wantedby
-#  Service['nfs-server.service'] -> Stunnel::Instance['nfsd']
-#  Service['nfs-server.service'] -> Stunnel::Instance['lockd']
-#  Service['nfs-server.service'] -> Stunnel::Instance['mountd']
-#  Service['nfs-server.service'] -> Stunnel::Instance['statd']
 }

@@ -71,15 +71,30 @@
 - RESOLVED NO:does the server use rpcbind for the callback port or is that sent another way?
 - FIXED move tcpwrappers and firewall settings out of nfs::server and nfs::client, as they
   must be the same for both when on the same machine.
+- FIXED make sure UDP open on the server statd port even when using stunnel
+
+       The  client  sends Network Status Manager (NSM) notifications via UDP
+       no matter what transport  options  are  specified,  but  listens  for
+       server NSM notifications on both UDP and TCP.  The NFS Access Control
+       List (NFSACL) protocol shares the same transport as the main NFS ser‐
+       vice.
+- FIXED Replace $::nfs::.. with $nfs::
+- NO FIX POSSIBLE nfs is not idempotent...takes 2 runs for sysctl for client
 
 MODULE TODO
+- Add export_insecure in other shared_examples
+- document  if overlapping export rules and one has insecure and one has secure, the secure one
+  wins, even if the one with insecure is a specific ip, not a network or wildcard.
+  So overlapping rule must have insecure
+-iptables on NFSv4 server should not have port 875 open (rquotad).  Should only have 111 open
+- should stunnel change refresh nfs::server::service?  similar to how autofs gets
+  refreshed?
 - handle stunnel when on server correctly and same way for NFSv3and4 and NFSv3 client
   mount connections
 - note in readme that we are intentionally not stunneling rpcbind because
   can't stunnel them and support multiple servers
   - rpcbind port is not intended to be configured (but could munge with unit drop-in file)
-- test with a client mounting NFSv4 from 2 servers
-- stunnel workaround
+- stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
 - figure out if include krb5 needed (i.e., kerberos packages installed) to
   build policy
   - should be able to do it on a clean server, but can't do it in the
@@ -95,13 +110,6 @@ MODULE TODO
 - Make sure export parameters in nfs::server::export still make sense
 - Is export logic with seboolean required
 - why was the number of rpc.mountd threads decreased when applied puppet?
-- make sure UDP open on the server statd port even when using stunnel
-
-       The  client  sends Network Status Manager (NSM) notifications via UDP
-       no matter what transport  options  are  specified,  but  listens  for
-       server NSM notifications on both UDP and TCP.  The NFS Access Control
-       List (NFSACL) protocol shares the same transport as the main NFS ser‐
-       vice.
 - use systemd directly to fix any dependency bugs
   - remove Puppet '->' that are handled by wants/wantedby
   - override unit file for gssproxy removing secure targets and having a After that has network.target
@@ -109,8 +117,6 @@ MODULE TODO
 - what is correct ordering?
   - Are all the notifies sufficient?
   - nfs-server.service -> stunnel -> firewall ?
-- nfs is not idempotent...takes 2 runs for sysctl for client
-- Replace $::nfs::.. with $nfs::
 - fix problem with stunnel_systemd_deps and stunnel_wantedby
   - hard to understand what is being set where
   - dlookup
@@ -146,10 +152,10 @@ MODULE TODO
     - verify server config item list is correct and client config it list is correct,
       i.e., when server config is customized, we haven't missed a corresponding client
       config that would be have to be set
+    - will be tested with stunnel client multiple servers stes
+   - NFSv4 when idmapd default config is used
 
 QUESTIONS
-- NSM notifications are over UDP, so when nfsv3 and using stunnel, protocol won't work?
-  - what does this mean for iptables and stunnel settings?
 - What should the initial nfs.conf look like?
   - Should settings be explicit and match defaults?
 - Should we manage nfsmount.conf with the module?
@@ -355,3 +361,11 @@ Feb 11 17:59:15 localhost kernel: nfsd: nfsv4 idmapping failing: has idmapd not 
 
 kdestroy -c /var/lib/gssproxy/clients/krb5cc_0
 problems.txt
+
+netstat -pant
+netstat -plant
+
+https://access.redhat.com/solutions/2083513
+rpcdebug -m nfs -s all
+rpcdebug -m nlm -s all
+rpcdebug -m rpc -s all

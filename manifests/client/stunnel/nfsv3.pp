@@ -63,7 +63,7 @@ define nfs::client::stunnel::nfsv3 (
   # FIXME verify that the local mount location will work, so these tunnels
   #  aren't really needed
   unless simplib::host_is_me($nfs_server) {
-    stunnel::instance { 'nfs_${name}_client_nfsd':
+    stunnel::instance { "nfs_${name}_client_nfsd":
       connect          => ["${nfs_server}:${nfsd_connect_port}"],
       accept           => "127.0.0.1:${nfsd_accept_port}",
       verify           => $stunnel_verify,
@@ -75,9 +75,9 @@ define nfs::client::stunnel::nfsv3 (
       tag              => ['nfs']
     }
 
-    stunnel::instance { 'nfs_${name}_client_rquotad':
+    stunnel::instance { "nfs_${name}_client_rquotad":
       connect          => ["${nfs_server}:${rquotad_connect_port}"],
-      accept           => "127.0.0.1:${::nfs::rquotad_port}",
+      accept           => "127.0.0.1:${nfs::rquotad_port}",
       verify           => $stunnel_verify,
       socket_options   => $stunnel_socket_options,
       systemd_wantedby => $stunnel_wantedby,
@@ -86,7 +86,7 @@ define nfs::client::stunnel::nfsv3 (
       tag              => ['nfs']
     }
 
-    stunnel::instance { 'nfs_${name}_client_lockd':
+    stunnel::instance { "nfs_${name}_client_lockd":
       connect          => ["${nfs_server}:${lockd_connect_port}"],
       accept           => "127.0.0.1:${nfs::lockd_port}",
       verify           => $stunnel_verify,
@@ -97,7 +97,7 @@ define nfs::client::stunnel::nfsv3 (
       tag              => ['nfs']
     }
 
-    stunnel::instance { 'nfs_${name}_client_mountd':
+    stunnel::instance { "nfs_${name}_client_mountd":
       connect          => ["${nfs_server}:${mountd_connect_port}"],
       accept           => "127.0.0.1:${nfs::mountd_port}",
       verify           => $stunnel_verify,
@@ -108,7 +108,7 @@ define nfs::client::stunnel::nfsv3 (
       tag              => ['nfs']
     }
 
-    stunnel::instance { 'nfs_${name}_client_statd':
+    stunnel::instance { "nfs_${name}_client_statd":
       connect          => ["${nfs_server}:${statd_connect_port}"],
       accept           => "127.0.0.1:${nfs::statd_port}",
       verify           => $stunnel_verify,
