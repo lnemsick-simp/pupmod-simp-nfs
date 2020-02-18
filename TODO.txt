@@ -362,6 +362,7 @@ Feb 11 17:59:15 localhost kernel: nfsd: nfsv4 idmapping failing: has idmapd not 
 kdestroy -c /var/lib/gssproxy/clients/krb5cc_0
 problems.txt
 
+yum install -y net-tools
 netstat -pant
 netstat -plant
 

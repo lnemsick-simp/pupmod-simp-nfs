@@ -35,7 +35,7 @@ define nfs::client::stunnel::nfsv4 (
   unless simplib::host_is_me($nfs_server) {
     stunnel::instance { "nfs_${name}_client_nfsd":
       connect          => ["${nfs_server}:${nfsd_connect_port}"],
-      accept           => "127.0.0.1:${$nfsd_accept_port}",
+      accept           => "127.0.0.1:${nfsd_accept_port}",
       verify           => $stunnel_verify,
       socket_options   => $stunnel_socket_options,
       systemd_wantedby => $stunnel_wantedby,
@@ -46,7 +46,7 @@ define nfs::client::stunnel::nfsv4 (
 
     stunnel::instance { "nfs_${name}_client_rquotad":
       connect          => ["${nfs_server}:${rquotad_connect_port}"],
-      accept           => "127.0.0.1:${nfs::rquotad_port}",
+      accept           => "127.0.0.1:${rquotad_accept_port}",
       verify           => $stunnel_verify,
       socket_options   => $stunnel_socket_options,
       systemd_wantedby => $stunnel_wantedby,

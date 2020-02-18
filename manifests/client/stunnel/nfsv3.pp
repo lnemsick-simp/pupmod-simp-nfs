@@ -77,7 +77,7 @@ define nfs::client::stunnel::nfsv3 (
 
     stunnel::instance { "nfs_${name}_client_rquotad":
       connect          => ["${nfs_server}:${rquotad_connect_port}"],
-      accept           => "127.0.0.1:${nfs::rquotad_port}",
+      accept           => "127.0.0.1:${rquotad_accept_port}",
       verify           => $stunnel_verify,
       socket_options   => $stunnel_socket_options,
       systemd_wantedby => $stunnel_wantedby,
@@ -88,7 +88,7 @@ define nfs::client::stunnel::nfsv3 (
 
     stunnel::instance { "nfs_${name}_client_lockd":
       connect          => ["${nfs_server}:${lockd_connect_port}"],
-      accept           => "127.0.0.1:${nfs::lockd_port}",
+      accept           => "127.0.0.1:${lockd_accept_port}",
       verify           => $stunnel_verify,
       socket_options   => $stunnel_socket_options,
       systemd_wantedby => $stunnel_wantedby,
@@ -99,7 +99,7 @@ define nfs::client::stunnel::nfsv3 (
 
     stunnel::instance { "nfs_${name}_client_mountd":
       connect          => ["${nfs_server}:${mountd_connect_port}"],
-      accept           => "127.0.0.1:${nfs::mountd_port}",
+      accept           => "127.0.0.1:${mountd_accept_port}",
       verify           => $stunnel_verify,
       socket_options   => $stunnel_socket_options,
       systemd_wantedby => $stunnel_wantedby,
@@ -110,7 +110,7 @@ define nfs::client::stunnel::nfsv3 (
 
     stunnel::instance { "nfs_${name}_client_statd":
       connect          => ["${nfs_server}:${statd_connect_port}"],
-      accept           => "127.0.0.1:${nfs::statd_port}",
+      accept           => "127.0.0.1:${statd_accept_port}",
       verify           => $stunnel_verify,
       socket_options   => $stunnel_socket_options,
       systemd_wantedby => $stunnel_wantedby,
