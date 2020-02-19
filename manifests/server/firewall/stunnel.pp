@@ -10,9 +10,10 @@ class nfs::server::firewall::stunnel
   # stunnels will take care of their own ports. Here, we just have to deal
   # with stragglers that are outside the stunnels.
 
-  iptables::listen::tcp_stateful{ 'nfs_client_rquotad_ports':
+  # rpcbind is required for rquotad
+  iptables::listen::tcp_stateful{ 'nfs_client_rpcbind_port':
     trusted_nets => $nfs::server::trusted_nets,
-    dports       => [ 111, $nfs::rquotad_port ]  # 111 = rpcbind port
+    dports       => [ 111 ]
   }
 
   if $nfs::nfsv3 {

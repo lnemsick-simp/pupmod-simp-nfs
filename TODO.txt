@@ -93,21 +93,19 @@
   mount connections
 - FIXED Make sure export parameters in nfs::server::export still make sense
   add replicas, pnfs, security_label
+- FIXED - Collapsed into 1 parameter with a default
+  fix problem with stunnel_systemd_deps and stunnel_wantedby
+  - hard to understand what is being set where
+  - dlookup
 
 MODULE TODO
+- move server export template to templatest/etc for consistency
 - is EPEL repo needed in acceptance test?  If so, install with simp beaker_helpers?
 - name of stunnels don't have the full port info in them ->  does not make sense to
   have the nfsd port in its name
-- document  if overlapping export rules and one has insecure and one has secure, the secure one
-  wins, even if the one with insecure is a specific ip, not a network or wildcard.
-  So overlapping rule must have insecure
-- iptables on NFSv4 server should not have port 875 open (rquotad).  Should only have 111 open
 - should stunnel change refresh nfs::server::service?  similar to how autofs gets
   refreshed?
 - change autofs reload to be unit file
-- note in readme that we are intentionally not stunneling rpcbind because
-  can't stunnel them and support multiple servers
-  - rpcbind port is not intended to be configured (but could munge with unit drop-in file)
 - stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
 - See if have to start stunnel up after service
   client goes beserk? (times out and has issues with hard mount)
@@ -120,14 +118,17 @@ MODULE TODO
 - what is correct ordering?
   - Are all the notifies sufficient?
   - nfs-server.service -> stunnel -> firewall ?
-- fix problem with stunnel_systemd_deps and stunnel_wantedby
-  - hard to understand what is being set where
-  - dlookup
-- Fix else and elsif curly braces -> make sure consistent
+- Fix else and elsif curly braces -> make sure consistent in a file
 - README.md
   - has hiera() functions...not sure we are still using them
   - has simp_options::kerberos <-- doesn't exist?
   - is the kerberos discussion still correct? Thought there was a test for it.
+  - document  if overlapping export rules and one has insecure and one has secure, the secure one
+    wins, even if the one with insecure is a specific ip, not a network or wildcard (anonymous).
+    So overlapping rule must have insecure
+  - note in readme that we are intentionally not stunneling rpcbind because
+    can't stunnel them and support multiple servers
+    - rpcbind port is not intended to be configured (but could munge with unit drop-in file)
 - regenerate REFERENCE.md
 - Move lockd configuration out of /etc/modprobe.d/nfs.conf to /etc/modprobe.d/lockd.conf
   - Should we use a sysctl resource as well?
