@@ -67,7 +67,8 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
   }
 
   let(:nfs_version) { opts[:nfsv3] ? 3 : 4 }
-  let(:server_hiera_nfsv3) {
+  let(:server_port_overrides_hiera) {
+    opts[:port_overrides].map { |name,value| ["nfs::#{name}",value] }.to_h
   }
 
   let(:mount_port_overrides_nfsv3) {
@@ -83,9 +84,6 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
       stunnel_rquotad_port => #{opts[:port_overrides][:stunnel_rquotad_port]},
       stunnel_statd_port   => #{opts[:port_overrides][:stunnel_statd_port]}
    EOM
-  }
-
-  let(:server_hiera_nfsv4) {
   }
 
   let(:mount_port_overrides_nfsv4) {
@@ -146,85 +144,106 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     EOM
   }
 
-  context 'server with default ports' do
-      it 'should apply server manifest to export' do
-        server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-        server_hieradata['nfs::is_client'] = false
-        server_hieradata['nfs::is_server'] = true
-        server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
-        set_hieradata_on(server, server_hieradata)
-        apply_manifest_on(server, server_manifest, :catch_failures => true)
-      end
+  context "as a NFS server #{server1} using default ports" do
+    it 'should ensure vagrant connectivity' do
+      on(hosts, 'date')
+    end
+
+    it 'should apply server manifest to export' do
+      server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
+      server_hieradata['nfs::is_client'] = false
+      server_hieradata['nfs::is_server'] = true
+      server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
+      set_hieradata_on(server1, server_hieradata)
+
+      server_manifest = server_manifest_base.dup
+      server_manifest.gsub!('#EXPORTED_DIR#', exported_dir1)
+      apply_manifest_on(server1, server_manifest, :catch_failures => true)
+    end
+
+    it 'should be idempotent' do
+      apply_manifest_on(server1, server_manifest, :catch_changes => true)
+    end
+
+    it 'should export shared dir' do
+      on(server1, "exportfs -v | grep #{exported_dir1}")
+    end
   end
 
-  context 'server with custom ports' do
-      it 'should apply server manifest to export' do
-        server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-        server_hieradata['nfs::is_client'] = false
-        server_hieradata['nfs::is_server'] = true
-        server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
-        set_hieradata_on(server, server_hieradata)
-        apply_manifest_on(server, server_manifest, :catch_failures => true)
-      end
-  end
+  context "as a NFS server #{server2} using custom ports" do
+    it 'should apply server manifest to export' do
+      server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
+      server_hieradata['nfs::is_client'] = false
+      server_hieradata['nfs::is_server'] = true
+      server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
+      server_hieradata.merge!(server_port_overrides_hiera)
+      set_hieradata_on(server2, server_hieradata)
 
-  servers.each do |server|
-    context "as just a NFS server #{server}" do
-      it 'should ensure vagrant connectivity' do
-        on(hosts, 'date')
-      end
+      server_manifest = server_manifest_base.dup
+      server_manifest.gsub!('#EXPORTED_DIR#', exported_dir2)
+      apply_manifest_on(server2, server_manifest, :catch_failures => true)
+    end
 
-      it 'should apply server manifest to export' do
-        server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-        server_hieradata['nfs::is_client'] = false
-        server_hieradata['nfs::is_server'] = true
-        server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
-        set_hieradata_on(server, server_hieradata)
-        apply_manifest_on(server, server_manifest, :catch_failures => true)
-      end
+    it 'should be idempotent' do
+      apply_manifest_on(server2, server_manifest, :catch_changes => true)
+    end
 
-      it 'should be idempotent' do
-        apply_manifest_on(server, server_manifest, :catch_changes => true)
-      end
-
-      it 'should export shared dir' do
-        on(server, "exportfs -v | grep #{exported_dir}")
-      end
+    it 'should export shared dir' do
+      on(server2, "exportfs -v | grep #{exported_dir2}")
     end
   end
 
   clients.each do |client|
-    servers.each do |server|
-      context "as just a NFS client #{client} using NFS server #{server}" do
-        let(:server_ip) {
-          info = internal_network_info(server)
-          expect(info[:ip]).to_not be_nil
-          info[:ip]
-        }
+    context "as a NFS client #{client} using NFS servers #{server1} and #{server2}" do
+      mount_dir1 = "/mnt/#{server1}"
+      mount_dir2 = "/mnt/#{server2}"
 
-        let(:mount_dir) { "/mnt/#{server}" }
-        let(:client_manifest) {
-          client_manifest = client_manifest_base.dup
-          client_manifest.gsub!('#MOUNT_DIR#', mount_dir)
-          client_manifest.gsub!('#SERVER_IP#', server_ip)
-          client_manifest
-        }
+      let(:server1_ip) {
+        info = internal_network_info(server1)
+        expect(info[:ip]).to_not be_nil
+        info[:ip]
+      }
 
-        it "should apply client manifest to mount dir from #{server}" do
-          client_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-          client_hieradata['nfs::is_client'] = true
-          client_hieradata['nfs::is_server'] = false
-          client_hieradata['nfs::nfsv3'] = opts[:nfsv3]
-          set_hieradata_on(client, client_hieradata)
+      let(:server2_ip) {
+        info = internal_network_info(server2)
+        expect(info[:ip]).to_not be_nil
+        info[:ip]
+      }
 
-          apply_manifest_on(client, client_manifest, :catch_failures => true)
+      let(:client_manifest) {
+        client_manifest = client_manifest_base.dup
+        client_manifest.gsub!('#MOUNT_DIR1#', mount_dir1)
+        client_manifest.gsub!('#MOUNT_DIR2#', mount_dir2)
+        client_manifest.gsub!('#SERVER_IP1#', server_ip1)
+        client_manifest.gsub!('#SERVER_IP2#', server_ip2)
+        if opts[:nfsv3]
+          client_manifest.gsub!('#PORT_OPTIONS#', mount_port_overrides_nfsv3)
+        else
+          client_manifest.gsub!('#PORT_OPTIONS#', mount_port_overrides_nfsv4)
         end
+        client_manifest
+      }
 
-        it 'should be idempotent' do
-          apply_manifest_on(client, client_manifest, :catch_changes => true)
-        end
+      it "should apply client manifest to mount a dir from each server" do
+        client_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
+        client_hieradata['nfs::is_client'] = true
+        client_hieradata['nfs::is_server'] = false
+        client_hieradata['nfs::nfsv3'] = opts[:nfsv3]
+        set_hieradata_on(client, client_hieradata)
 
-        it 'should mount NFS share' do
+        apply_manifest_on(client, client_manifest, :catch_failures => true)
+      end
+
+      it 'should be idempotent' do
+        apply_manifest_on(client, client_manifest, :catch_changes => true)
+      end
+
+      {
+        server1 => mount_dir1,
+        server2 => mount_dir2
+      }.each do |server,mount_dir|
+
+        it "should mount NFS share from #{server}" do
           on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
 
@@ -239,7 +258,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
           # Unfortunately, even the --nonblock flock option simply hangs when we
           # have communication problem. So, we will timeout to detect communication
           # problems instead.
-          it 'should communicate lock status with NFS server' do
+          it "should communicate lock status with NFS server #{server}" do
             require 'timeout'
 
             # When testing with tcpwrappers (el7), times out on the first
@@ -262,36 +281,41 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
             end
           end
         end
+      end
 
-        if opts[:verify_reboot]
-          it 'should ensure vagrant connectivity' do
-            on(hosts, 'date')
+      if opts[:verify_reboot]
+        it 'should ensure vagrant connectivity' do
+          on(hosts, 'date')
+        end
+
+        unless opts[:nfsv3]
+          # The nfsv4 kernel module is only automatically loaded when a NFSv4
+          # mount is executed. In the NFSv3 test, we only mount using NFSv3.
+          # So, after reboot, the nfsv4 kernel module will not be loaded.
+          # However, since nfs::client::config pre-emptively loads the nfsv4
+          # kernel module (necessary to ensure config initially prior to
+          # reboot), applying the client manifest in the absence of NFSv4
+          # mount will cause the Exec[modprove_nfsv4] to be executed.
+          it 'client manifest should be idempotent after reboot' do
+            client.reboot
+            apply_manifest_on(client, client_manifest, :catch_changes => true)
           end
+        end
 
-          unless opts[:nfsv3]
-            # The nfsv4 kernel module is only automatically loaded when a NFSv4
-            # mount is executed. In the NFSv3 test, we only mount using NFSv3.
-            # So, after reboot, the nfsv4 kernel module will not be loaded.
-            # However, since nfs::client::config pre-emptively loads the nfsv4
-            # kernel module (necessary to ensure config initially prior to
-            # reboot), applying the client manifest in the absence of NFSv4
-            # mount will cause the Exec[modprove_nfsv4] to be executed.
-            it 'client manifest should be idempotent after reboot' do
-              client.reboot
-              apply_manifest_on(client, client_manifest, :catch_changes => true)
-            end
-          end
-
-          it 'mount should be re-established after client reboot' do
+        {
+          server1 => mount_dir1,
+          server2 => mount_dir2
+        }.each do |server,mount_dir|
+          it "mount to #{server} should be re-established after client reboot" do
             on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
           end
 
-          it 'server manifest should be idempotent after reboot' do
+          it "server manifest should be idempotent on #{server} after reboot" do
             server.reboot
             apply_manifest_on(server, server_manifest, :catch_changes => true)
           end
 
-          it 'mount should be re-established after server reboot' do
+          it "mount should be re-established after server #{server} reboot" do
             on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
           end
         end

@@ -2,12 +2,23 @@
 #   NFS server and NFS client.
 #
 # @param opts Hash of test options with the following keys:
-#  * :base_hiera - Base hieradata to be added to nfs-specific hieradata
-#  * :nfsv3      - Whether this is testing NFSv3.  When true, NFSv3 will be
-#                  enabled (server + client) and used in the client mount
+#  * :base_hiera    - Base hieradata to be added to nfs-specific hieradata
+#  * :server_custom - Additional content to be added to the combined manifest
+#  * :client_custom - Additional content to be added to the combined manifest
+#  * :nfsv3         - Whether this is testing NFSv3.  When true, NFSv3 will be
+#                     enabled (server + client) and used in the client mount
 #  * :nfs_sec       - NFS security option to use in both the server exports and
 #                     the client mounts
 #  * :export_insecure - insecure setting for NFS export
+#  * :mount_autodetect_remote - Array of nfs::client::mount::autodetect_remote
+#                     values to test
+#
+# NOTE:  The following token substitutions are supported in the :server_custom
+#  and :client_custom manifests:
+#
+#  * #MOUNT_DIR#
+#  * #SERVER_IP#
+#  * #AUTODETECT_REMOTE#
 #
 shared_examples 'a NFS share using static mounts with combined client/server roles' do |servers_with_client, opts|
   let(:exported_dir) { '/srv/nfs_share' }
@@ -37,10 +48,13 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
       nfs::server::export { 'nfs_root':
         clients     => ['*'],
         export_path => '#{exported_dir}',
-        sec         => ['sys']
+        sec         => ['#{opts[:nfs_sec]}'],
+        insecure    => #{opts[:export_insecure]}
       }
 
       File[$exported_file] -> Nfs::Server::Export['nfs_root']
+
+      #{opts[:server_custom]}
 
       # NFS client portion
       $mount_dir = '#MOUNT_DIR#'
@@ -49,6 +63,7 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
         nfs_server        => '#SERVER_IP#',
         nfs_version       => #{nfs_vers},
         remote_path       => '#{exported_dir}',
+        sec               => '#{opts[:nfs_sec]}',
         autodetect_remote => #AUTODETECT_REMOTE#,
         autofs            => false
       }
@@ -63,6 +78,8 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
 
       File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
 
+      #{opts[:client_custom]}
+
       Nfs::Server::Export['nfs_root'] -> Nfs::Client::Mount[$mount_dir]
     EOM
   }
@@ -70,7 +87,7 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
   let(:nfs_vers) { opts[:nfsv3] ? 3 : 4 }
 
   servers_with_client.each do |host|
-    [ true, false ].each do |autodetect_remote|
+    opts[:mount_autodetect_remote].each do |autodetect_remote|
       let(:mount_dir) { "/mnt/#{host}" }
       let(:server_ip) {
         info = internal_network_info(host)
@@ -86,6 +103,10 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
           manifest.gsub!('#AUTODETECT_REMOTE#', autodetect_remote.to_s)
           manifest
         }
+
+        it 'should ensure vagrant connectivity' do
+          on(hosts, 'date')
+        end
 
         it 'should apply server+client manifest to export+mount' do
           hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
@@ -107,7 +128,6 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
         it 'should mount NFS share' do
           on(host, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
-#FIXME add in server reboot tests
 
         it 'should remove mount as prep for next test' do
             # use puppet resource instead of simple umount, in order to remove

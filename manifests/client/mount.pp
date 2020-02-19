@@ -305,11 +305,13 @@ define nfs::client::mount (
 
     if $_stunnel {
       # This is a workaround for issues with hooking into stunnel
-      exec { 'reload_autofs':
+      $_exec_attributes = {
         command     => '/usr/bin/systemctl reload autofs',
         refreshonly => true,
         require     => Class['autofs::service']
       }
+
+      ensure_resource( 'exec', 'reload_autofs', $_exec_attributes)
 
       # This is so that the automounter gets reloaded when *any* of the
       # related stunnel instances are refreshed

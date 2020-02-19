@@ -59,9 +59,9 @@ define nfs::client::stunnel::nfsv3 (
 ) {
   assert_private()
 
-  # Don't do this if you're running on yourself because, well, it's bad!
-  # FIXME verify that the local mount location will work, so these tunnels
-  #  aren't really needed
+  # When you are connecting to a collocated NFS server, the stunnel is
+  # unnecessary and the destination IP has already been correctly configured
+  # to be 127.0.0.1.
   unless simplib::host_is_me($nfs_server) {
     stunnel::instance { "nfs_${name}_client_nfsd":
       connect          => ["${nfs_server}:${nfsd_connect_port}"],
