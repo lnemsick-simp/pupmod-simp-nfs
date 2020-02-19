@@ -143,10 +143,6 @@ class nfs (
   include 'nfs::install'
 
   if $kerberos and (versioncmp($facts['os']['release']['major'], '8') < 0) {
-# FIXME Must krb5 be installed to build the selinux policy that refers
-# to krb5_conf_t?
-#    include 'krb5'
-
     # This is here because the SELinux rules for directory includes in krb5
     # are broken in selinux-policy < 3.13.1-229.el7_6.9. It does no harm
     # on an EL7 system with the fixed selinux-policy.

@@ -61,8 +61,20 @@ else
     _options.push("refer=#{Array(@refer).join(':')}")
   end
 
+  if @replicas
+    _options.push("replicas=#{Array(@replicas).join(':')}")
+  end
+
   if @nordirplus
     _options.push('nordirplus')
+  end
+
+  if @pnfs
+    _options.push('pnfs')
+  end
+
+  if @security_label
+    _options.push('security_label')
   end
 
   _options.push("sec=#{Array(@sec).join(':')}")
@@ -87,7 +99,7 @@ _client = Array(@clients.dup).flatten
 _client.map! { |cl| (['ALL','all','ANY','any'].include? cl) ? '*' : cl }.flatten!
 _client.push("127.0.0.1")
 _client.uniq.sort.each do |cl|
-  if cl == '127.0.0.1'
+  if (cl == '127.0.0.1') && !@insecure
     # Sometimes stunnel will bind on a high port, so we need to account for
     # that.
     _output.push("#{@export_path} #{cl}#{_options.split(')').first + ',insecure)'}")

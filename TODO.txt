@@ -80,36 +80,37 @@
        vice.
 - FIXED Replace $::nfs::.. with $nfs::
 - NO FIX POSSIBLE nfs is not idempotent...takes 2 runs for sysctl for client
-
-MODULE TODO
-- name of stunnels don't have the full port info in them ->  does not make sense to
-  have the nfsd port in its name
-- Add export_insecure in other shared_examples
-- document  if overlapping export rules and one has insecure and one has secure, the secure one
-  wins, even if the one with insecure is a specific ip, not a network or wildcard.
-  So overlapping rule must have insecure
--iptables on NFSv4 server should not have port 875 open (rquotad).  Should only have 111 open
-- should stunnel change refresh nfs::server::service?  similar to how autofs gets
-  refreshed?
-- handle stunnel when on server correctly and same way for NFSv3and4 and NFSv3 client
-  mount connections
-- note in readme that we are intentionally not stunneling rpcbind because
-  can't stunnel them and support multiple servers
-  - rpcbind port is not intended to be configured (but could munge with unit drop-in file)
-- stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
-- figure out if include krb5 needed (i.e., kerberos packages installed) to
-  build policy
-  - should be able to do it on a clean server, but can't do it in the
-    current acceptance test
-- See if have to start stunnel up after service
-  client goes beserk? (times out and has issues with hard mount)
-- have to make sure sm-modify's reboot notification goes out when stunnels
+- RESOLVED NO not necessary - figure out if include krb5 needed (i.e., kerberos
+  packages installed) to build policy
+- RESOLVED stunnel_wantedby brings up stunnel first
+  have to make sure sm-modify's reboot notification goes out when stunnels
   up...so need to make sure stunnel service is before nfs-server?
   - This conflicts with server coming up before stunnel...notifications
     won't actually go out.
   - If notifications don't actually go out (blocked by firewall), will NFS retry
     later or will they be lost
-- Make sure export parameters in nfs::server::export still make sense
+- FIXED handle stunnel when on server correctly and same way for NFSv4 and NFSv3 client
+  mount connections
+- FIXED Make sure export parameters in nfs::server::export still make sense
+  add replicas, pnfs, security_label
+
+MODULE TODO
+- is EPEL repo needed in acceptance test?  If so, install with simp beaker_helpers?
+- name of stunnels don't have the full port info in them ->  does not make sense to
+  have the nfsd port in its name
+- document  if overlapping export rules and one has insecure and one has secure, the secure one
+  wins, even if the one with insecure is a specific ip, not a network or wildcard.
+  So overlapping rule must have insecure
+- iptables on NFSv4 server should not have port 875 open (rquotad).  Should only have 111 open
+- should stunnel change refresh nfs::server::service?  similar to how autofs gets
+  refreshed?
+- change autofs reload to be unit file
+- note in readme that we are intentionally not stunneling rpcbind because
+  can't stunnel them and support multiple servers
+  - rpcbind port is not intended to be configured (but could munge with unit drop-in file)
+- stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
+- See if have to start stunnel up after service
+  client goes beserk? (times out and has issues with hard mount)
 - Is export logic with seboolean required
 - why was the number of rpc.mountd threads decreased when applied puppet?
 - use systemd directly to fix any dependency bugs
@@ -357,12 +358,11 @@ Feb 11 17:59:15 localhost kernel: nfsd: nfsv4 idmapping failing: has idmapd not 
 
 
 kdestroy -c /var/lib/gssproxy/clients/krb5cc_0
-problems.txt
-
 yum install -y net-tools
 netstat -pant
 netstat -plant
 
+To enable NFS debug in kernel modules/rpc plugins:
 https://access.redhat.com/solutions/2083513
 rpcdebug -m nfs -s all
 rpcdebug -m nlm -s all
