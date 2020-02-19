@@ -1,4 +1,4 @@
-# **NOTE: THIS IS A [PRIVATE](https://github.com/puppetlabs/puppetlabs-stdlib#assert_private) CLASS**
+# **NOTE: THIS IS A [PRIVATE](https://github.com/puppetlabs/puppetlabs-stdlib#assert_private) DEFINE**
 #
 # Connect to an NFSv3 server over stunnel
 #

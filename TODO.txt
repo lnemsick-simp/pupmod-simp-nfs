@@ -82,6 +82,8 @@
 - NO FIX POSSIBLE nfs is not idempotent...takes 2 runs for sysctl for client
 
 MODULE TODO
+- name of stunnels don't have the full port info in them ->  does not make sense to
+  have the nfsd port in its name
 - Add export_insecure in other shared_examples
 - document  if overlapping export rules and one has insecure and one has secure, the secure one
   wins, even if the one with insecure is a specific ip, not a network or wildcard.
