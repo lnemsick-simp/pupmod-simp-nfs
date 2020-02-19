@@ -6,7 +6,11 @@ describe 'nfs basic' do
 
   servers = hosts_with_role( hosts, 'nfs_server' )
   servers_with_client = hosts_with_role( hosts, 'nfs_server_and_client' )
+  servers_tcpwrappers = servers.select { |server| server.name.match(/el7/) }
+
   clients = hosts_with_role( hosts, 'nfs_client' )
+  clients_tcpwrappers = clients.select { |client| client.name.match(/el7/) }
+
   base_hiera = {
     # Set us up for a basic NFS (firewall-only)
     'simp_options::firewall'                => true,
@@ -69,8 +73,11 @@ describe 'nfs basic' do
         :verify_reboot   => false
       }
 
-      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
-      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with distinct client/server roles',
+        servers_tcpwrappers, clients_tcpwrappers, opts
+
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles',
+        servers_tcpwrappers, clients_tcpwrappers, opts
     end
 
     context 'NFSv3 with firewall and tcpwrappers' do
@@ -82,8 +89,11 @@ describe 'nfs basic' do
         :verify_reboot   => false
       }
 
-      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
-      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with distinct client/server roles',
+        servers_tcpwrappers, clients_tcpwrappers, opts
+
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles',
+        servers_tcpwrappers, clients_tcpwrappers, opts
     end
   end
 end

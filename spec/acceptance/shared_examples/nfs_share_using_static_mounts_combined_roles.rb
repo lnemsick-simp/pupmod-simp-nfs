@@ -5,6 +5,9 @@
 #  * :base_hiera - Base hieradata to be added to nfs-specific hieradata
 #  * :nfsv3      - Whether this is testing NFSv3.  When true, NFSv3 will be
 #                  enabled (server + client) and used in the client mount
+#  * :nfs_sec       - NFS security option to use in both the server exports and
+#                     the client mounts
+#  * :export_insecure - insecure setting for NFS export
 #
 shared_examples 'a NFS share using static mounts with combined client/server roles' do |servers_with_client, opts|
   let(:exported_dir) { '/srv/nfs_share' }

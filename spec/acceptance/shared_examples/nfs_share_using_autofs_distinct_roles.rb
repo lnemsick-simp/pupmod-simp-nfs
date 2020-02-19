@@ -9,6 +9,7 @@
 #                     enabled (server + client) and used in the client mount
 #  * :nfs_sec       - NFS security option to use in both the server exports and
 #                     the client mounts
+#  * :export_insecure - insecure setting for NFS export
 #  * :verify_reboot - Whether to verify idempotency and mount functionality
 #                     after individually rebooting the client and server
 #                     in each test pair
@@ -83,7 +84,8 @@ shared_examples 'a NFS share using autofs with distinct client/server roles' do 
         nfs::server::export { $_export_dir:
           clients     => ['*'],
           export_path => $_export_dir,
-          sec         => ['sys']
+          sec         => ['#{opts[:nfs_sec]}'],
+          insecure    => #{opts[:export_insecure]}
         }
 
         File["${_export_dir}"] -> Nfs::Server::Export["${_export_dir}"]
@@ -129,6 +131,7 @@ shared_examples 'a NFS share using autofs with distinct client/server roles' do 
         nfs_server  => '#SERVER_IP#',
         nfs_version => #{nfs_version},
         remote_path => '#{mount_map[:direct][:export_dir]}',
+        sec         => '#{opts[:nfs_sec]}',
         autofs      => true,
       }
 
@@ -137,6 +140,7 @@ shared_examples 'a NFS share using autofs with distinct client/server roles' do 
         nfs_server              => '#SERVER_IP#',
         nfs_version             => #{nfs_version},
         remote_path             => '#{mount_map[:indirect][:export_dir]}',
+        sec                     => '#{opts[:nfs_sec]}',
         autofs                  => true,
         autofs_indirect_map_key => '#{mount_map[:indirect][:map_key]}',
         autofs_add_key_subst    => #{mount_map[:indirect][:add_key_subst].to_s}
@@ -147,6 +151,7 @@ shared_examples 'a NFS share using autofs with distinct client/server roles' do 
         nfs_server              => '#SERVER_IP#',
         nfs_version             => #{nfs_version},
         remote_path             => '#{mount_map[:indirect_wildcard][:export_dir]}',
+        sec                     => '#{opts[:nfs_sec]}',
         autofs                  => true,
         autofs_indirect_map_key => '#{mount_map[:indirect_wildcard][:map_key]}',
         autofs_add_key_subst    => #{mount_map[:indirect_wildcard][:add_key_subst].to_s}

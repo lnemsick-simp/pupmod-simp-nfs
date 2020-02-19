@@ -146,6 +146,30 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
           on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
 
+        if opts[:nfsv3]
+          # Want to verify the NLM ports are correctly configured.  According
+          # to nfs man page, NLM supports advisory file locks only and the
+          # client converts file locks obtained via flock to advisory locks.
+          # So, we can use flock in this test.
+          #
+          # If flock hangs, we have a NLM connectivity problem. Ideally, we would
+          # want an immediate indication of a connectivity issues via flock.
+          # Unfortunately, even the --nonblock flock option simply hangs when we
+          # have communication problem. So, we will timeout to detect communication
+          # problems instead.
+          it 'should communicate lock status with NFS server' do
+            require 'timeout'
+            begin
+              lock_seconds = 1
+              Timeout::timeout(lock_seconds + 5) do
+                on(client, "flock  #{mount_dir}/#{filename} -c 'sleep #{lock_seconds}'")
+              end
+            rescue Timeout::Error
+              fail('Problem with NFSv3 connectivity during file lock')
+            end
+          end
+        end
+
         if opts[:verify_reboot]
           it 'should ensure vagrant connectivity' do
             on(hosts, 'date')
@@ -156,7 +180,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
             # mount is executed. In the NFSv3 test, we only mount using NFSv3.
             # So, after reboot, the nfsv4 kernel module will not be loaded.
             # However, since nfs::client::config pre-emptively loads the nfsv4
-            # kernel module (necessary to ensure config intially prior to
+            # kernel module (necessary to ensure config initially prior to
             # reboot), applying the client manifest in the absence of NFSv4
             # mount will cause the Exec[modprove_nfsv4] to be executed.
             it 'client manifest should be idempotent after reboot' do

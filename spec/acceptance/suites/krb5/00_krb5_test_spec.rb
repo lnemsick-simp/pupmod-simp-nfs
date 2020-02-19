@@ -119,7 +119,7 @@ describe 'nfs krb5' do
         end
       end
 
-      context 'Secure NFSv4' do
+      context 'Secure NFSv4 with firewall and tcpwrappers' do
         server_krb5_manifest_extras = <<~EOM
           # Keep KRB5 (kadmin & krb5kdc) ports open in firewall so clients can
           # talk to KDC

@@ -1,6 +1,6 @@
 require 'spec_helper_acceptance'
 
-test_name 'nfs stunnel basic'
+test_name 'nfs stunnel'
 
 ################################################################################
 # IMPORTANT:
@@ -27,13 +27,17 @@ test_name 'nfs stunnel basic'
 # 127.0.0.1:<non-privileged port>.  NFS then selects the wildcard rule as the
 # best match. However, because secure ports are disallowed by that rule, the
 # mount will fail.
-#
+################################################################################
 
-describe 'nfs stunnel basic' do
+describe 'nfs stunnel' do
 
   servers = hosts_with_role( hosts, 'nfs_server' )
   servers_with_client = hosts_with_role( hosts, 'nfs_server_and_client' )
+  servers_tcpwrappers = servers.select { |server| server.name.match(/el7/) }
+
   clients = hosts_with_role( hosts, 'nfs_client' )
+  clients_tcpwrappers = clients.select { |client| client.name.match(/el7/) }
+
   base_hiera = {
     # Set us up for a basic stunnel NFS (firewall-only)
     'simp_options::audit'                   => false,
@@ -75,7 +79,7 @@ describe 'nfs stunnel basic' do
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
  #     it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
- #     it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
 
     context 'NFSv3 with stunnel and firewall' do
@@ -89,7 +93,7 @@ describe 'nfs stunnel basic' do
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
  #     it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
- #     it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
   end
 
@@ -103,8 +107,11 @@ describe 'nfs stunnel basic' do
         :verify_reboot   => false
       }
 
-      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
- #     it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with distinct client/server roles',
+        servers_tcpwrappers, clients_tcpwrappers, opts
+
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles',
+        servers_tcpwrappers, clients_tcpwrappers, opts
     end
 
     context 'NFSv3 with stunnel, firewall and tcpwrappers' do
@@ -116,8 +123,11 @@ describe 'nfs stunnel basic' do
         :verify_reboot   => false
       }
 
-      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
- #     it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
+      it_behaves_like 'a NFS share using static mounts with distinct client/server roles',
+        servers_tcpwrappers, clients_tcpwrappers, opts
+
+      it_behaves_like 'a NFS share using autofs with distinct client/server roles',
+        servers_tcpwrappers, clients_tcpwrappers, opts
     end
   end
 end

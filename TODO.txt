@@ -335,11 +335,6 @@ server sends notification to client (initially and then periodically)
 can't figure out how to tell comms are working/down without tcpdump, so
 should skip this test
 
-If for some reason you need to revert to the old iptables backend, you can easily
-do so by setting FirewallBackend in /etc/firewalld/firewalld.conf to iptables, then
-restart firewalld. However, please realise that future firewalld development will
-focus on the nftables backend and not iptables.
-
 
 Decrypt integrity check failed
 
@@ -372,3 +367,7 @@ https://access.redhat.com/solutions/2083513
 rpcdebug -m nfs -s all
 rpcdebug -m nlm -s all
 rpcdebug -m rpc -s all
+
+
+egrep ' as | with | should ' default.log | egrep -v 'with sum|database with|Notice:'
+
