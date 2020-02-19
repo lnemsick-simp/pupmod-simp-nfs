@@ -36,11 +36,12 @@ describe 'nfs basic' do
   context 'with firewall only' do
     context 'NFSv4 with firewall' do
       opts = {
-        :base_hiera      => base_hiera,
-        :export_insecure => false,
-        :nfs_sec         => 'sys',
-        :nfsv3           => false,
-        :verify_reboot   => true
+        :base_hiera              => base_hiera,
+        :export_insecure         => false,
+        :nfs_sec                 => 'sys',
+        :nfsv3                   => false,
+        :mount_autodetect_remote => [ true, false ],
+        :verify_reboot           => true
       }
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
@@ -50,11 +51,12 @@ describe 'nfs basic' do
 
     context 'NFSv3 with firewall' do
       opts = {
-        :base_hiera      => base_hiera,
-        :export_insecure => false,
-        :nfs_sec         => 'sys',
-        :nfsv3           => true,
-        :verify_rebootbb => true
+        :base_hiera              => base_hiera,
+        :export_insecure         => false,
+        :nfs_sec                 => 'sys',
+        :nfsv3                   => true,
+        :mount_autodetect_remote => [ true, false ],
+        :verify_reboot           => true
       }
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
