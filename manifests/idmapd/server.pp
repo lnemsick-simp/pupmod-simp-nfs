@@ -12,13 +12,13 @@ class nfs::idmapd::server
       hasrestart => true
     }
 
-    Class['nfs::idmap::config'] ~> Service['nfs-idmapd.service']
+    Class['nfs::idmapd::config'] ~> Service['nfs-idmapd.service']
 
     # Service will be masked if previous config had disallowed idmapd
     exec { 'unmask_nfs-idmapd.service':
       command => '/usr/bin/systemctl unmask nfs-idmpad.service',
       onlyif  => '/usr/bin/systemctl status nfs-idmpad.service | /usr/bin/grep -qw masked',
-      notify  => Service['nfs-ipmapd.service']
+      notify  => Service['nfs-idmapd.service']
     }
   } else {
     # service { NAME: enable => mask } does not seem to work in puppet.

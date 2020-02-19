@@ -26,7 +26,6 @@ HOSTS:
     platform: el-7-x86_64
     box: centos/7
     hypervisor: <%= hypervisor %>
-#FIXME is epel required?
     yum_repos:
       epel:
         mirrorlist: 'https://mirrors.fedoraproject.org/mirrorlist?repo=epel-7&arch=$basearch&country=us'

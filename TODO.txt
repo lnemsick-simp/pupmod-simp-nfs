@@ -97,10 +97,13 @@
   fix problem with stunnel_systemd_deps and stunnel_wantedby
   - hard to understand what is being set where
   - dlookup
+- Beefed up acceptance tests
+  - Added NFSv3 tests
+  - Added basic idmapd test
+- RESOLVED - yes, for haveged - Is EPEL repo needed in acceptance tests? 
 
 MODULE TODO
 - move server export template to templatest/etc for consistency
-- is EPEL repo needed in acceptance test?  If so, install with simp beaker_helpers?
 - name of stunnels don't have the full port info in them ->  does not make sense to
   have the nfsd port in its name
 - should stunnel change refresh nfs::server::service?  similar to how autofs gets
@@ -109,7 +112,7 @@ MODULE TODO
 - stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
 - See if have to start stunnel up after service
   client goes beserk? (times out and has issues with hard mount)
-- Is export logic with seboolean required
+- Is nfs::server::export logic with seboolean required
 - why was the number of rpc.mountd threads decreased when applied puppet?
 - use systemd directly to fix any dependency bugs
   - remove Puppet '->' that are handled by wants/wantedby

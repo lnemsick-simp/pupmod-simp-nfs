@@ -29,6 +29,8 @@ test_name 'nfs stunnel'
 # mount will fail.
 ################################################################################
 
+
+# Tests stunneling between individual NFS client and NFS server pairs
 describe 'nfs stunnel' do
 
   servers = hosts_with_role( hosts, 'nfs_server' )
@@ -39,7 +41,7 @@ describe 'nfs stunnel' do
   clients_tcpwrappers = clients.select { |client| client.name.match(/el7/) }
 
   base_hiera = {
-    # Set us up for a basic stunnel NFS (firewall-only)
+    # Set us up for a basic stunneled NFS (firewall-only)
     'simp_options::audit'                   => false,
     'simp_options::firewall'                => true,
     'simp_options::haveged'                 => true,
