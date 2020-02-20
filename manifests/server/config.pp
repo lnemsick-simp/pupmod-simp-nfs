@@ -151,6 +151,9 @@ class nfs::server::config
     [Path]
     Unit=simp_etc_exports.service
     PathChanged=/etc/exports
+
+    [Install]
+    WantedBy=multi-user.target
     | HEREDOC
 
   systemd::unit_file { 'simp_etc_exports.path':
@@ -166,12 +169,10 @@ class nfs::server::config
     | HEREDOC
 
   systemd::unit_file { 'simp_etc_exports.service':
-    content => $_simp_etc_exports_service
-  }
-
-  service { 'simp_etc_exports':
+    # static service can't really be enabled, but this does no harm and
+    # prevents svckill from killing it when it is running
     enable  => true,
-    require => Systemd::Unit_file['simp_etc_exports.service']
+    content => $_simp_etc_exports_service
   }
 
 #  exec { 'nfs_re-export':
