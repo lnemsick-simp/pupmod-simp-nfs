@@ -69,69 +69,34 @@ describe 'nfs stunnel' do
     end
   end
 
-  context 'with stunnel and firewall' do
-    context 'NFSv4 with stunnel and firewall' do
-      opts = {
-        :base_hiera              => base_hiera,
-        :export_insecure         => true,
-        :nfs_sec                 => 'sys',
-        :nfsv3                   => false,
-        :mount_autodetect_remote => [ false ],
-        :verify_reboot           => true
-      }
+  context 'with NFSv4 stunnel and firewall' do
+    opts = {
+      :base_hiera              => base_hiera,
+      :export_insecure         => true,
+      :nfs_sec                 => 'sys',
+      :nfsv3                   => false,
+      :mount_autodetect_remote => [ false ],
+      :verify_reboot           => true
+    }
 
-      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
-      it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
-      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
-    end
-
-    context 'NFSv3 with stunnel and firewall' do
-      opts = {
-        :base_hiera              => base_hiera,
-        :export_insecure         => true,
-        :nfs_sec                 => 'sys',
-        :nfsv3                   => true,
-        :mount_autodetect_remote => [ false ],
-        :verify_reboot           => true
-      }
-
-      it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
-      it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
-      it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
-    end
+    it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
+    it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
+    it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
   end
 
-  context 'with stunnel, firewall and tcpwrappers' do
-    context 'NFSv4 with stunnel, firewall and tcpwrappers' do
-      opts = {
-        :base_hiera      => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
-        :export_insecure => true,
-        :nfs_sec         => 'sys',
-        :nfsv3           => false,
-        :verify_reboot   => false
-      }
+  context 'with NFSv4 stunnel, firewall and tcpwrappers' do
+    opts = {
+      :base_hiera      => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
+      :export_insecure => true,
+      :nfs_sec         => 'sys',
+      :nfsv3           => false,
+      :verify_reboot   => false
+    }
 
-      it_behaves_like 'a NFS share using static mounts with distinct client/server roles',
-        servers_tcpwrappers, clients_tcpwrappers, opts
+    it_behaves_like 'a NFS share using static mounts with distinct client/server roles',
+      servers_tcpwrappers, clients_tcpwrappers, opts
 
-      it_behaves_like 'a NFS share using autofs with distinct client/server roles',
-        servers_tcpwrappers, clients_tcpwrappers, opts
-    end
-
-    context 'NFSv3 with stunnel, firewall and tcpwrappers' do
-      opts = {
-        :base_hiera      => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
-        :export_insecure => true,
-        :nfs_sec         => 'sys',
-        :nfsv3           => true,
-        :verify_reboot   => false
-      }
-
-      it_behaves_like 'a NFS share using static mounts with distinct client/server roles',
-        servers_tcpwrappers, clients_tcpwrappers, opts
-
-      it_behaves_like 'a NFS share using autofs with distinct client/server roles',
-        servers_tcpwrappers, clients_tcpwrappers, opts
-    end
+    it_behaves_like 'a NFS share using autofs with distinct client/server roles',
+      servers_tcpwrappers, clients_tcpwrappers, opts
   end
 end

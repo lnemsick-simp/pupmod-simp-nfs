@@ -7,13 +7,13 @@ test_name 'nfs client with multiple servers'
 # 00_stunnel_test_spec.rb.
 #################################################################
 
-# Tests stunneling between an individual NFS client and 2 NFS server
+# Tests stunneling between an individual NFS client and 2 NFS server.
+# Verifies client can support a mix of NFSv4 (stunneled) and NFSv3 (direct)
+# mount.
 describe 'nfs client with multiple servers' do
 
   servers = hosts_with_role( hosts, 'nfs_server' )
 
-  # Setting up distinct ports for NFSv3 is painful. So, in this test
-  # we are going to only handle two servers.
   if servers.size < 2
     fail("#{__FILE__} requires at least 2 hosts with role 'nfs_server'")
   end
@@ -30,6 +30,7 @@ describe 'nfs client with multiple servers' do
     'simp_options::kerberos'                => false,
     'simp_options::pki'                     => true,
     'simp_options::pki::source'             => '/etc/pki/simp-testing/pki',
+    # will only apply to NFSv4 connections
     'simp_options::stunnel'                 => true,
     'simp_options::tcpwrappers'             => false,
     'ssh::server::conf::permitrootlogin'    => true,
@@ -52,52 +53,77 @@ describe 'nfs client with multiple servers' do
     end
   end
 
-  context 'client mounting from 2 NFSv4 servers' do
+  context 'client mounting from 2 NFSv4 servers, both via stunnel' do
     opts = {
       :base_hiera      => base_hiera,
-      :export_insecure => true,
-      :nfs_sec         => 'sys',
-      :nfsv3           => false,
-      :verify_reboot   => true,
-
-      # Overrides cannot match defaults.
-      :port_overrides => {
-        :nfsd_port            => 2149,  # default=2049
-        :rquotad_port         => 876,   # default=875
-        :stunnel_nfsd_port    => 21480, # default=20490
-        :stunnel_rquotad_port => 8760,  # default=8750
-      }
+      :mount1_config   => {
+        :export_insecure   => true, # true required for stunnel
+        :nfsv3             => false,
+        :nfs_sec           => 'sys',
+        :nfsd_port         => nil, # use default of 2049
+        :stunnel_nfsd_port => nil, # use default of 20490
+        :stunnel           => nil  # use default of true
+      },
+      :mount2_config   => {
+        :export_insecure   => true, # true required for stunnel
+        :nfsv3             => false,
+        :nfs_sec           => 'sys',
+        :nfsd_port         => 2150,  # do not use default
+        :stunnel_nfsd_port => 21500, # do not use default
+        :stunnel           => nil    # use default of true
+      },
     }
 
     it_behaves_like 'a multi-server NFS share',
       server1, server2, clients, opts
   end
 
-  context 'client mounting from 2 NFSv3 servers' do
+  context 'client mounting from 1 NFSv4 server via stunnel and 1 NFSv3 server directly' do
     opts = {
       :base_hiera      => base_hiera,
-      :export_insecure => true,
-      :nfs_sec         => 'sys',
-      :nfsv3           => true,
-      :verify_reboot   => true,
-
-      # Overrides cannot match defaults.  In addition, lockd_port and statd_port
-      # cannot match either of their correspoding server and client defaults.
-      :port_overrides => {
-        :lockd_port_server    => 32813, # client default=32802, server default=32803
-        :mountd_port          => 21048, # default=20048
-        :nfsd_port            => 2149,  # default=2049
-        :rquotad_port         => 876,   # default=875
-        :statd_port_server    => 663,   # client default=661, server default=662
-        :stunnel_lockd_port   => 32814, # default 32804
-        :stunnel_mountd_port  => 8921,  # default=8920
-        :stunnel_nfsd_port    => 21490, # default=20490
-        :stunnel_rquotad_port => 8760,  # default=8750
-        :stunnel_statd_port   => 6630,  # default=6620
+      :mount1_config   => {
+        :export_insecure   => true, # true required for stunnel
+        :nfsv3             => false,
+        :nfs_sec           => 'sys',
+        :nfsd_port         => 2150,  # do not use default
+        :stunnel_nfsd_port => 21500, # do not use default
+        :stunnel           => nil    # use default of true
+      },
+      :mount2_config   => {
+        :export_insecure   => false, # not stunneling
+        :nfsv3             => true,
+        :nfs_sec           => 'sys',
+        :nfsd_port         => nil, # use default=2049
+        :stunnel_nfsd_port => nil, # N/A
+        :stunnel           => false
       }
     }
 
-    it_behaves_like 'a multi-server NFS share',
-      server1, server2, clients, opts
+    it_behaves_like 'a multi-server NFS share', server1, server2, clients, opts
+    it_behaves_like 'a multi-server NFS share', server2, server1, clients, opts
+  end
+
+  context 'client mounting from 2 NFSv3 servers directly' do
+    opts = {
+      :base_hiera      => base_hiera,
+      :mount1_config   => {
+        :export_insecure   => true, # true required for stunnel
+        :nfsv3             => false,
+        :nfs_sec           => 'sys',
+        :nfsd_port         => 2150,  # do not use default
+        :stunnel_nfsd_port => 21500, # do not use default
+        :stunnel           => false
+      },
+      :mount2_config   => {
+        :export_insecure   => false, # not stunneling
+        :nfsv3             => true,
+        :nfs_sec           => 'sys',
+        :nfsd_port         => nil, # use default=2049
+        :stunnel_nfsd_port => nil, # N/A
+        :stunnel           => false
+      }
+    }
+
+    it_behaves_like 'a multi-server NFS share', server1, server2, clients, opts
   end
 end

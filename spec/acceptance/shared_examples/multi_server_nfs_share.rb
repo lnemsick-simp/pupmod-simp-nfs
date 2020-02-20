@@ -1,21 +1,15 @@
-# @param servers Array of Hosts that will only be NFS servers
+# @param server1 Host that will only be a NFS server
+# @param server2 Host that will only be a NFS server
 # @param clients Array of Hosts that will only be NFS clients
 #
 # @param opts Hash of test options with the following keys:
 #  * :base_hiera    - Base hieradata to be added to nfs-specific hieradata
 #  * :server_custom - Additional content to be added to the NFS server manifest
 #  * :client_custom - Additional content to be added to the NFS client manifest
-#  * :port_overrides - Hash of port overrides to be used in configuring the
-#                     second server. When running stunnel tests, MUST be
-#                     different from the defaults used in the first server.
-#  * :nfsv3         - Whether this is testing NFSv3.  When true, NFSv3 will be
-#                     enabled (server + client) and used in the client mount
-#  * :nfs_sec       - NFS security option to use in both the server export and
-#                     the client mount
-#  * :export_insecure - insecure setting for NFS export
-#  * :verify_reboot - Whether to verify idempotency and mount functionality
-#                     after individually rebooting the client and server
-#                     in each test pair
+#  * :mount1_config - Hash of config to be applied to NFS server and client
+#                     for connections to server1
+#  * :mount2_config - Hash of config to be applied to NFS server and client
+#                     for connections to server1
 #
 # NOTE:  The following token substitutions are supported:
 # * In the :server_custom manifest:
@@ -24,10 +18,39 @@
 # * In the :client_custom manifest:
 #   * #MOUNT_DIR1#
 #   * #MOUNT_DIR2#
-#   * #PORT_OPTIONS#
 #   * #SERVER_IP1#
 #   * #SERVER_IP2#
 #
+
+def build_mount_port_options(config)
+  options = ''
+  if config[:nfsv3]
+    options += "  nfs_version => 3,\n"
+  end
+
+  if config[:nfs_sec]
+    options += "  sec         => #{config[:nfs_sec]},\n"
+  end
+
+  if config[:nfsd_port]
+    options += "  nfsd_port   => #{config[:nfsd_port]},\n"
+  end
+
+  if config[:stunnel_nfsd_port]
+    options += "  stunnel_nfsd_port => #{config[:stunnel_nfsd_port]},\n"
+  end
+
+  unless config[:stunnel].nil?
+    if config[:stunnel]
+      options += "  stunnel    => true,\n"
+    else
+      options += "  stunnel    => false,\n"
+    end
+  end
+
+  options
+end
+
 shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
   let(:exported_dir1) { '/srv/nfs_share1' }
   let(:exported_dir2) { '/srv/nfs_share2' }
@@ -56,8 +79,8 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
       nfs::server::export { 'nfs_root':
         clients     => ['*'],
         export_path => '#EXPORTED_DIR#',
-        sec         => ['#{opts[:nfs_sec]}'],
-        insecure    => #{opts[:export_insecure]}
+        sec         => ['#NFS_SEC#'],
+        insecure    => #EXPORT_INSECURE#
       }
 
       File['#{exported_dir}'] -> Nfs::Server::Export['nfs_root']
@@ -66,34 +89,8 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     EOM
   }
 
-  let(:nfs_version) { opts[:nfsv3] ? 3 : 4 }
-  let(:server_port_overrides_hiera) {
-    opts[:port_overrides].map { |name,value| ["nfs::#{name}",value] }.to_h
-  }
-
-  let(:mount_port_overrides_nfsv3) {
-    <<~EOM
-      lockd_port           => #{opts[:port_overrides][:lockd_port_server]},
-      mountd_port          => #{opts[:port_overrides][:mountd_port]},
-      nfsd_port            => #{opts[:port_overrides][:nfsd_port]},
-      rquotad_port         => #{opts[:port_overrides][:rquotad_port]},
-      statd_port           => #{opts[:port_overrides][:statd_port_server]},
-      stunnel_lockd_port   => #{opts[:port_overrides][:stunnel_lockd_port]},
-      stunnel_mountd_port  => #{opts[:port_overrides][:stunnel_lockd_port]},
-      stunnel_nfsd_port    => #{opts[:port_overrides][:stunnel_nfsd_port]},
-      stunnel_rquotad_port => #{opts[:port_overrides][:stunnel_rquotad_port]},
-      stunnel_statd_port   => #{opts[:port_overrides][:stunnel_statd_port]}
-   EOM
-  }
-
-  let(:mount_port_overrides_nfsv4) {
-    <<~EOM
-      nfsd_port            => #{opts[:port_overrides][:nfsd_port]},
-      rquotad_port         => #{opts[:port_overrides][:rquotad_port]},
-      stunnel_nfsd_port    => #{opts[:port_overrides][:stunnel_nfsd_port]},
-      stunnel_rquotad_port => #{opts[:port_overrides][:stunnel_rquotad_port]},
-   EOM
-  }
+  let(:mount_port_options1) { build_mount_port_options(opts[:mount1_config]) }
+  let(:mount_port_options2) { build_mount_port_options(opts[:mount2_config]) }
 
   let(:client_manifest_base) {
     <<~EOM
@@ -103,10 +100,9 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
 
       nfs::client::mount { $mount_dir1:
         nfs_server  => '#SERVER1_IP#',
-        nfs_version => #{nfs_version},
         remote_path => '#{exported_dir1}',
-        sec         => '#{opts[:nfs_sec]}',
-        autofs      => false
+        autofs      => false,
+      #{mount_port_options1}
       }
 
       # mount directory must exist if not using autofs
@@ -122,12 +118,10 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
       $mount_dir2 = '#MOUNT_DIR2#'
 
       nfs::client::mount { $mount_dir2:
-        nfs_server           => '#SERVER2_IP#',
-        nfs_version          => #{nfs_version},
-        remote_path          => '#{exported_dir2}',
-        sec                  => '#{opts[:nfs_sec]}',
-        autofs               => false,
-      #PORT_OPTIONS#
+        nfs_server  => '#SERVER2_IP#',
+        remote_path => '#{exported_dir2}',
+        autofs      => false,
+      #{mount_port_options2}
       }
 
       # mount directory must exist if not using autofs
@@ -144,7 +138,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     EOM
   }
 
-  context "as a NFS server #{server1} using default ports" do
+  context "as the first NFS server #{server1}" do
     it 'should ensure vagrant connectivity' do
       on(hosts, 'date')
     end
@@ -153,11 +147,21 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
       server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
       server_hieradata['nfs::is_client'] = false
       server_hieradata['nfs::is_server'] = true
-      server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
+      server_hieradata['nfs::nfsv3'] = opts[:mount1_config][:nfsv3]
+      if opts[:mount1_config][:nfsd_port]
+        server_hieradata['nfs::nfsd_port'] = opts[:mount1_config][:nfsd_port]
+      end
+
+      if opts[:mount1_config][:stunnel_nfsd_port]
+        server_hieradata['nfs::stunnel_nfsd_port'] = opts[:mount1_config][:stunnel_nfsd_port]
+      end
+
       set_hieradata_on(server1, server_hieradata)
 
       server_manifest = server_manifest_base.dup
       server_manifest.gsub!('#EXPORTED_DIR#', exported_dir1)
+      server_manifest.gsub!('#NFS_SEC#', opts[:mount1_config][:nfs_sec])
+      server_manifest.gsub!('#EXPORT_INSECURE#', opts[:mount1_config][:export_insecure])
       apply_manifest_on(server1, server_manifest, :catch_failures => true)
     end
 
@@ -170,17 +174,27 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     end
   end
 
-  context "as a NFS server #{server2} using custom ports" do
+  context "as the second NFS server #{server2}" do
     it 'should apply server manifest to export' do
       server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
       server_hieradata['nfs::is_client'] = false
       server_hieradata['nfs::is_server'] = true
-      server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
+      server_hieradata['nfs::nfsv3'] = opts[:mount2_config][:nfsv3]
+      if opts[:mount2_config][:nfsd_port]
+        server_hieradata['nfs::nfsd_port'] = opts[:mount2_config][:nfsd_port]
+      end
+
+      if opts[:mount2_config][:stunnel_nfsd_port]
+        server_hieradata['nfs::stunnel_nfsd_port'] = opts[:mount2_config][:stunnel_nfsd_port]
+      end
+
       server_hieradata.merge!(server_port_overrides_hiera)
       set_hieradata_on(server2, server_hieradata)
 
       server_manifest = server_manifest_base.dup
       server_manifest.gsub!('#EXPORTED_DIR#', exported_dir2)
+      server_manifest.gsub!('#NFS_SEC#', opts[:mount2_config][:nfs_sec])
+      server_manifest.gsub!('#EXPORT_INSECURE#', opts[:mount2_config][:export_insecure])
       apply_manifest_on(server2, server_manifest, :catch_failures => true)
     end
 
@@ -214,13 +228,8 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
         client_manifest = client_manifest_base.dup
         client_manifest.gsub!('#MOUNT_DIR1#', mount_dir1)
         client_manifest.gsub!('#MOUNT_DIR2#', mount_dir2)
-        client_manifest.gsub!('#SERVER_IP1#', server_ip1)
-        client_manifest.gsub!('#SERVER_IP2#', server_ip2)
-        if opts[:nfsv3]
-          client_manifest.gsub!('#PORT_OPTIONS#', mount_port_overrides_nfsv3)
-        else
-          client_manifest.gsub!('#PORT_OPTIONS#', mount_port_overrides_nfsv4)
-        end
+        client_manifest.gsub!('#SERVER1_IP#', server_ip1)
+        client_manifest.gsub!('#SERVER2_IP#', server_ip2)
         client_manifest
       }
 
@@ -245,79 +254,6 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
 
         it "should mount NFS share from #{server}" do
           on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
-        end
-
-        if opts[:nfsv3]
-          # Want to verify the NLM ports are correctly configured.  According
-          # to nfs man page, NLM supports advisory file locks only and the
-          # client converts file locks obtained via flock to advisory locks.
-          # So, we can use flock in this test.
-          #
-          # If flock hangs, we have a NLM connectivity problem. Ideally, we would
-          # want an immediate indication of a connectivity issues via flock.
-          # Unfortunately, even the --nonblock flock option simply hangs when we
-          # have communication problem. So, we will timeout to detect communication
-          # problems instead.
-          it "should communicate lock status with NFS server #{server}" do
-            require 'timeout'
-
-            # When testing with tcpwrappers (el7), times out on the first
-            # attempt but then succeed on the second attempt
-            # TODO Figure out why this happens
-            tries = 2
-            begin
-              lock_seconds = 1
-              timeout_seconds = lock_seconds + 30
-              Timeout::timeout(timeout_seconds) do
-                on(client, "flock  #{mount_dir}/#{filename} -c 'sleep #{lock_seconds}'")
-              end
-            rescue Timeout::Error
-              tries -= 1
-              if tries == 0
-                fail('Problem with NFSv3 connectivity during file lock')
-              else
-                retry
-              end
-            end
-          end
-        end
-      end
-
-      if opts[:verify_reboot]
-        it 'should ensure vagrant connectivity' do
-          on(hosts, 'date')
-        end
-
-        unless opts[:nfsv3]
-          # The nfsv4 kernel module is only automatically loaded when a NFSv4
-          # mount is executed. In the NFSv3 test, we only mount using NFSv3.
-          # So, after reboot, the nfsv4 kernel module will not be loaded.
-          # However, since nfs::client::config pre-emptively loads the nfsv4
-          # kernel module (necessary to ensure config initially prior to
-          # reboot), applying the client manifest in the absence of NFSv4
-          # mount will cause the Exec[modprove_nfsv4] to be executed.
-          it 'client manifest should be idempotent after reboot' do
-            client.reboot
-            apply_manifest_on(client, client_manifest, :catch_changes => true)
-          end
-        end
-
-        {
-          server1 => mount_dir1,
-          server2 => mount_dir2
-        }.each do |server,mount_dir|
-          it "mount to #{server} should be re-established after client reboot" do
-            on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
-          end
-
-          it "server manifest should be idempotent on #{server} after reboot" do
-            server.reboot
-            apply_manifest_on(server, server_manifest, :catch_changes => true)
-          end
-
-          it "mount should be re-established after server #{server} reboot" do
-            on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
-          end
         end
 
         it 'should remove mount as prep for next test' do

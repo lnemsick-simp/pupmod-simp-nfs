@@ -1,4 +1,4 @@
-# **NOTE: THIS IS A [PRIVATE](https://github.com/puppetlabs/puppetlabs-stdlib#assert_private) CLASS**
+# **NOTE: THIS IS A [PRIVATE](https://github.com/puppetlabs/puppetlabs-stdlib#assert_private) DEFINE**
 #
 # A helper for setting up the cross-system connectivity parts of a mount
 #
@@ -32,7 +32,9 @@ define nfs::client::mount::connection (
   assert_private()
 
   if $stunnel {
-    # Only dealing with NFSv4!
+    # Only dealing with NFSv4.  stunnel-related firewall and tcpwrappers
+    # settings handled by the stunnel::instance, itself.
+
     # It is possible that this is called for multiple mounts on the same server
     ensure_resource('nfs::client::stunnel',
       "${nfs_server}:${nfsd_port}",
@@ -82,6 +84,7 @@ define nfs::client::mount::connection (
       #
       # TODO Restrict source port to the server's configured (not ephemeral)
       # outgoing statd and statd-notify ports as appropriate.
+      #
       $_rpcbind_port = 111
       $_tcp_status_ports = [
         $_rpcbind_port,
