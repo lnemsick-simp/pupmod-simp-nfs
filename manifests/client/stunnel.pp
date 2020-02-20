@@ -15,12 +15,10 @@
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
-define nfs::client::stunnel::nfsv4 (
+define nfs::client::stunnel(
   Simplib::Host $nfs_server,
   Simplib::Port $nfsd_accept_port,
   Simplib::Port $nfsd_connect_port,
-  Simplib::Port $rquotad_accept_port,
-  Simplib::Port $rquotad_connect_port,
   Array[String] $stunnel_socket_options,
   Integer[0]    $stunnel_verify,
   Array[String] $stunnel_wantedby,
@@ -36,17 +34,6 @@ define nfs::client::stunnel::nfsv4 (
     stunnel::instance { "nfs_${name}_client_nfsd":
       connect          => ["${nfs_server}:${nfsd_connect_port}"],
       accept           => "127.0.0.1:${nfsd_accept_port}",
-      verify           => $stunnel_verify,
-      socket_options   => $stunnel_socket_options,
-      systemd_wantedby => $stunnel_wantedby,
-      firewall         => $firewall,
-      tcpwrappers      => $tcpwrappers,
-      tag              => ['nfs']
-    }
-
-    stunnel::instance { "nfs_${name}_client_rquotad":
-      connect          => ["${nfs_server}:${rquotad_connect_port}"],
-      accept           => "127.0.0.1:${rquotad_accept_port}",
       verify           => $stunnel_verify,
       socket_options   => $stunnel_socket_options,
       systemd_wantedby => $stunnel_wantedby,

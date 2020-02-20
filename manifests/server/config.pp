@@ -85,7 +85,6 @@ class nfs::server::config
       }
     }
 
-
     if 'RPCMOUNTDARGS' in $nfs::custom_daemon_args {
       concat::fragment { 'nfs_RPCNFSDARGS':
         order   => 4,
@@ -148,6 +147,9 @@ class nfs::server::config
   }
 
   $_simp_etc_exports_path = @("HEREDOC")
+    # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
+    # at the next puppet run.
+
     [Path]
     Unit=simp_etc_exports.service
     PathChanged=/etc/exports
@@ -163,6 +165,9 @@ class nfs::server::config
   }
 
   $_simp_etc_exports_service = @("HEREDOC")
+    # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
+    # at the next puppet run.
+
     [Service]
     Type=simple
     ExecStart=/usr/sbin/exportfs -ra

@@ -100,28 +100,17 @@ define nfs::client::mount (
   Simplib::Ip             $nfs_server,
   Stdlib::Absolutepath    $remote_path,
   Boolean                 $autodetect_remote       = true,
-  Simplib::Port           $port                    = 2049,
   Integer[3,4]            $nfs_version             = 4,
   Nfs::SecurityFlavor     $sec                     = 'sys',
   String                  $options                 = 'soft',
   Nfs::MountEnsure        $ensure                  = 'mounted',
   Boolean                 $at_boot                 = true,
   Boolean                 $autofs                  = true,
-  Optional[String[1]]     $autofs_indirect_map_key = undef,
   Boolean                 $autofs_add_key_subst    = false,
-  # server's ports
-  Optional[Simplib::Port] $lockd_port              = undef,
-  Optional[Simplib::Port] $mountd_port             = undef,
+  Optional[String[1]]     $autofs_indirect_map_key = undef,
   Optional[Simplib::Port] $nfsd_port               = undef,
-  Optional[Simplib::Port] $rquotad_port            = undef,
-  Optional[Simplib::Port] $statd_port              = undef,
   Optional[Boolean]       $stunnel                 = undef,
-  # server's stunnel ports
-  Optional[Simplib::Port] $stunnel_lockd_port      = undef,
-  Optional[Simplib::Port] $stunnel_mountd_port     = undef,
   Optional[Simplib::Port] $stunnel_nfsd_port       = undef,
-  Optional[Simplib::Port] $stunnel_rquotad_port    = undef,
-  Optional[Simplib::Port] $stunnel_statd_port      = undef,
   Optional[Array[String]] $stunnel_socket_options  = undef,
   Optional[Integer]       $stunnel_verify          = undef,
   Optional[Array[String]] $stunnel_wantedby        = undef
@@ -140,34 +129,10 @@ define nfs::client::mount (
   #############################################################
   # Pull in defaults from nfs and nfs::client classes as needed
   #############################################################
-  if $lockd_port !~ Undef {
-    $_lockd_port = $lockd_port
-  } else {
-    $_lockd_port = $nfs::lockd_port_server
-  }
-
-  if $mountd_port !~ Undef {
-    $_mountd_port = $mountd_port
-  } else {
-    $_mountd_port = $nfs::mountd_port
-  }
-
   if $nfsd_port !~ Undef {
     $_nfsd_port = $nfsd_port
   } else {
     $_nfsd_port = $nfs::nfsd_port
-  }
-
-  if $rquotad_port !~ Undef {
-    $_rquotad_port = $rquotad_port
-  } else {
-    $_rquotad_port = $nfs::rquotad_port
-  }
-
-  if $statd_port !~ Undef {
-    $_statd_port = $statd_port
-  } else {
-    $_statd_port = $nfs::statd_port_server
   }
 
   if $stunnel !~ Undef {
@@ -176,34 +141,14 @@ define nfs::client::mount (
     $_stunnel = $nfs::client::stunnel
   }
 
-  if $stunnel_lockd_port !~ Undef {
-    $_stunnel_lockd_port = $stunnel_lockd_port
-  } else {
-    $_stunnel_lockd_port = $nfs::stunnel_lockd_port
-  }
-
-  if $stunnel_mountd_port !~ Undef {
-    $_stunnel_mountd_port = $stunnel_mountd_port
-  } else {
-    $_stunnel_mountd_port = $nfs::stunnel_mountd_port
+  if ($nfs_version == 3) and $_stunnel {
+    fail("NFSv3 mounts with stunnel are unsupported.  Set 'stunnel' to false for Nfs::Client::Mount[${name}] to fix.")
   }
 
   if $stunnel_nfsd_port !~ Undef {
     $_stunnel_nfsd_port = $stunnel_nfsd_port
   } else {
     $_stunnel_nfsd_port = $nfs::stunnel_nfsd_port
-  }
-
-  if $stunnel_rquotad_port !~ Undef {
-    $_stunnel_rquotad_port = $stunnel_rquotad_port
-  } else {
-    $_stunnel_rquotad_port = $nfs::stunnel_rquotad_port
-  }
-
-  if $stunnel_statd_port !~ Undef {
-    $_stunnel_statd_port = $stunnel_statd_port
-  } else {
-    $_stunnel_statd_port = $nfs::stunnel_statd_port
   }
 
   if $stunnel_socket_options !~ Undef {
@@ -231,16 +176,12 @@ define nfs::client::mount (
   if ($nfs_version  == 4) {
     $_nfs_base_options = "nfsvers=4,port=${_nfsd_port},${options},sec=${sec}"
   } else {
-    $_nfs_base_options = "nfsvers=3,port=${_nfsd_port},mountport=${_mountd_port},${options}"
+    $_nfs_base_options = "nfsvers=3,port=${_nfsd_port},${options}"
   }
 
   if $_stunnel {
-    # Ensure as much TCP communication is used as possible.
-    if ($nfs_version  == 4) {
-      $_nfs_options = "${_nfs_base_options},proto=tcp"
-    } else {
-      $_nfs_options = "${_nfs_base_options},proto=tcp,mountproto=tcp"
-    }
+    # stunnel only carries TCP
+    $_nfs_options = "${_nfs_base_options},proto=tcp"
   } else {
     $_nfs_options = $_nfs_base_options
   }
@@ -254,26 +195,10 @@ define nfs::client::mount (
   nfs::client::mount::connection { $name:
     nfs_server             => $nfs_server,
     nfs_version            => $nfs_version,
-    lockd_port             => $_lockd_port,
-    mountd_port            => $_mountd_port,
     nfsd_port              => $_nfsd_port,
-    rquotad_port           => $_rquotad_port,
-    statd_port             => $_statd_port,
-    # Client ports are required to open up the firewall for this specific
-    # connection. The NFSv3 client ports are those that have been configured
-    # for this host, i.e., the ports set based on whether this is a NFS client
-    # or both a NFS client and a NFS server.
-    client_callback_port   => $nfs::client::callback_port,
-    client_lockd_port      => $nfs::lockd_port,
-    client_lockd_udp_port  => $nfs::lockd_udp_port,
-    client_statd_port      => $nfs::statd_port,
     firewall               => $nfs::firewall,
     stunnel                => $_stunnel,
-    stunnel_lockd_port     => $_stunnel_lockd_port,
-    stunnel_mountd_port    => $_stunnel_mountd_port,
     stunnel_nfsd_port      => $_stunnel_nfsd_port,
-    stunnel_rquotad_port   => $_stunnel_rquotad_port,
-    stunnel_statd_port     => $_stunnel_statd_port,
     stunnel_socket_options => $_stunnel_socket_options,
     stunnel_verify         => $_stunnel_verify,
     stunnel_wantedby       => $_stunnel_wantedby,

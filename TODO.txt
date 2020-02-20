@@ -105,12 +105,21 @@
 - DONE test NFSv4 when idmapd default config is used
 
 MODULE TODO
+- NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server?
 - Remove rquota tunnels I had added in
   - examined quota using xfs file system with user quota on and group quota off
   - rquotad used UDP to IP address in mount
   - won't work with stunnel,even if TCP, if you want to allow connection to
     more than 1 server
 - IN PROGRESS stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
+- Figure out if this test failure is a real problem or a timimg issue:
+    1) nfs basic with firewall only NFSv4 with firewall behaves like a NFS share using autofs
+       with distinct client/server roles as just a NFS client el7-client using NFS server
+       el8-server automount should be valid after client reboot
+     Failure/Error: client.reboot
+     Beaker::Host::RebootFailure:
+       Command failed in reboot: Uptime did not reset. Reboot appears to have failed.
+
 - move server export template to templatest/etc for consistency
 - name of stunnels don't have the full port info in them ->  does it make sense to
   have the nfsd port in its name?

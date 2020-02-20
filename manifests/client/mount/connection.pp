@@ -18,22 +18,10 @@
 define nfs::client::mount::connection (
   Simplib::Ip   $nfs_server,
   Integer[3,4]  $nfs_version,
-  Simplib::Port $lockd_port,
-  Simplib::Port $mountd_port,
   Simplib::Port $nfsd_port,
-  Simplib::Port $rquotad_port,
-  Simplib::Port $statd_port,
-  Simplib::Port $client_callback_port,
-  Simplib::Port $client_lockd_port,
-  Simplib::Port $client_lockd_udp_port,
-  Simplib::Port $client_statd_port,
   Boolean       $firewall,
   Boolean       $stunnel,
-  Simplib::Port $stunnel_lockd_port,
-  Simplib::Port $stunnel_mountd_port,
   Simplib::Port $stunnel_nfsd_port,
-  Simplib::Port $stunnel_rquotad_port,
-  Simplib::Port $stunnel_statd_port,
   Array[String] $stunnel_socket_options,
   Integer       $stunnel_verify,
   Array[String] $stunnel_wantedby,
@@ -44,56 +32,23 @@ define nfs::client::mount::connection (
   assert_private()
 
   if $stunnel {
-    if $nfs_version == 3 {
-      # It is possible that this is called for multiple mounts on the same server
-      ensure_resource('nfs::client::stunnel::nfsv3',
-        "${nfs_server}:${nfsd_port}",
-        {
-          nfs_server             => $nfs_server,
-          lockd_accept_port      => $lockd_port,
-          lockd_connect_port     => $stunnel_lockd_port,
-          mountd_accept_port     => $mountd_port,
-          mountd_connect_port    => $stunnel_mountd_port,
-          nfsd_accept_port       => $nfsd_port,
-          nfsd_connect_port      => $stunnel_nfsd_port,
-          rquotad_accept_port    => $rquotad_port,
-          rquotad_connect_port   => $stunnel_rquotad_port,
-          statd_accept_port      => $statd_port,
-          statd_connect_port     => $stunnel_statd_port,
-          stunnel_socket_options => $stunnel_socket_options,
-          stunnel_verify         => $stunnel_verify,
-          stunnel_wantedby       => $stunnel_wantedby,
-          firewall               => $firewall,
-          tcpwrappers            => $tcpwrappers,
-        }
-      )
-    }
-    else {
-      # It is possible that this is called for multiple mounts on the same server
-      ensure_resource('nfs::client::stunnel::nfsv4',
-        "${nfs_server}:${nfsd_port}",
-        {
-          nfs_server             => $nfs_server,
-          nfsd_accept_port       => $nfsd_port,
-          nfsd_connect_port      => $stunnel_nfsd_port,
-          rquotad_accept_port    => $rquotad_port,
-          rquotad_connect_port   => $stunnel_rquotad_port,
-          stunnel_socket_options => $stunnel_socket_options,
-          stunnel_verify         => $stunnel_verify,
-          stunnel_wantedby       => $stunnel_wantedby,
-          firewall               => $firewall,
-          tcpwrappers            => $tcpwrappers,
-        }
-      )
-    }
-  }
-
-  if $firewall  {
-    # Open up the firewall for incoming, side-band NFS channels.  Without
-    # pre-configuring each NFS server to know all the clients they are
-    # communicating with, these channels cannot be carried over stunnel.
-    # However, the security risk is minimized, because the side-channels
-    # are not used to carry file content.
+    # Only dealing with NFSv4!
+    # It is possible that this is called for multiple mounts on the same server
+    ensure_resource('nfs::client::stunnel',
+      "${nfs_server}:${nfsd_port}",
+      {
+        nfs_server             => $nfs_server,
+        nfsd_accept_port       => $nfsd_port,
+        nfsd_connect_port      => $stunnel_nfsd_port,
+        stunnel_socket_options => $stunnel_socket_options,
+        stunnel_verify         => $stunnel_verify,
+        stunnel_wantedby       => $stunnel_wantedby,
+        firewall               => $firewall,
+        tcpwrappers            => $tcpwrappers,
+      }
+    )
+  } elsif $firewall  {
+    # Open up the firewall for incoming, side-band NFS channels.
     include 'iptables'
 
     # WORK AROUND iptables::listen::xxx issue with invalid firewalld services
@@ -116,7 +71,7 @@ define nfs::client::mount::connection (
           trusted_nets => [$nfs_server],
           # the port to use is communicated via the main nfsd channel, so no
           # need for rpcbind
-          dports       => [$client_callback_port]
+          dports       => [$nfs::client::callback_port]
         }
       )
     } else {
@@ -130,8 +85,8 @@ define nfs::client::mount::connection (
       $_rpcbind_port = 111
       $_tcp_status_ports = [
         $_rpcbind_port,
-        $client_lockd_port,
-        $client_statd_port
+        $nfs::lockd_port,
+        $nfs::statd_port
       ]
       ensure_resource('iptables::listen::tcp_stateful',
         "nfs_status_tcp_${_safe_nfs_server}",
@@ -143,8 +98,8 @@ define nfs::client::mount::connection (
 
       $_udp_status_ports = [
         $_rpcbind_port,
-        $client_lockd_udp_port,
-        $client_statd_port
+        $nfs::lockd_udp_port,
+        $nfs::statd_port
       ]
       ensure_resource('iptables::listen::udp',
         "nfs_status_udp_${_safe_nfs_server}",

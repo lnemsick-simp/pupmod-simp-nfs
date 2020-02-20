@@ -109,7 +109,7 @@
 
 class nfs::server (
   Boolean          $nfsd_vers4                    = true,
-  Boolean          $nfsd_vers4_0                  = true,
+  Boolean          $nfsd_vers4_0                  = false,
   Boolean          $nfsd_vers4_1                  = true,
   Boolean          $nfsd_vers4_2                  = true,
   Optional[String] $custom_rpcrquotad_opts        = undef,
@@ -117,11 +117,7 @@ class nfs::server (
   Integer[1]       $sunrpc_tcp_slot_table_entries = 128,
   Boolean          $stunnel                       = $nfs::stunnel,
   Simplib::IP      $stunnel_accept_address        = '0.0.0.0',
-  Simplib::Port    $stunnel_lockd_accept_port     = $nfs::stunnel_lockd_port,
-  Simplib::Port    $stunnel_mountd_accept_port    = $nfs::stunnel_mountd_port,
   Simplib::Port    $stunnel_nfsd_accept_port      = $nfs::stunnel_nfsd_port,
-  Simplib::Port    $stunnel_rquotad_accept_port   = $nfs::stunnel_rquotad_port,
-  Simplib::Port    $stunnel_statd_accept_port     = $nfs::stunnel_statd_port,
   Array[String]    $stunnel_socket_options        = $nfs::stunnel_socket_options,
   Integer          $stunnel_verify                = $nfs::stunnel_verify,
   Array[String]    $stunnel_wantedby              = [
@@ -140,6 +136,10 @@ class nfs::server (
 ) inherits ::nfs {
 
   assert_private()
+
+  if $stunnel and $nfsd_vers4_0 {
+    fail('NFSv4.0 within stunnel is unsupported. Set nfs::server::nfsd_vers4_0 or nfs::server::stunnel to false to fix.')
+  }
 
   include 'nfs::base::config'
   include 'nfs::base::service'

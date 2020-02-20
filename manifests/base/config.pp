@@ -8,9 +8,9 @@ class nfs::base::config
   # Required /etc/nfs.conf options for all possible NFS base services shared
   # by NFS client and NFS server
   # * Only config appropriate for specified NFS versions will actually be set.
-  # * All values can be set vi nfs class parameters
+  # * All values can be set via nfs class parameters
   # * Will override any $nfs::custom_nfs_conf_opts settings, because firewall
-  #   and stunnels will not work otherwise!
+  #   and/or stunnels will not work otherwise!
   $_required_nfs_conf_opts = {
     'gssd'     => {
       'avoid-dns'                => $nfs::gssd_avoid_dns,
@@ -158,7 +158,8 @@ class nfs::base::config
   # all the other NFS services
   if $nfs::secure_nfs and $nfs::gssd_use_gss_proxy  {
     $_override = @(OVERRIDE)
-      # This file is managed by Puppet, simp-nfs module
+      # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
+      # at the next puppet run.
 
       [Unit]
 

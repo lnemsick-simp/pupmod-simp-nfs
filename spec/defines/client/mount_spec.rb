@@ -52,12 +52,11 @@ describe 'nfs::client::mount' do
         end
 
         context 'with NFSv4' do
-          context 'with custom server ports' do
+          context 'with custom server port' do
             let(:params) {{
               :nfs_server   => '1.2.3.4',
               :remote_path  => '/home',
               :nfsd_port    => 10000,
-              :rquotad_port => 10001,
             }}
 
             include_examples 'a base client mount define'
@@ -65,7 +64,6 @@ describe 'nfs::client::mount' do
               is_expected.to create_nfs__client__mount__connection(title).with( {
                 :nfs_version  => 4,
                 :nfsd_port    => 10000,
-                :rquotad_port => 10001
               } )
             }
           end
@@ -77,7 +75,7 @@ describe 'nfs::client::mount' do
               class { 'nfs': nfsv3 => true }
             EOM
           }
-          context 'with default server ports' do
+          context 'with default server port' do
             let(:params) {{
               :nfs_server  => '1.2.3.4',
               :remote_path => '/home',
@@ -89,37 +87,25 @@ describe 'nfs::client::mount' do
             it {
               is_expected.to create_nfs__client__mount__connection(title).with( {
                 :nfs_version  => 3,
-                :lockd_port   => 32803,
-                :mountd_port  => 20048,
                 :nfsd_port    => 2049,
-                :rquotad_port => 875,
-                :statd_port   => 662,
               } )
             }
             #FIXME check autofs entry for mount options
           end
 
-          context 'with custom server ports' do
+          context 'with custom server port' do
             let(:params) {{
               :nfs_server   => '1.2.3.4',
               :remote_path  => '/home',
               :nfs_version  => 3,
-              :lockd_port   => 10000,
-              :mountd_port  => 10001,
               :nfsd_port    => 10002,
-              :rquotad_port => 10003,
-              :statd_port   => 10004
             }}
 
             include_examples 'a base client mount define'
             it {
               is_expected.to create_nfs__client__mount__connection(title).with( {
                 :nfs_version  => 3,
-                :lockd_port   => 10000,
-                :mountd_port  => 10001,
                 :nfsd_port    => 10002,
-                :rquotad_port => 10003,
-                :statd_port   => 10004
               } )
             }
             #FIXME check autofs entry for mount options
@@ -169,7 +155,7 @@ describe 'nfs::client::mount' do
           }}
 
           include_examples 'a base client mount define'
-          it { is_expected.to contain_nfs__client__stunnel__nfsv4("#{params[:nfs_server]}:2049") }
+          it { is_expected.to contain_nfs__client__stunnel("#{params[:nfs_server]}:2049") }
         end
 
         context 'without autofs' do
