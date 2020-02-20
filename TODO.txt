@@ -102,15 +102,21 @@
   - Added basic idmapd test
 - RESOLVED - yes, for haveged - Is EPEL repo needed in acceptance tests?
 - Fixed bug with duplicate exec resource in client::mount
+- DONE test NFSv4 when idmapd default config is used
 
 MODULE TODO
+- Remove rquota tunnels I had added in
+  - examined quota using xfs file system with user quota on and group quota off
+  - rquotad used UDP to IP address in mount
+  - won't work with stunnel,even if TCP, if you want to allow connection to
+    more than 1 server
+- IN PROGRESS stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
 - move server export template to templatest/etc for consistency
-- name of stunnels don't have the full port info in them ->  does not make sense to
-  have the nfsd port in its name
+- name of stunnels don't have the full port info in them ->  does it make sense to
+  have the nfsd port in its name?
 - should stunnel change refresh nfs::server::service?  similar to how autofs gets
   refreshed?
 - change autofs reload to be unit file
-- stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
 - See if have to start stunnel up after service
   client goes beserk? (times out and has issues with hard mount)
 - Is nfs::server::export logic with seboolean required
@@ -161,7 +167,6 @@ MODULE TODO
       i.e., when server config is customized, we haven't missed a corresponding client
       config that would be have to be set
     - will be tested with stunnel client multiple servers stes
-   - NFSv4 when idmapd default config is used
 
 QUESTIONS
 - What should the initial nfs.conf look like?

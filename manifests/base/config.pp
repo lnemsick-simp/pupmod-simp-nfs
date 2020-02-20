@@ -165,7 +165,7 @@ class nfs::base::config
       PartOf=nfs-utils.service
       | OVERRIDE
 
-    systemd::dropin_file { 'unit.conf':
+    systemd::dropin_file { 'simp_unit.conf':
       unit    => 'gssproxy.service',
       content => $_override
     }

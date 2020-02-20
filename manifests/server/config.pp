@@ -144,19 +144,46 @@ class nfs::server::config
     mode           => '0644',
     ensure_newline => true,
     warn           => true,
-    notify         => Exec['nfs_re-export']
+#    notify         => Exec['nfs_re-export']
   }
 
-  exec { 'nfs_re-export':
-    command     => '/usr/sbin/exportfs -ra',
-    refreshonly => true,
-    logoutput   => true,
-    # Don't execute if nfsd kernel module has not been loaded yet, (i.e.,
-    # nfs-server.service is not running) or will fail with obscure
-    # 'Function not implemented' error. The changes will be picked up when
-    # nfs-server.service starts, as its unit file runs 'exportfs -r'.
-    onlyif      => '/sbin/lsmod | /usr/bin/grep -qw nfsd'
+  $_simp_etc_exports_path = @("HEREDOC")
+    [Path]
+    Unit=simp_etc_exports.service
+    PathChanged=/etc/exports
+    | HEREDOC
+
+  systemd::unit_file { 'simp_etc_exports.path':
+    enable  => true,
+    active  => true,
+    content => $_simp_etc_exports_path
   }
+
+  $_simp_etc_exports_service = @("HEREDOC")
+    [Service]
+    Type=simple
+    ExecStart=/usr/sbin/exportfs -ra
+    | HEREDOC
+
+  systemd::unit_file { 'simp_etc_exports.service':
+    content => $_simp_etc_exports_service
+  }
+
+  service { 'simp_etc_exports':
+    enable  => true,
+    require => Systemd::Unit_file['simp_etc_exports.service']
+  }
+
+#  exec { 'nfs_re-export':
+#    command     => '/usr/sbin/exportfs -ra',
+#    refreshonly => true,
+#    logoutput   => true,
+#    # Don't execute if nfsd kernel module has not been loaded yet, (i.e.,
+#    # nfs-server.service is not running) or will fail with obscure
+#    # 'Function not implemented' error. The changes will be picked up when
+#    # nfs-server.service starts, as its unit file runs 'exportfs -r'.
+#    onlyif      => '/sbin/lsmod | /usr/bin/grep -qw nfsd'
+#  }
 
   # Tune with the proper number of slot entries.
   #FIXME Is this still applicable?  Also, should we persist to file

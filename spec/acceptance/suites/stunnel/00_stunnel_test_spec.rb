@@ -19,8 +19,8 @@ test_name 'nfs stunnel'
 #   }
 #
 # This will generate two rules in /etc/exports:
-#   /srv/my_share *(sync,sec=sys,anonuid=65534,anongid=65534)
-#   /srv/my_share 127.0.0.1(sync,sec=sys,anonuid=65534,anongid=65534,insecure)
+#   /srv/my_share *(sync,security_label,sec=sys,anonuid=65534,anongid=65534)
+#   /srv/my_share 127.0.0.1(sync,security_label,sec=sys,anonuid=65534,anongid=65534,insecure)
 #
 # When a NFS client attempts to mount /srv/my_share via stunnel, the request
 # will pass through the tunnel and be translated in a request from
@@ -72,29 +72,31 @@ describe 'nfs stunnel' do
   context 'with stunnel and firewall' do
     context 'NFSv4 with stunnel and firewall' do
       opts = {
-        :base_hiera      => base_hiera,
-        :export_insecure => true,
-        :nfs_sec         => 'sys',
-        :nfsv3           => false,
-        :verify_reboot   => true
+        :base_hiera              => base_hiera,
+        :export_insecure         => true,
+        :nfs_sec                 => 'sys',
+        :nfsv3                   => false,
+        :mount_autodetect_remote => [ false ],
+        :verify_reboot           => true
       }
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
- #     it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
+      it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
       it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
 
     context 'NFSv3 with stunnel and firewall' do
       opts = {
-        :base_hiera      => base_hiera,
-        :export_insecure => true,
-        :nfs_sec         => 'sys',
-        :nfsv3           => true,
-        :verify_reboot   => true
+        :base_hiera              => base_hiera,
+        :export_insecure         => true,
+        :nfs_sec                 => 'sys',
+        :nfsv3                   => true,
+        :mount_autodetect_remote => [ false ],
+        :verify_reboot           => true
       }
 
       it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
- #     it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
+      it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
       it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
     end
   end
