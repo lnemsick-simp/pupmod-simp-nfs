@@ -1,9 +1,7 @@
 # Provides for the configuration of ``idmapd``
 #
-# The daemon is started from ``init.pp`` but you may need to tweak some values
-# here for your environment.
-#
-# This is recommended for ``NFSv4`` but not required for ``NFSv3``
+# The NFSV4 daemon is started from ``init.pp`` but you may need to tweak some
+# values here for your environment.
 #
 # @see idmapd.conf(5)
 #
@@ -33,15 +31,17 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::idmapd::config (
-  Optional[Integer]                          $verbosity          = undef,
-  Optional[String]                           $domain             = undef,
-  Optional[Array[String]]                    $local_realms       = undef,
-  String                                     $nobody_user        = 'nobody',
-  String                                     $nobody_group       = 'nobody',
-  Array[Enum['nsswitch','static']]           $trans_method       = ['nsswitch'],
-  Optional[Array[Enum['nsswitch','static']]] $gss_methods        = undef,
-  Optional[Hash[String,String]]              $static_translation = undef,
-  Optional[String]                           $content            = undef
+  Optional[Integer]                            $verbosity          = undef,
+  Optional[String[1]]                          $domain             = undef,
+  Optional[Enum['user','group','both','none']] $no_strip           = undef,
+  Optional[Boolean]                            $reformat_group     = undef,
+  Optional[Array[String[1],1]]                 $local_realms       = undef,
+  String                                       $nobody_user        = 'nobody',
+  String                                       $nobody_group       = 'nobody',
+  Array[Enum['nsswitch','static'],1]           $trans_method       = ['nsswitch'],
+  Optional[Array[Enum['nsswitch','static'],1]] $gss_methods        = undef,
+  Optional[Hash[String[1],String[1]]]          $static_translation = undef,
+  Optional[String]                             $content            = undef
 ) {
 
   file { '/etc/idmapd.conf':

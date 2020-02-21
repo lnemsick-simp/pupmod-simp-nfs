@@ -182,7 +182,8 @@ shared_examples 'a NFS share using autofs with distinct client/server roles' do 
 
       it 'should export shared dirs' do
         export_dirs.each do |dir|
-          on(server, "exportfs | grep -w #{dir}")
+          on(server, 'exportfs -v')
+          on(server, "exportfs -v | grep -w #{dir}")
         end
 
         on(server, "find #{export_root_path} -type f | sort")

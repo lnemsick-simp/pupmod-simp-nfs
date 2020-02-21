@@ -5,13 +5,19 @@
 <% else -%>
 [General]
 
-<%  if @verbosity -%>
+<%  unless @verbosity.nil? -%>
 Verbosity = <%= @verbosity %>
 <%  end -%>
-<%  if @domain -%>
+<%  unless @domain.nil? -%>
 Domain = <%= @domain %>
 <%  end -%>
-<%  if @local_realms -%>
+<%  unless @no_strip.nil? -%>
+No-Strip = <%= @no_strip %>
+<%  end -%>
+<%  unless @reformat_group.nil? -%>
+Reformat-Group = <%= @reformat_group %>
+<%  end -%>
+<%  unless @local_realms.nil? -%>
 Local-Realms = <%= Array(@local_realms).join(',') %>
 <%  end -%>
 
@@ -23,13 +29,13 @@ Nobody-Group = <%= @nobody_group %>
 [Translation]
 
 Method = <%= Array(@trans_method).join(',') %>
-<%  if @gss_methods -%>
+<%  unless @gss_methods.nil? -%>
 GSS-Methods = <%= Array(@gss_methods).join(',') %>
 <%  end -%>
 
 [Static]
 <%
-  if @static_translation
+  unless @static_translation.nil?
     @static_translation.each_pair do |k,v|
 -%>
 <%= k %> = <%= v %>

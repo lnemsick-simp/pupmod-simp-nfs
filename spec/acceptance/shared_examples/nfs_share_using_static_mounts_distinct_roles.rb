@@ -106,6 +106,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
       end
 
       it 'should export shared dir' do
+        on(server, 'exportfs -v')
         on(server, "exportfs -v | grep #{exported_dir}")
       end
     end

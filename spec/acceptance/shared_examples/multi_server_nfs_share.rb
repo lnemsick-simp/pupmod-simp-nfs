@@ -51,6 +51,24 @@ def build_mount_port_options(config)
   options
 end
 
+def build_server_hieradata(base_hiera, config)
+  hiera = Marshal.load(Marshal.dump(base_hiera))
+  hiera['nfs::is_client'] = false
+  hiera['nfs::is_server'] = true
+  hiera['nfs::nfsv3'] = config[:nfsv3]
+  hiera['nfs::nfsd_port'] = config[:nfsd_port]
+  hiera['nfs::stunnel_nfsd_port'] = config[:stunnel_nfsd_port]
+  hiera.compact
+end
+
+def build_server_manifest(manifest_base, config, exported_dir)
+  server_manifest = manifest_base.dup
+  server_manifest.gsub!('#EXPORTED_DIR#', exported_dir)
+  server_manifest.gsub!('#NFS_SEC#', config[:nfs_sec])
+  server_manifest.gsub!('#EXPORT_INSECURE#', config[:export_insecure].to_s)
+  server_manifest
+end
+
 shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
   let(:exported_dir1) { '/srv/nfs_share1' }
   let(:exported_dir2) { '/srv/nfs_share2' }
@@ -83,7 +101,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
         insecure    => #EXPORT_INSECURE#
       }
 
-      File['#{exported_dir}'] -> Nfs::Server::Export['nfs_root']
+      File['#EXPORTED_DIR#'] -> Nfs::Server::Export['nfs_root']
 
       #{opts[:server_custom]}
     EOM
@@ -139,29 +157,17 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
   }
 
   context "as the first NFS server #{server1}" do
+    let(:server_manifest) {
+      build_server_manifest(server_manifest_base, opts[:mount1_config], exported_dir1)
+    }
+
     it 'should ensure vagrant connectivity' do
       on(hosts, 'date')
     end
 
     it 'should apply server manifest to export' do
-      server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-      server_hieradata['nfs::is_client'] = false
-      server_hieradata['nfs::is_server'] = true
-      server_hieradata['nfs::nfsv3'] = opts[:mount1_config][:nfsv3]
-      if opts[:mount1_config][:nfsd_port]
-        server_hieradata['nfs::nfsd_port'] = opts[:mount1_config][:nfsd_port]
-      end
-
-      if opts[:mount1_config][:stunnel_nfsd_port]
-        server_hieradata['nfs::stunnel_nfsd_port'] = opts[:mount1_config][:stunnel_nfsd_port]
-      end
-
+      server_hieradata = build_server_hieradata(opts[:base_hiera],opts[:mount1_config])
       set_hieradata_on(server1, server_hieradata)
-
-      server_manifest = server_manifest_base.dup
-      server_manifest.gsub!('#EXPORTED_DIR#', exported_dir1)
-      server_manifest.gsub!('#NFS_SEC#', opts[:mount1_config][:nfs_sec])
-      server_manifest.gsub!('#EXPORT_INSECURE#', opts[:mount1_config][:export_insecure])
       apply_manifest_on(server1, server_manifest, :catch_failures => true)
     end
 
@@ -170,31 +176,19 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     end
 
     it 'should export shared dir' do
+      on(server1, 'exportfs -v')
       on(server1, "exportfs -v | grep #{exported_dir1}")
     end
   end
 
   context "as the second NFS server #{server2}" do
+    let(:server_manifest) {
+      build_server_manifest(server_manifest_base, opts[:mount2_config], exported_dir2)
+    }
+
     it 'should apply server manifest to export' do
-      server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-      server_hieradata['nfs::is_client'] = false
-      server_hieradata['nfs::is_server'] = true
-      server_hieradata['nfs::nfsv3'] = opts[:mount2_config][:nfsv3]
-      if opts[:mount2_config][:nfsd_port]
-        server_hieradata['nfs::nfsd_port'] = opts[:mount2_config][:nfsd_port]
-      end
-
-      if opts[:mount2_config][:stunnel_nfsd_port]
-        server_hieradata['nfs::stunnel_nfsd_port'] = opts[:mount2_config][:stunnel_nfsd_port]
-      end
-
-      server_hieradata.merge!(server_port_overrides_hiera)
+      server_hieradata = build_server_hieradata(opts[:base_hiera],opts[:mount2_config])
       set_hieradata_on(server2, server_hieradata)
-
-      server_manifest = server_manifest_base.dup
-      server_manifest.gsub!('#EXPORTED_DIR#', exported_dir2)
-      server_manifest.gsub!('#NFS_SEC#', opts[:mount2_config][:nfs_sec])
-      server_manifest.gsub!('#EXPORT_INSECURE#', opts[:mount2_config][:export_insecure])
       apply_manifest_on(server2, server_manifest, :catch_failures => true)
     end
 
@@ -203,6 +197,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     end
 
     it 'should export shared dir' do
+      on(server2, 'exportfs -v')
       on(server2, "exportfs -v | grep #{exported_dir2}")
     end
   end
@@ -228,8 +223,8 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
         client_manifest = client_manifest_base.dup
         client_manifest.gsub!('#MOUNT_DIR1#', mount_dir1)
         client_manifest.gsub!('#MOUNT_DIR2#', mount_dir2)
-        client_manifest.gsub!('#SERVER1_IP#', server_ip1)
-        client_manifest.gsub!('#SERVER2_IP#', server_ip2)
+        client_manifest.gsub!('#SERVER1_IP#', server1_ip)
+        client_manifest.gsub!('#SERVER2_IP#', server2_ip)
         client_manifest
       }
 
@@ -237,7 +232,8 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
         client_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
         client_hieradata['nfs::is_client'] = true
         client_hieradata['nfs::is_server'] = false
-        client_hieradata['nfs::nfsv3'] = opts[:nfsv3]
+        nfsv3 = opts[:mount1_config][:nfsv3] || opts[:mount2_config][:nfsv3]
+        client_hieradata['nfs::nfsv3'] = nfsv3
         set_hieradata_on(client, client_hieradata)
 
         apply_manifest_on(client, client_manifest, :catch_failures => true)

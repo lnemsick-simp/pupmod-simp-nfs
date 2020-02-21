@@ -105,6 +105,8 @@
 - DONE test NFSv4 when idmapd default config is used
 
 MODULE TODO
+- make sure no error messages when idmapd.conf is enabled
+- stunnel set and NFS server and client on same host fails idempotency
 - NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server?
 - Remove rquota tunnels I had added in
   - examined quota using xfs file system with user quota on and group quota off
