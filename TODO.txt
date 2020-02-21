@@ -103,16 +103,20 @@
 - RESOLVED - yes, for haveged - Is EPEL repo needed in acceptance tests?
 - Fixed bug with duplicate exec resource in client::mount
 - DONE test NFSv4 when idmapd default config is used
-
-MODULE TODO
-- make sure no error messages when idmapd.conf is enabled
-- stunnel set and NFS server and client on same host fails idempotency
-- NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server?
-- Remove rquota tunnels I had added in
+- DONE make sure no error messages when idmapd.conf is enabled
+- DONE Remove rquota tunnels I had added in
   - examined quota using xfs file system with user quota on and group quota off
   - rquotad used UDP to IP address in mount
   - won't work with stunnel,even if TCP, if you want to allow connection to
     more than 1 server
+- RESOLVED name of stunnels don't have the full port info in them ->  does it make sense to
+  have the nfsd port in its name?  Yes, now that only nfsd tunnel
+- DONE change exportfs reload to be unit file
+
+MODULE TODO
+- use epp for idmapd.conf
+- stunnel set and NFS server and client on same host fails idempotency
+- NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server?
 - IN PROGRESS stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
 - Figure out if this test failure is a real problem or a timimg issue:
     1) nfs basic with firewall only NFSv4 with firewall behaves like a NFS share using autofs
@@ -121,13 +125,9 @@ MODULE TODO
      Failure/Error: client.reboot
      Beaker::Host::RebootFailure:
        Command failed in reboot: Uptime did not reset. Reboot appears to have failed.
-
-- move server export template to templatest/etc for consistency
-- name of stunnels don't have the full port info in them ->  does it make sense to
-  have the nfsd port in its name?
+- move server export template to templates/etc for consistency
 - should stunnel change refresh nfs::server::service?  similar to how autofs gets
   refreshed?
-- change autofs reload to be unit file
 - See if have to start stunnel up after service
   client goes beserk? (times out and has issues with hard mount)
 - Is nfs::server::export logic with seboolean required

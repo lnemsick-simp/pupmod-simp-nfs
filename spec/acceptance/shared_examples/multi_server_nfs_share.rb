@@ -40,8 +40,8 @@ def build_mount_port_options(config)
     options += "  stunnel_nfsd_port => #{config[:stunnel_nfsd_port]},\n"
   end
 
-  unless config[:stunnel].nil?
-    if config[:stunnel]
+  unless config[:mount_stunnel].nil?
+    if config[:mount_stunnel]
       options += "  stunnel    => true,\n"
     else
       options += "  stunnel    => false,\n"
@@ -168,6 +168,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     it 'should apply server manifest to export' do
       server_hieradata = build_server_hieradata(opts[:base_hiera],opts[:mount1_config])
       set_hieradata_on(server1, server_hieradata)
+      print_test_config(server_hieradata, server_manifest)
       apply_manifest_on(server1, server_manifest, :catch_failures => true)
     end
 
@@ -189,6 +190,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     it 'should apply server manifest to export' do
       server_hieradata = build_server_hieradata(opts[:base_hiera],opts[:mount2_config])
       set_hieradata_on(server2, server_hieradata)
+      print_test_config(server_hieradata, server_manifest)
       apply_manifest_on(server2, server_manifest, :catch_failures => true)
     end
 
@@ -235,7 +237,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
         nfsv3 = opts[:mount1_config][:nfsv3] || opts[:mount2_config][:nfsv3]
         client_hieradata['nfs::nfsv3'] = nfsv3
         set_hieradata_on(client, client_hieradata)
-
+        print_test_config(client_hieradata, client_manifest)
         apply_manifest_on(client, client_manifest, :catch_failures => true)
       end
 
@@ -249,6 +251,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
       }.each do |server,mount_dir|
 
         it "should mount NFS share from #{server}" do
+          on(client, "mount | grep #{mount_dir}")
           on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
         end
 

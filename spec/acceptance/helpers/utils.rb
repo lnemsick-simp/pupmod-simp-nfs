@@ -46,6 +46,17 @@ module Acceptance
         internal_ip_info
       end
 
+      def print_test_config(hieradata, manifest)
+        puts '>'*80
+        if hieradata.is_a?(Hash)
+          puts "Hieradata:\n#{hieradata.to_yaml}"
+        else
+          puts "Hieradata:\n#{hieradata}"
+        end
+        puts '-'*80
+        puts "Manifest:\n#{manifest}"
+        puts '<'*80
+      end
     end
   end
 end

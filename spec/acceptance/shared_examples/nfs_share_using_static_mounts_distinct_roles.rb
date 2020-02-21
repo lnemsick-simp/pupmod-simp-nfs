@@ -98,6 +98,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
         server_hieradata['nfs::is_server'] = true
         server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
         set_hieradata_on(server, server_hieradata)
+        print_test_config(server_hieradata, server_manifest)
         apply_manifest_on(server, server_manifest, :catch_failures => true)
       end
 
@@ -135,7 +136,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
           client_hieradata['nfs::is_server'] = false
           client_hieradata['nfs::nfsv3'] = opts[:nfsv3]
           set_hieradata_on(client, client_hieradata)
-
+          print_test_config(client_hieradata, client_manifest)
           apply_manifest_on(client, client_manifest, :catch_failures => true)
         end
 

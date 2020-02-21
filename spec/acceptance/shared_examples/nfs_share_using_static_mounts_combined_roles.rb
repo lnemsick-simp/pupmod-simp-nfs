@@ -114,6 +114,7 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
           hieradata['nfs::is_server'] = true
           hieradata['nfs::nfsv3'] = opts[:nfsv3]
           set_hieradata_on(host, hieradata)
+          print_test_config(hieradata, manifest)
           apply_manifest_on(host, manifest, :catch_failures => true)
         end
 
