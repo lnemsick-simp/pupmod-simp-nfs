@@ -112,20 +112,29 @@
 - RESOLVED name of stunnels don't have the full port info in them ->  does it make sense to
   have the nfsd port in its name?  Yes, now that only nfsd tunnel
 - DONE change exportfs reload to be unit file
-
-MODULE TODO
-- use epp for idmapd.conf
-- stunnel set and NFS server and client on same host fails idempotency
-- NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server?
-- IN PROGRESS stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
-- Figure out if this test failure is a real problem or a timimg issue:
+- RESOLVED Move lockd configuration out of /etc/modprobe.d/nfs.conf to /etc/modprobe.d/lockd.conf
+  - Should we use a sysctl resource as well?
+    NO nothing to notify on client until mount has happened and will pick up correct
+    config at mount time.
+- DONE stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
+- RESOLVED - beaker change is the problem
+  Figure out if this test failure is a real problem or a timimg issue:
     1) nfs basic with firewall only NFSv4 with firewall behaves like a NFS share using autofs
        with distinct client/server roles as just a NFS client el7-client using NFS server
        el8-server automount should be valid after client reboot
      Failure/Error: client.reboot
      Beaker::Host::RebootFailure:
        Command failed in reboot: Uptime did not reset. Reboot appears to have failed.
-- move server export template to templates/etc for consistency
+
+MODULE TODO
+- cleanup
+  - use epp for idmapd.conf
+  - move server export template to templates/etc for consistency
+  - puppet strings documentation
+  - Fix else and elsif curly braces -> make sure consistent in a file
+- Testing holes/problems
+  - stunnel set and NFS server and client on same host fails idempotency
+  - NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server at same time?
 - should stunnel change refresh nfs::server::service?  similar to how autofs gets
   refreshed?
 - See if have to start stunnel up after service
@@ -139,7 +148,6 @@ MODULE TODO
 - what is correct ordering?
   - Are all the notifies sufficient?
   - nfs-server.service -> stunnel -> firewall ?
-- Fix else and elsif curly braces -> make sure consistent in a file
 - README.md
   - has hiera() functions...not sure we are still using them
   - has simp_options::kerberos <-- doesn't exist?
@@ -150,9 +158,8 @@ MODULE TODO
   - note in readme that we are intentionally not stunneling rpcbind because
     can't stunnel them and support multiple servers
     - rpcbind port is not intended to be configured (but could munge with unit drop-in file)
+  - note not manage gssproxy config files or /etc/nfsmounts.conf
 - regenerate REFERENCE.md
-- Move lockd configuration out of /etc/modprobe.d/nfs.conf to /etc/modprobe.d/lockd.conf
-  - Should we use a sysctl resource as well?
 - verify that if change config file, everything restarts ok
   - For NFSv3 and NFSv4
     - no stunnel
@@ -180,12 +187,12 @@ MODULE TODO
     - will be tested with stunnel client multiple servers stes
 
 QUESTIONS
-- What should the initial nfs.conf look like?
-  - Should settings be explicit and match defaults?
 - Should we manage nfsmount.conf with the module?
   - looks like client mount config
   - How does this affect compliance validation?  Do options here not get reported
     when the security scans are done?
+- What should the initial nfs.conf look like?
+  - Should settings be explicit and match defaults?
 - Do we need to handle RDMA?
   - Install the rdma-core package:
     # yum install rdma-core

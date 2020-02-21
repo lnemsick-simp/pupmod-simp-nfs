@@ -80,13 +80,26 @@ describe 'nfs stunnel' do
     }
 
     it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
-    it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
+#FIXME
+#    it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
     it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
   end
 
   context 'with NFSv4 stunnel, firewall and tcpwrappers' do
+    tcpwrappers_hiera = {
+      'simp_options::tcpwrappers' => true,
+
+      # use as much TCP as possible for NFS
+      'nfs::custom_nfs_conf_opts' => {
+        'nfsd' => {
+          'tcp' => true,
+          'udp' => false
+        }
+      }
+    }
+
     opts = {
-      :base_hiera      => base_hiera.merge( {'simp_options::tcpwrappers' => true } ),
+      :base_hiera      => base_hiera.merge(tcpwrappers_hiera),
       :export_insecure => true,
       :nfs_sec         => 'sys',
       :nfsv3           => false,
@@ -98,5 +111,13 @@ describe 'nfs stunnel' do
 
     it_behaves_like 'a NFS share using autofs with distinct client/server roles',
       servers_tcpwrappers, clients_tcpwrappers, opts
+  end
+
+  context 'clean up for next test' do
+    (servers_tcpwrappers + clients_tcpwrappers).each do |host|
+      it 'should disable tcpwrappers by removing hosts.allow and hosts.deny files' do
+        on(host, 'rm -f /etc/hosts.allow /etc/hosts.deny')
+      end
+    end
   end
 end

@@ -97,7 +97,7 @@
 #   * See ``stunnel::instance::verify`` for details
 #
 # @param tcpwrappers
-#   Use the SIMP ``tcpwrappers`` module to manage tcpwrappers
+#   Use the SIMP ``tcpwrappers`` module to manage TCP wrappers
 #
 # @param trusted_nets
 #   The systems that are allowed to connect to this service

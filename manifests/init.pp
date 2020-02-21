@@ -68,7 +68,7 @@
 #   Use the SIMP ``iptables`` module to manage firewall connections
 #
 # @param tcpwrappers
-#   Use the SIMP ``tcpwrappers`` module to manage tcpwrappers
+#   Use the SIMP ``tcpwrappers`` module to manage TCP wrappers
 #
 # @param stunnel
 #   Wrap ``stunnel`` around critical NFS connections
