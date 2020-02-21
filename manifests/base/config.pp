@@ -175,4 +175,46 @@ class nfs::base::config
   if $nfs::idmapd {
     include 'nfs::idmapd::config'
   }
+
+  if $nfs::nfsv3 {
+    # Have some difficulty ensuring custom lockd RPC ports from /etc/nfs.conf
+    # are picked up immediately in two scenarios:
+    # - NFS client reboot. The ports are not initially correctly registered
+    #   with rpcbind (portmapper) at NFS client reboot.  They will show the
+    #   wrong value for nlockmgr in 'rpcinfo -p' output, UNTIL the lock protocol
+    #   is engaged (e.g., when the user flocks a file on the NFS share). At that
+    #   time the correct ports will be used and reflected in 'rpcinfo -p'.
+    #   This is a perception problem, not a real problem.
+    # - NFS server is started without nfs-utils being simultaneously started.
+    #   This is a real problem that can be fixed with
+    #     'systemctl restart nfs-utils nfs-server',
+    #   but not necessarily with
+    #     'systemctl start nfs-server'.
+    #   Depending upon the state of the system, a Puppet run may call
+    #   the latter instead of the former and not fix the problem.
+    #
+    # To minimize these issues, set the lockd ports in a kernel module config
+    # file. This will ensure the correct parameters are picked up when the
+    # nfs kernel modules are loaded.
+    #
+    $_modprobe_d_lockd_conf = @("LOCKDCONF")
+      # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
+      # at the next puppet run.
+      #
+      # Set the TCP port that the NFS lock manager should use.
+      # port must be a valid TCP port value (1-65535).
+      options lockd nlm_tcpport=${nfs::lockd_port}
+
+      # Set the UDP port that the NFS lock manager should use.
+      # port must be a valid UDP port value (1-65535).
+      options lockd nlm_udpport=${nfs::lockd_udp_port}
+      | LOCKDCONF
+
+    file { '/etc/modprobe.d/lockd.conf':
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0640',
+      content => $_modprobe_d_lockd_conf,
+    }
+  }
 }

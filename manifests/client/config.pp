@@ -57,39 +57,6 @@ class nfs::client::config {
       content => "\n"
     }
 
-    if $nfs::nfsv3 {
-      # Unlike with the NFS server, custom lockd RPC ports from /etc/nfs.conf
-      # are not initially correctly registered with rpcbind (portmapper) at
-      # NFS client reboot. In fact, they will show the wrong value for nlockmgr
-      # in 'rpcinfo -p' output, UNTIL the lock protocol is engaged (e.g., when
-      # the user flocks a file on the NFS share). This is super confusing to
-      # end-users trying to debug problems. So, to minimize that confusion,
-      # set the lockd ports in a kernel module config file. This ensures the
-      # reported ports have the correct values after a reboot.
-      $_modprobe_d_lockd_conf = @("LOCKDCONF")
-        # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
-        # at the next puppet run.
-        #
-        # Set the TCP port that the NFS lock manager should use.
-        # port must be a valid TCP port value (1-65535).
-        options lockd nlm_tcpport=${nfs::lockd_port}
-
-        # Set the UDP port that the NFS lock manager should use.
-        # port must be a valid UDP port value (1-65535).
-        options lockd nlm_udpport=${nfs::lockd_udp_port}
-        | LOCKDCONF
-
-      file { '/etc/modprobe.d/lockd.conf':
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0640',
-        content => $_modprobe_d_lockd_conf,
-        # modprobe_nfsv4 will load module nfs4, which requires module nfs,
-        # which, in turn, requires module lockd.  So, lockd will get loaded
-        # as a result of the nfsv4 module load.
-        before  => Exec['modprobe_nfsv4']
-      }
-    }
   }
 
   if $nfs::tcpwrappers {

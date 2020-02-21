@@ -162,23 +162,14 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
           it 'should communicate lock status with NFS server' do
             require 'timeout'
 
-            # When testing with tcpwrappers (el7), times out on the first
-            # attempt but then succeed on the second attempt
-            # TODO Figure out why this happens
-            tries = 2
             begin
               lock_seconds = 1
-              timeout_seconds = lock_seconds + 30
+              timeout_seconds = lock_seconds + 60
               Timeout::timeout(timeout_seconds) do
-                on(client, "flock  #{mount_dir}/#{filename} -c 'sleep #{lock_seconds}'")
+                on(client, "date; flock  #{mount_dir}/#{filename} -c 'sleep #{lock_seconds}'; date")
               end
             rescue Timeout::Error
-              tries -= 1
-              if tries == 0
-                fail('Problem with NFSv3 connectivity during file lock')
-              else
-                retry
-              end
+              fail('Problem with NFSv3 connectivity during file lock')
             end
           end
         end
