@@ -1,13 +1,17 @@
 require 'spec_helper'
 
-# Testing private nfs::idmapd::server via nfs
+# Testing private nfs::idmapd::server class via nfs class
 describe 'nfs' do
   # What we are testing is not fact-dependent, but need facts for
   # nfs class.  So, grab first set of supported OS facts.
   let(:facts) { on_supported_os.to_a[0][1] }
 
   context 'with nfs::idmapd=true' do
-    let(:hieradata) { 'idmapd_server_enabled' }
+    let(:params) {{
+      # nfs class params
+      :is_server => true,
+      :idmapd    => true
+    }}
 
     it { is_expected.to compile.with_all_deps }
     it { is_expected.to create_class('nfs::idmapd::server') }
@@ -27,7 +31,11 @@ describe 'nfs' do
   end
 
   context 'with nfs::idmapd=false' do
-    let(:hieradata) { 'idmapd_server_disabled' }
+    let(:params) {{
+      # nfs class params
+      :is_server => true,
+      :idmapd    => false
+    }}
 
     it { is_expected.to compile.with_all_deps }
     it { is_expected.to create_class('nfs::idmapd::server') }
