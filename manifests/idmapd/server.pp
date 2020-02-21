@@ -16,8 +16,8 @@ class nfs::idmapd::server
 
     # Service will be masked if previous config had disallowed idmapd
     exec { 'unmask_nfs-idmapd.service':
-      command => '/usr/bin/systemctl unmask nfs-idmpad.service',
-      onlyif  => '/usr/bin/systemctl status nfs-idmpad.service | /usr/bin/grep -qw masked',
+      command => '/usr/bin/systemctl unmask nfs-idmapd.service',
+      onlyif  => '/usr/bin/systemctl status nfs-idmapd.service | /usr/bin/grep -qw masked',
       notify  => Service['nfs-idmapd.service']
     }
   } else {
