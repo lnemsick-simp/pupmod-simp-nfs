@@ -88,14 +88,15 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
 
   servers_with_client.each do |host|
     opts[:mount_autodetect_remote].each do |autodetect_remote|
-      let(:mount_dir) { "/mnt/#{host}" }
-      let(:server_ip) {
-        info = internal_network_info(host)
-        expect(info[:ip]).to_not be_nil
-        info[:ip]
-      }
 
       context "with autodetect_remote=#{autodetect_remote} on host #{host}" do
+        let(:mount_dir) { "/mnt/#{host}" }
+        let(:server_ip) {
+          info = internal_network_info(host)
+          expect(info[:ip]).to_not be_nil
+          info[:ip]
+        }
+
         let(:manifest) {
           manifest = manifest_base.dup
           manifest.gsub!('#MOUNT_DIR#', mount_dir)
