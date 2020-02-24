@@ -124,7 +124,7 @@ class nfs::server::config
     # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
     # at the next puppet run.
     #
-    RPCRQUOTADOPTS=${_rpcrquotadopts}
+    RPCRQUOTADOPTS="${_rpcrquotadopts}"
     | SYSCONFIGRPCRQUOTAD
 
   file { '/etc/sysconfig/rpc-rquotad':

@@ -56,7 +56,7 @@ describe 'nfs' do
             # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
             # at the next puppet run.
             #
-            RPCRQUOTADOPTS=-p 875
+            RPCRQUOTADOPTS="-p 875"
             EOM
         } ) }
 
@@ -311,10 +311,21 @@ describe 'nfs' do
           context "when nfs::custom_daemon_args has 'RPCNFSDARGS' key" do
           end
       end
+=end
 
       context 'when nfs::server::custom_rpcrquotad_opts set' do
+        let(:hieradata) { 'nfs_server_custom_rpcrquotad_opts' }
+        it { is_expected.to compile.with_all_deps }
+        it { is_expected.to create_class('nfs::server::config') }
+        it { is_expected.to create_file('/etc/sysconfig/rpc-rquotad').with_content(
+          <<~EOM
+            # This file is managed by Puppet (simp-nfs module).  Changes will be overwritten
+            # at the next puppet run.
+            #
+            RPCRQUOTADOPTS="--setquota -p 875"
+            EOM
+        ) }
       end
-=end
 
       context 'when tcpwrappers enabled' do
         let(:params) {{
