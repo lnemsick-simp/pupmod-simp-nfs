@@ -76,11 +76,10 @@ shared_examples 'a NFS share using static mounts with combined client/server rol
         mode   => '0644'
       }
 
-      File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
+      Nfs::Server::Export['nfs_root'] -> Nfs::Client::Mount[$mount_dir]
+      Service['nfs-server.service'] -> Nfs::Client::Mount[$mount_dir]
 
       #{opts[:client_custom]}
-
-      Nfs::Server::Export['nfs_root'] -> Nfs::Client::Mount[$mount_dir]
     EOM
   }
 

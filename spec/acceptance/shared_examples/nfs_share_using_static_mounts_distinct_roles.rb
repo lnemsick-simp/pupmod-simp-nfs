@@ -35,8 +35,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
         mode   => '0644'
       }
 
-      $exported_file = "#{exported_dir}/#{filename}"
-      file { $exported_file:
+      file { '#{exported_dir}/#{filename}':
         ensure  => 'file',
         owner   => 'root',
         group   => 'root',

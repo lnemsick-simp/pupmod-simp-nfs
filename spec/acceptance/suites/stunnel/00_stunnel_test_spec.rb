@@ -80,8 +80,7 @@ describe 'nfs stunnel' do
     }
 
     it_behaves_like 'a NFS share using static mounts with distinct client/server roles', servers, clients, opts
-#FIXME
-#    it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
+    it_behaves_like 'a NFS share using static mounts with combined client/server roles', servers_with_client, opts
     it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
   end
 
