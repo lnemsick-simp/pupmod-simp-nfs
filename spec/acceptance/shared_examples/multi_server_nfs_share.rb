@@ -1,25 +1,40 @@
+# Verify a NFS client can mount directories from two NFS servers simultaneously.
+#
+#   client mount ----> server1 exported dir
+#               \
+#                ----> server2 exported dir
+#
+# This test is most useful for verifying a client supports simultaneous
+# stunneled and non-stunneled connections to different servers.
+#
+# Characteristics of the server capabilities, server exports and clients mounts
+# (e.g., stunnel, NFSv4 or NFSv3, insecure export) are controlled by opts.
+#
 # @param server1 Host that will only be a NFS server
 # @param server2 Host that will only be a NFS server
 # @param clients Array of Hosts that will only be NFS clients
 #
 # @param opts Hash of test options with the following keys:
-#  * :base_hiera    - Base hieradata to be added to nfs-specific hieradata
-#  * :server_custom - Additional content to be added to the NFS server manifest
-#  * :client_custom - Additional content to be added to the NFS client manifest
-#  * :mount1_config - Hash of config to be applied to NFS server and client
-#                     for connections to server1
-#  * :mount2_config - Hash of config to be applied to NFS server and client
-#                     for connections to server1
+#  * :base_hiera - Base hieradata to be added to nfs-specific hieradata for all
+#                  hosts
+#  * :config1    - Hash of config to be applied to NFS server and client to
+#                  affect type of mount to server1
+#  * :config2    - Hash of config to be applied to NFS server and client to
+#                  to affect type of mount to server2
 #
-# NOTE:  The following token substitutions are supported:
-# * In the :server_custom manifest:
-#   * #EXPORTED_DIR#
-#
-# * In the :client_custom manifest:
-#   * #MOUNT_DIR1#
-#   * #MOUNT_DIR2#
-#   * #SERVER_IP1#
-#   * #SERVER_IP2#
+# Hash keys in opts[:config1] and [:config2]
+# * :export_insecure - nfs::server::export::insecure, must be true for
+#   stunneled mounts (NFSv4)
+# * :nfsv3 - When true, nfs::nfsv3 is set to true on both server and client and
+#   nfs::client::mount::nfs_version is set to 3.
+# * :nfs_sec - Value of nfs::server::export::sec (within an Array) and
+#   nfs::client::mount::sec.
+# * :nfsd_port - When set, value of nfs::nfsd_port and
+#   nfs::client::mount::nfsd_port. Otherwise, the defaults will apply.
+# * :stunnel_nfsd_port - When set, value of nfs::stunnel_nfsd_port and
+#   nfs::client::mount::stunnel_nfsd_port. Otherwise, the defaults will apply.
+# * :mount_stunnel - When set, used for nfs::client::mount::stunnel. Otherwise,
+#   the default will apply.
 #
 
 def build_mount_port_options(config)
@@ -102,13 +117,11 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
       }
 
       File['#EXPORTED_DIR#'] -> Nfs::Server::Export['nfs_root']
-
-      #{opts[:server_custom]}
     EOM
   }
 
-  let(:mount_port_options1) { build_mount_port_options(opts[:mount1_config]) }
-  let(:mount_port_options2) { build_mount_port_options(opts[:mount2_config]) }
+  let(:mount_port_options1) { build_mount_port_options(opts[:config1]) }
+  let(:mount_port_options2) { build_mount_port_options(opts[:config2]) }
 
   let(:client_manifest_base) {
     <<~EOM
@@ -151,14 +164,12 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
       }
 
       File[$mount_dir2] -> Nfs::Client::Mount[$mount_dir2]
-
-      #{opts[:client_custom]}
     EOM
   }
 
   context "as the first NFS server #{server1}" do
     let(:server_manifest) {
-      build_server_manifest(server_manifest_base, opts[:mount1_config], exported_dir1)
+      build_server_manifest(server_manifest_base, opts[:config1], exported_dir1)
     }
 
     it 'should ensure vagrant connectivity' do
@@ -166,7 +177,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     end
 
     it 'should apply server manifest to export' do
-      server_hieradata = build_server_hieradata(opts[:base_hiera],opts[:mount1_config])
+      server_hieradata = build_server_hieradata(opts[:base_hiera],opts[:config1])
       set_hieradata_on(server1, server_hieradata)
       print_test_config(server_hieradata, server_manifest)
       apply_manifest_on(server1, server_manifest, :catch_failures => true)
@@ -184,11 +195,11 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
 
   context "as the second NFS server #{server2}" do
     let(:server_manifest) {
-      build_server_manifest(server_manifest_base, opts[:mount2_config], exported_dir2)
+      build_server_manifest(server_manifest_base, opts[:config2], exported_dir2)
     }
 
     it 'should apply server manifest to export' do
-      server_hieradata = build_server_hieradata(opts[:base_hiera],opts[:mount2_config])
+      server_hieradata = build_server_hieradata(opts[:base_hiera],opts[:config2])
       set_hieradata_on(server2, server_hieradata)
       print_test_config(server_hieradata, server_manifest)
       apply_manifest_on(server2, server_manifest, :catch_failures => true)
@@ -234,7 +245,8 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
         client_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
         client_hieradata['nfs::is_client'] = true
         client_hieradata['nfs::is_server'] = false
-        nfsv3 = opts[:mount1_config][:nfsv3] || opts[:mount2_config][:nfsv3]
+        # if either mount will be NFSv3, enable NFSv3 on the client
+        nfsv3 = opts[:config1][:nfsv3] || opts[:config2][:nfsv3]
         client_hieradata['nfs::nfsv3'] = nfsv3
         set_hieradata_on(client, client_hieradata)
         print_test_config(client_hieradata, client_manifest)

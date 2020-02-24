@@ -31,7 +31,7 @@ class nfs::base::service
     # and then exits.  Doesn't make sense to ensure running, but in
     # the extremely unlikely chance svckill is running when the
     # service runs, make sure svckill leaves it alone.
-    svckill::ignore{ 'rpc-statd-notify.service': }
+    svckill::ignore{ 'rpc-statd-notify': }
 
     # Service will be masked if previous config had disallowed NFSv3.
     exec { 'unmask_rpc-statd.service':

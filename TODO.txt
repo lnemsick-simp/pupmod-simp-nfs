@@ -401,3 +401,8 @@ rpcdebug -m rpc -s all
 
 egrep ' as | with | should ' default.log | egrep -v 'with sum|database with|Notice:'
 
+
+server1 export home, mount apps
+server2 export apps, mount home
+clients mount home and apps
+

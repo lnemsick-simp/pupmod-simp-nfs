@@ -13,7 +13,7 @@ class nfs::server::service
     # correct, restart nfs-utils and nfs-server at the same time. Serially
     # restarting these does not reliably work.
     hasrestart => false,
-    restart    => 'systemctl restart nfs-utils.service nfs-server.service',
+    restart    => 'systemctl restart nfs-utils.service nfs-server.service'
   }
 
   # nfs-mountd is required for both NFSv3 and NFSv4, is started when needed,
