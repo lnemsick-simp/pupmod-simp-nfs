@@ -12,7 +12,7 @@ class nfs::server::config
   #   will not work otherwise!
   $_required_nfs_conf_opts = {
     'mountd' => {
-      'mountd_port' => $nfs::mountd_port,
+      'port' => $nfs::mountd_port,
     },
     'nfsd'   => {
       'port'        => $nfs::nfsd_port,
@@ -45,14 +45,12 @@ class nfs::server::config
     }
   }
 
-  if $nfs::nfsv3 {
-    if 'mountd' in $_merged_opts {
-      concat::fragment { 'nfs_conf_mountd':
-        order   => 5,
-        target  => '/etc/nfs.conf',
-        content => epp("${module_name}/etc/nfs_conf_section.epp",
-          { section => 'mountd', opts => $_merged_opts['mountd']})
-      }
+  if 'mountd' in $_merged_opts {
+    concat::fragment { 'nfs_conf_mountd':
+      order   => 5,
+      target  => '/etc/nfs.conf',
+      content => epp("${module_name}/etc/nfs_conf_section.epp",
+        { section => 'mountd', opts => $_merged_opts['mountd']})
     }
   }
 
@@ -86,7 +84,7 @@ class nfs::server::config
     }
 
     if 'RPCMOUNTDARGS' in $nfs::custom_daemon_args {
-      concat::fragment { 'nfs_RPCNFSDARGS':
+      concat::fragment { 'nfs_RPCMOUNTDARGS':
         order   => 4,
         target  => '/etc/sysconfig/nfs',
         content => "RPCMOUNTDARGS=\"${nfs::custom_daemon_args['RPCMOUNTDARGS']}\""
@@ -114,7 +112,6 @@ class nfs::server::config
         content => "RPCNFSDARGS=\"${nfs::custom_daemon_args['RPCNFSDARGS']}\""
       }
     }
-
   }
 
   if $nfs::server::custom_rpcrquotad_opts {
@@ -143,7 +140,6 @@ class nfs::server::config
     mode           => '0644',
     ensure_newline => true,
     warn           => true,
-#    notify         => Exec['nfs_re-export']
   }
 
   $_simp_etc_exports_path = @("HEREDOC")
@@ -180,19 +176,8 @@ class nfs::server::config
     content => $_simp_etc_exports_service
   }
 
-#  exec { 'nfs_re-export':
-#    command     => '/usr/sbin/exportfs -ra',
-#    refreshonly => true,
-#    logoutput   => true,
-#    # Don't execute if nfsd kernel module has not been loaded yet, (i.e.,
-#    # nfs-server.service is not running) or will fail with obscure
-#    # 'Function not implemented' error. The changes will be picked up when
-#    # nfs-server.service starts, as its unit file runs 'exportfs -r'.
-#    onlyif      => '/sbin/lsmod | /usr/bin/grep -qw nfsd'
-#  }
-
   # Tune with the proper number of slot entries.
-  #FIXME Is this still applicable?  Also, should we persist to file
+  # TODO Is this still applicable?  Also, should we persist to file
   # in /etc/modprobe.d so that it is available at boot time, just
   # like the kernel module settings for nfs(v4)?
   sysctl { 'sunrpc.tcp_slot_table_entries':
