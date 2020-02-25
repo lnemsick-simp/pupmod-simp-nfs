@@ -16,7 +16,7 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 define nfs::client::stunnel(
-  Simplib::Host $nfs_server,
+  Simplib::Ip   $nfs_server,
   Simplib::Port $nfsd_accept_port,
   Simplib::Port $nfsd_connect_port,
   Array[String] $stunnel_socket_options,
