@@ -56,7 +56,6 @@ class nfs::client::config {
       group   => 'root',
       content => "\n"
     }
-
   }
 
   if $nfs::tcpwrappers {
