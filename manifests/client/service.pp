@@ -12,7 +12,7 @@ class nfs::client::service
     # correct, restart nfs-utils and nfs-client at the same time. Serially
     # restarting these does not reliably work.
     hasrestart => false,
-    restart    => 'systemctl restart nfs-utils.service nfs-client.target',
+    restart    => '/usr/bin/systemctl restart nfs-utils.service nfs-client.target'
   }
 
   if $nfs::client::blkmap {

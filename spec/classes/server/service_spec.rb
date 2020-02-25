@@ -17,7 +17,7 @@ describe 'nfs' do
     :ensure     => 'running',
     :enable     => true,
     :hasrestart => false,
-    :restart    => 'systemctl restart nfs-utils.service nfs-server.service'
+    :restart    => '/usr/bin/systemctl restart nfs-utils.service nfs-server.service'
   } ) }
 
   it { is_expected.to create_svckill__ignore('nfs-mountd') }
