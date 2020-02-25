@@ -141,6 +141,7 @@ class nfs (
   }
 
   if $ensure_latest_lvm2 {
+    # TODO Figure out if this is still needed.
     include 'nfs::lvm2'
     Class['nfs::lvm2'] -> Class['nfs::install']
   }

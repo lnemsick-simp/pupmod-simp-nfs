@@ -1,4 +1,4 @@
-# @summary Common configuration required by both NFS server and client
+# @summary Common configuration required by both a NFS server and a NFS client
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 class nfs::base::config
@@ -9,8 +9,8 @@ class nfs::base::config
   # by NFS client and NFS server
   # * Only config appropriate for specified NFS versions will actually be set.
   # * All values can be set via nfs class parameters
-  # * Will override any $nfs::custom_nfs_conf_opts settings, because firewall
-  #   and/or stunnels will not work otherwise!
+  # * Will override any $nfs::custom_nfs_conf_opts settings, because the 
+  #   firewall will not work otherwise!
   $_required_nfs_conf_opts = {
     'gssd'     => {
       'avoid-dns'                => $nfs::gssd_avoid_dns,
@@ -108,39 +108,43 @@ class nfs::base::config
       warn           => true
     }
 
-    if $nfs::secure_nfs and $nfs::gssd_use_gss_proxy  {
-      # The 'use-gss-proxy' option in /etc/nfs.conf is not used in EL7.
-      # Need to set GSS_USE_PROXY service env variable instead.
-      concat::fragment { 'nfs_gss_use_proxy':
-        order   => 1,
-        target  => '/etc/sysconfig/nfs',
-        content => "GSS_USE_PROXY=yes"
+    if $nfs::secure_nfs {
+      if $nfs::gssd_use_gss_proxy  {
+        # The 'use-gss-proxy' option in /etc/nfs.conf is not used in EL7.
+        # Need to set GSS_USE_PROXY service env variable instead.
+        concat::fragment { 'nfs_gss_use_proxy':
+          order   => 1,
+          target  => '/etc/sysconfig/nfs',
+          content => "GSS_USE_PROXY=yes"
+        }
+      }
+
+      if 'GSSDARGS' in $nfs::custom_daemon_args {
+        concat::fragment { 'nfs_GSSDARGS':
+          order   => 2,
+          target  => '/etc/sysconfig/nfs',
+          content => "GSSDARGS=\"${nfs::custom_daemon_args['GSSDARGS']}\""
+        }
       }
     }
 
-    if 'GSSDARGS' in $nfs::custom_daemon_args {
-      concat::fragment { 'nfs_GSSDARGS':
-        order   => 2,
-        target  => '/etc/sysconfig/nfs',
-        content => "GSSDARGS=\"${nfs::custom_daemon_args['GSSDARGS']}\""
+    if $nfs::nfsv3 {
+      if 'SMNOTIFYARGS' in $nfs::custom_daemon_args {
+        concat::fragment { 'nfs_SMNOTIFYARGS':
+          order   => 6,
+          target  => '/etc/sysconfig/nfs',
+          content => "SMNOTIFYARGS=\"${nfs::custom_daemon_args['SMNOTIFYARGS']}\""
+        }
       }
-    }
 
-    if 'SMNOTIFYARGS' in $nfs::custom_daemon_args {
-      concat::fragment { 'nfs_SMNOTIFYARGS':
-        order   => 6,
-        target  => '/etc/sysconfig/nfs',
-        content => "SMNOTIFYARGS=\"${nfs::custom_daemon_args['SMNOTIFYARGS']}\""
-      }
-    }
-
-    # The variable in /etc/sysconfig/nfs is $STATDARG but is written to
-    # /run/sysconfig/nfs-utils as STATDARGS.
-    if 'STATDARG' in $nfs::custom_daemon_args {
-      concat::fragment { 'nfs_STATDARG':
-        order   => 7,
-        target  => '/etc/sysconfig/nfs',
-        content => "STATDARG=\"${nfs::custom_daemon_args['STATDARG']}\""
+      # The variable in /etc/sysconfig/nfs is $STATDARG but is written to
+      # /run/sysconfig/nfs-utils as STATDARGS.
+      if 'STATDARG' in $nfs::custom_daemon_args {
+        concat::fragment { 'nfs_STATDARG':
+          order   => 7,
+          target  => '/etc/sysconfig/nfs',
+          content => "STATDARG=\"${nfs::custom_daemon_args['STATDARG']}\""
+        }
       }
     }
   } else {

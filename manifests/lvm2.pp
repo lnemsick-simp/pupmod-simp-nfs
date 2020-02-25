@@ -7,6 +7,8 @@
 # @param ensure
 #
 class nfs::lvm2 (
+  # FIXME  This was originally 'latest', but then changed to 'installed'.  Is
+  # it still needed at all?
   String $ensure = simplib::lookup('simp_options::package_ensure', { 'default_value' => 'installed' }),
 ) {
   package { 'lvm2':
