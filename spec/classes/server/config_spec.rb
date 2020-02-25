@@ -300,18 +300,55 @@ describe 'nfs' do
           } ) }
         end
       end
-=begin
 
       if os_facts[:os][:release][:major].to_i < 8
         context 'when nfs::custom_daemon_args set' do
           context "when nfs::custom_daemon_args has 'RCIDMAPDARGS' key" do
+            let(:params) {{
+              # nfs class params
+              :is_server          => true,
+              :custom_daemon_args => { 'RPCIDMAPDARGS' => '-C' }
+            }}
+
+            it { is_expected.to compile.with_all_deps }
+            it { is_expected.to create_class('nfs::server::config') }
+            it { is_expected.to create_concat__fragment('nfs_RPCIDMAPDARGS').with( {
+              :target  => '/etc/sysconfig/nfs',
+              :content => 'RPCIDMAPDARGS="-C"'
+            } ) }
           end
+
           context "when nfs::custom_daemon_args has 'RPCMOUNTDARGS' key" do
+            let(:params) {{
+              # nfs class params
+              :is_server          => true,
+              :custom_daemon_args => { 'RPCMOUNTDARGS' => '-f /some/export/file' }
+            }}
+
+            it { is_expected.to compile.with_all_deps }
+            it { is_expected.to create_class('nfs::server::config') }
+            it { is_expected.to create_concat__fragment('nfs_RPCMOUNTDARGS').with( {
+              :target  => '/etc/sysconfig/nfs',
+              :content => 'RPCMOUNTDARGS="-f /some/export/file"'
+            } ) }
           end
+
           context "when nfs::custom_daemon_args has 'RPCNFSDARGS' key" do
+            let(:params) {{
+              # nfs class params
+              :is_server          => true,
+              :custom_daemon_args => { 'RPCNFSDARGS' => '--syslog' }
+            }}
+
+            it { is_expected.to compile.with_all_deps }
+            it { is_expected.to create_class('nfs::server::config') }
+            it { is_expected.to create_concat__fragment('nfs_RPCNFSDARGS').with( {
+              :target  => '/etc/sysconfig/nfs',
+              :content => 'RPCNFSDARGS="--syslog"'
+            } ) }
           end
+        end
       end
-=end
 
       context 'when nfs::server::custom_rpcrquotad_opts set' do
         let(:hieradata) { 'nfs_server_custom_rpcrquotad_opts' }
