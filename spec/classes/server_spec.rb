@@ -26,15 +26,23 @@ describe 'nfs' do
   end
 
   context 'with nfs::stunnel = true' do
-    let(:params) {{
-      # nfs class params
-      :is_server => true,
-      :stunnel   => true
-    }}
+    context 'with nfs::server::nfsd_vers_4_0 = false' do
+      let(:params) {{
+        # nfs class params
+        :is_server => true,
+        :stunnel   => true
+      }}
 
-    it { is_expected.to compile.with_all_deps }
-    it { is_expected.to create_class('nfs::server::config') }
-    it { is_expected.to create_class('nfs::server::stunnel') }
+      it { is_expected.to compile.with_all_deps }
+      it { is_expected.to create_class('nfs::server::config') }
+      it { is_expected.to create_class('nfs::server::stunnel') }
+
+    end
+
+    context 'with nfs::server::nfsd_vers4_0 = true' do
+      let(:hieradata) { 'nfs_server_stunnel_and_nfsd_vers4_0' }
+      it { is_expected.to_not compile.with_all_deps }
+    end
   end
 
   context 'with nfs::firewall = true' do
@@ -50,7 +58,7 @@ describe 'nfs' do
   end
 
   context 'with nfs::kerberos = true' do
-    context 'with nfs:::keytab_on_puppet = false' do
+    context 'with nfs::keytab_on_puppet = false' do
       let(:params) {{
         # nfs class params
         :is_server        => true,
@@ -64,7 +72,7 @@ describe 'nfs' do
       it { is_expected.to_not create_class('krb5::keytab') }
     end
 
-    context 'with nfs:::keytab_on_puppet = true' do
+    context 'with nfs::keytab_on_puppet = true' do
       let(:params) {{
         # nfs class params
         :is_server        => true,

@@ -24,17 +24,7 @@ describe 'nfs' do
     :accept           => ['0.0.0.0:20490'],
     :verify           => 2,
     :socket_options   => ['l:TCP_NODELAY=1','r:TCP_NODELAY=1'],
-    :systemd_wantedby => [
-      'gssproxy.service',
-      'nfs-idmapd.service',
-      'nfs-mountd.service',
-      'nfs-server.service',
-      'rpc-gssd.service',
-      'rpc-rquotad.service',
-      'rpc-statd.service',
-      'rpc-statd-notify.service',
-      'rpcbind.service'
-     ],
+    :systemd_wantedby => [ 'nfs-server.service' ],
      :firewall         => true,
      :tcpwrappers      => true,
      :tag              => ['nfs']

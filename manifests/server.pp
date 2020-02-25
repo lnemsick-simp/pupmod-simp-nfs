@@ -120,15 +120,7 @@ class nfs::server (
   Simplib::Port    $stunnel_nfsd_accept_port      = $nfs::stunnel_nfsd_port,
   Array[String]    $stunnel_socket_options        = $nfs::stunnel_socket_options,
   Integer          $stunnel_verify                = $nfs::stunnel_verify,
-  Array[String]    $stunnel_wantedby              = [
-    'gssproxy.service',   # secure NFS
-    'nfs-idmapd.service',
-    'nfs-mountd.service',
-    'nfs-server.service',
-    'rpc-gssd.service',   # secure NFS
-    'rpc-rquotad.service',
-    'rpcbind.service',
-  ],
+  Array[String]    $stunnel_wantedby              = [ 'nfs-server.service' ],
   Boolean          $tcpwrappers                   = $nfs::tcpwrappers,
   Simplib::Netlist $trusted_nets                  = $nfs::trusted_nets
 ) inherits ::nfs {
