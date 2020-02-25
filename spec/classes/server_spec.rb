@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-# Testing private nfs::server::config class via nfs class
+# Testing private nfs::server class via nfs class
 describe 'nfs' do
   # What we are testing is not fact-dependent, but need facts for
   # nfs class.  So, grab first set of supported OS facts.
@@ -13,7 +13,7 @@ describe 'nfs' do
     }}
 
     it { is_expected.to compile.with_all_deps }
-    it { is_expected.to create_class('nfs::server::config') }
+    it { is_expected.to create_class('nfs::server') }
     it { is_expected.to create_class('nfs::base::config') }
     it { is_expected.to create_class('nfs::base::service') }
     it { is_expected.to create_class('nfs::server::config') }
@@ -34,7 +34,7 @@ describe 'nfs' do
       }}
 
       it { is_expected.to compile.with_all_deps }
-      it { is_expected.to create_class('nfs::server::config') }
+      it { is_expected.to create_class('nfs::server') }
       it { is_expected.to create_class('nfs::server::stunnel') }
 
     end
@@ -53,7 +53,7 @@ describe 'nfs' do
     }}
 
     it { is_expected.to compile.with_all_deps }
-    it { is_expected.to create_class('nfs::server::config') }
+    it { is_expected.to create_class('nfs::server') }
     it { is_expected.to create_class('nfs::server::firewall') }
   end
 
@@ -67,7 +67,7 @@ describe 'nfs' do
       }}
 
       it { is_expected.to compile.with_all_deps }
-      it { is_expected.to create_class('nfs::server::config') }
+      it { is_expected.to create_class('nfs::server') }
       it { is_expected.to create_class('krb5') }
       it { is_expected.to_not create_class('krb5::keytab') }
     end
@@ -81,7 +81,7 @@ describe 'nfs' do
       }}
 
       it { is_expected.to compile.with_all_deps }
-      it { is_expected.to create_class('nfs::server::config') }
+      it { is_expected.to create_class('nfs::server') }
       it { is_expected.to create_class('krb5') }
       it { is_expected.to create_class('krb5::keytab') }
     end
