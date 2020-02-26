@@ -122,7 +122,7 @@ define nfs::client::mount (
   include 'nfs::client'
 
   if ($nfs_version == 3) and !$nfs::nfsv3 {
-    fail('Cannot mount NFSv3 when not NFSv3 has not been configured.  Set nfs::nfsv3 to true to fix.')
+    fail('Cannot mount NFSv3 when NFSv3 is not enabled on client.  Set nfs::nfsv3 to true to fix.')
   }
 
 
@@ -202,7 +202,7 @@ define nfs::client::mount (
     stunnel_socket_options => $_stunnel_socket_options,
     stunnel_verify         => $_stunnel_verify,
     stunnel_wantedby       => $_stunnel_wantedby,
-    tcpwrappers            => $nfs::tcpwrappers,
+    tcpwrappers            => $nfs::tcpwrappers
   }
 
   if $autofs {
@@ -228,6 +228,19 @@ define nfs::client::mount (
       require     => Nfs::Client::Mount::Connection[$name]
     }
 
+    if $autofs_add_key_subst {
+      $_location = "${_remote}/&"
+    } else {
+      $_location = $_remote
+    }
+
+    autofs::map::entry { $_map_key:
+      options  => "-${_nfs_options}",
+      location => $_location,
+      target   => $_clean_name,
+      require  => Nfs::Client::Mount::Connection[$name]
+    }
+
     if $_stunnel {
       # This is a workaround for issues with hooking into stunnel
       $_exec_attributes = {
@@ -243,18 +256,6 @@ define nfs::client::mount (
       Stunnel::Instance <| tag == 'nfs' |> ~> Exec['reload_autofs']
     }
 
-    if $autofs_add_key_subst {
-      $_location = "${_remote}/&"
-    } else {
-      $_location = $_remote
-    }
-
-    autofs::map::entry { $_map_key:
-      options  => "-${_nfs_options}",
-      location => $_location,
-      target   => $_clean_name,
-      require  => Nfs::Client::Mount::Connection[$name]
-    }
   } else {
     mount { $name:
       ensure   => $ensure,

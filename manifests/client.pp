@@ -37,7 +37,7 @@ class nfs::client (
   Boolean          $stunnel                = $nfs::stunnel,
   Array[String]    $stunnel_socket_options = $nfs::stunnel_socket_options,
   Integer[0]       $stunnel_verify         = $nfs::stunnel_verify,
-  Array[String]    $stunnel_wantedby       = ['remote-fs-pre.target'],
+  Array[String]    $stunnel_wantedby       = ['remote-fs-pre.target']
 ) inherits ::nfs {
 
   assert_private()

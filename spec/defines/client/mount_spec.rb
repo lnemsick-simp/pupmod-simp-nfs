@@ -4,200 +4,436 @@ describe 'nfs::client::mount' do
   shared_examples_for 'a base client mount define' do
     it { is_expected.to compile.with_all_deps }
     it { is_expected.to contain_class('nfs::client') }
-    it { is_expected.to create_nfs__client__mount__connection(title).with_nfs_server(params[:nfs_server]) }
+    it { is_expected.to create_nfs__client__mount(title) }
   end
 
-  context 'supported operating systems' do
-    on_supported_os.each do |os, os_facts|
+  on_supported_os.each do |os, os_facts|
+    context "on #{os}" do
       let(:facts) { os_facts }
 
-      let(:title) { '/home' }
-      let(:clean_title) { 'home' }
+      let(:title) { '/net/apps' }
+      let(:nfs_server) { '1.2.3.4'}
 
       context 'with default parameters' do
         let(:params) {{
-          :nfs_server  => '1.2.3.4',
-          :remote_path => '/home'
+          :nfs_server  => nfs_server,
+          :remote_path => title
         }}
 
-        include_examples 'a base client mount define'
-        it { is_expected.to contain_class('autofs') }
-
-        it {
-          is_expected.to contain_autofs__map__entry(title).with_location("#{params[:nfs_server]}:#{params[:remote_path]}")
-        }
-      end
-
-      context 'without stunnel' do
-        context 'with autofs_indirect_map_key' do
-          context 'with autofs_add_key_subst=false' do
-            let(:params) {{
-              :nfs_server              => '1.2.3.4',
-              :remote_path             => '/home',
-              :autofs_indirect_map_key => 'some_dir'
-            }}
-            include_examples 'a base client mount define'
+        context 'with defaults for nfs and nfs::client' do
+          include_examples 'a base client mount define'
+          it 'should use nfs & nfs::client defaults for unspecified connection params' do
+            is_expected.to create_nfs__client__mount__connection(title).with( {
+              :nfs_server             => params[:nfs_server],
+              :nfs_version            => 4,
+              :nfsd_port              => 2049,                                  # from nfs
+              :firewall               => false,                                 # from nfs
+              :stunnel                => false,                                 # from nfs::client
+              :stunnel_nfsd_port      => 20490,                                 # from nfs
+              :stunnel_socket_options => ['l:TCP_NODELAY=1','r:TCP_NODELAY=1'], # from nfs::client
+              :stunnel_verify         => 2,                                     # from nfs::client
+              :stunnel_wantedby       => ['remote-fs-pre.target'],              # from nfs::client
+              :tcpwrappers            => false                                  # from nfs
+            } )
           end
 
-          context 'with autofs_add_key_subst=true' do
-            let(:params) {{
-              :nfs_server              => '1.2.3.4',
-              :remote_path             => '/home',
-              :autofs_indirect_map_key => '*',
-              :autofs_add_key_subst    => true
-            }}
+          it { is_expected.to contain_class('autofs') }
+          it { is_expected.to_not contain_exec('reload_autofs') }
+          it 'should create a direct autofs map' do
+            is_expected.to contain_autofs__map__master(title).with( {
+              :mount_point => '/-',
+              :map_name    => '/etc/autofs/net__apps.map'
+            } )
 
-            include_examples 'a base client mount define'
-          end
-        end
-
-        context 'with NFSv4' do
-          context 'with custom server port' do
-            let(:params) {{
-              :nfs_server   => '1.2.3.4',
-              :remote_path  => '/home',
-              :nfsd_port    => 10000,
-            }}
-
-            include_examples 'a base client mount define'
-            it {
-              is_expected.to create_nfs__client__mount__connection(title).with( {
-                :nfs_version  => 4,
-                :nfsd_port    => 10000,
-              } )
-            }
+            is_expected.to contain_autofs__map__entry(title).with( {
+             :options  => '-nfsvers=4,port=2049,soft,sec=sys',
+             :location => "#{params[:nfs_server]}:#{params[:remote_path]}",
+             :target   => 'net__apps'
+           } )
           end
         end
 
-        context 'with NFSv3' do
-          let(:pre_condition) {
-            <<-EOM
-              class { 'nfs': nfsv3 => true }
-            EOM
-          }
-          context 'with default server port' do
-            let(:params) {{
-              :nfs_server  => '1.2.3.4',
-              :remote_path => '/home',
-              :nfs_version => 3
-            }}
-
-            include_examples 'a base client mount define'
-
-            it {
-              is_expected.to create_nfs__client__mount__connection(title).with( {
-                :nfs_version  => 3,
-                :nfsd_port    => 2049,
-              } )
-            }
-            #FIXME check autofs entry for mount options
+        context 'with explicit nfs and nfs::client parameters' do
+          let(:hieradata) { 'nfs_client_mount_custom' }
+          include_examples 'a base client mount define'
+          it 'should use nfs & nfs::client params for unspecified connection params' do
+            is_expected.to create_nfs__client__mount__connection(title).with( {
+              :nfs_server             => params[:nfs_server],
+              :nfs_version            => 4,
+              :nfsd_port              => 2050,                                  # from nfs
+              :firewall               => true,                                  # from nfs
+              :stunnel                => true,                                  # from nfs::client
+              :stunnel_nfsd_port      => 20500,                                 # from nfs
+              :stunnel_socket_options => ['l:TCP_NODELAY=2','r:TCP_NODELAY=2'], # from nfs::client
+              :stunnel_verify         => 1,                                     # from nfs::client
+              :stunnel_wantedby       => ['remote-fs-pre.target', 'some-other.service'], # from nfs::client
+              :tcpwrappers            => true                                   # from nfs
+            } )
           end
-
-          context 'with custom server port' do
-            let(:params) {{
-              :nfs_server   => '1.2.3.4',
-              :remote_path  => '/home',
-              :nfs_version  => 3,
-              :nfsd_port    => 10002,
-            }}
-
-            include_examples 'a base client mount define'
-            it {
-              is_expected.to create_nfs__client__mount__connection(title).with( {
-                :nfs_version  => 3,
-                :nfsd_port    => 10002,
-              } )
-            }
-            #FIXME check autofs entry for mount options
-          end
-
         end
-      end
+      end # context 'with default parameters' do
+
+      context 'with autofs' do
+        let(:base_params) {{
+          :nfs_server        => nfs_server,
+          :remote_path       => title,
+          :autodetect_remote => true,
+          :autofs            => true
+        }}
+
+        context 'with direct map' do
+          context 'with NFSv3' do
+            let(:pre_condition) { "class { 'nfs': nfsv3 => true }" }
+            let(:params) { base_params.merge( { :nfs_version => 3, :stunnel => false } ) }
+
+            include_examples 'a base client mount define'
+            it { is_expected.to create_nfs__client__mount__connection(title).with_nfs_version(3) }
+            it { is_expected.to contain_class('autofs') }
+            it 'should create a direct autofs map' do
+              is_expected.to contain_autofs__map__master(title).with( {
+                :mount_point => '/-',
+                :map_name    => '/etc/autofs/net__apps.map'
+              } )
+
+              is_expected.to contain_autofs__map__entry(title).with( {
+               :options  => '-nfsvers=3,port=2049,soft',
+               :location => "#{params[:nfs_server]}:#{params[:remote_path]}",
+               :target   => 'net__apps'
+             } )
+            end
+
+            it { is_expected.to_not contain_exec('reload_autofs') }
+          end
+
+          context 'with NFSV4 and stunnel' do
+            let(:params) {
+              base_params.merge( {
+                :nfsd_port              => 2050,
+                :stunnel                => true,
+                :stunnel_nfsd_port      => 20500,
+                :stunnel_socket_options => ['l:TCP_NODELAY=2','r:TCP_NODELAY=2'],
+                :stunnel_verify         => 1,
+                :stunnel_wantedby       => ['remote-fs-pre.target', 'some-other.service']
+              } )
+            }
+
+            include_examples 'a base client mount define'
+            it { is_expected.to create_nfs__client__mount__connection(title).with( {
+              :nfs_server             => params[:nfs_server],
+              :nfs_version            => 4,
+              :nfsd_port              => 2050,
+              :stunnel                => true,
+              :stunnel_nfsd_port      => 20500,
+              :stunnel_socket_options => ['l:TCP_NODELAY=2','r:TCP_NODELAY=2'],
+              :stunnel_verify         => 1,
+              :stunnel_wantedby       => ['remote-fs-pre.target', 'some-other.service'],
+            } ) }
+
+            it { is_expected.to contain_class('autofs') }
+            it 'should create a direct autofs map' do
+              is_expected.to contain_autofs__map__master(title).with( {
+                :mount_point => '/-',
+                :map_name    => '/etc/autofs/net__apps.map'
+              } )
+
+              is_expected.to contain_autofs__map__entry(title).with( {
+               :options  => '-nfsvers=4,port=2050,soft,sec=sys,proto=tcp',
+               :location => "127.0.0.1:#{params[:remote_path]}",
+               :target   => 'net__apps'
+              } )
+            end
+
+            it { is_expected.to contain_exec('reload_autofs').with( {
+              :command     => '/usr/bin/systemctl reload autofs',
+              :refreshonly => true
+            } ) }
+
+            it { is_expected.to contain_stunnel__instance("nfs_#{params[:nfs_server]}:2050_client_nfsd")
+              .that_notifies('Exec[reload_autofs]') }
+
+          end
+
+          context 'with NFSV4 without stunnel' do
+            let(:params) { base_params.merge( { :stunnel => false } ) }
+
+            include_examples 'a base client mount define'
+            it { is_expected.to create_nfs__client__mount__connection(title).with( {
+              :nfs_server             => params[:nfs_server],
+              :nfs_version            => 4,
+              :nfsd_port              => 2049,
+              :stunnel                => false
+            } ) }
+
+            it { is_expected.to contain_class('autofs') }
+            it 'should create a direct autofs map' do
+              is_expected.to contain_autofs__map__master(title).with( {
+                :mount_point => '/-',
+                :map_name    => '/etc/autofs/net__apps.map'
+              } )
+
+              is_expected.to contain_autofs__map__entry(title).with( {
+               :options  => '-nfsvers=4,port=2049,soft,sec=sys',
+               :location => "#{params[:nfs_server]}:#{params[:remote_path]}",
+               :target   => 'net__apps'
+              } )
+            end
+
+            it { is_expected.to_not contain_exec('reload_autofs') }
+          end
+        end #context 'with direct map' do
+
+        context 'with indirect map' do
+          context 'with NFSv3' do
+            let(:pre_condition) { "class { 'nfs': nfsv3 => true }" }
+            let(:params) {
+              base_params.merge( {
+                :nfs_version             => 3,
+                :autofs_indirect_map_key => 'some_dir',
+                :stunnel                 => false
+              } )
+            }
+
+            it { is_expected.to compile.with_all_deps }
+            it 'should create an indirect autofs map' do
+              is_expected.to contain_autofs__map__master(title).with( {
+                :mount_point => title,
+                :map_name    => '/etc/autofs/net__apps.map'
+              } )
+
+              is_expected.to contain_autofs__map__entry(params[:autofs_indirect_map_key]).with( {
+               :options  => '-nfsvers=3,port=2049,soft',
+               :location => "#{params[:nfs_server]}:#{params[:remote_path]}",
+               :target   => 'net__apps'
+             } )
+            end
+          end
+
+          context 'with NFSV4 and stunnel' do
+            let(:params) {
+              base_params.merge( {
+                :autofs_indirect_map_key => 'some_dir',
+                :stunnel                 => true
+              } )
+            }
+
+            it { is_expected.to compile.with_all_deps }
+            it 'should create an indirect autofs map' do
+              is_expected.to contain_autofs__map__master(title).with( {
+                :mount_point => title,
+                :map_name    => '/etc/autofs/net__apps.map'
+              } )
+
+              is_expected.to contain_autofs__map__entry(params[:autofs_indirect_map_key]).with( {
+               :options  => '-nfsvers=4,port=2049,soft,sec=sys,proto=tcp',
+               :location => "127.0.0.1:#{params[:remote_path]}",
+               :target   => 'net__apps'
+              } )
+            end
+          end
+
+          context 'with NFSV4 without stunnel' do
+            let(:params) {
+              base_params.merge( {
+                :autofs_indirect_map_key => 'some_dir',
+                :stunnel                 => false
+              } )
+            }
+
+            it { is_expected.to compile.with_all_deps }
+            it 'should create an indirect autofs map' do
+              is_expected.to contain_autofs__map__master(title).with( {
+                :mount_point => title,
+                :map_name    => '/etc/autofs/net__apps.map'
+              } )
+
+              is_expected.to contain_autofs__map__entry(params[:autofs_indirect_map_key]).with( {
+               :options  => '-nfsvers=4,port=2049,soft,sec=sys',
+               :location => "#{params[:nfs_server]}:#{params[:remote_path]}",
+               :target   => 'net__apps'
+              } )
+            end
+          end
+
+          context 'with key substitution' do
+            let(:params) {
+              base_params.merge( {
+                :autofs_indirect_map_key => 'some_dir',
+                :autofs_indirect_map_key => '*',
+                :autofs_add_key_subst    => true
+              } )
+            }
+
+            it { is_expected.to compile.with_all_deps }
+            it 'should create an indirect autofs map' do
+              is_expected.to contain_autofs__map__master(title).with( {
+                :mount_point => title,
+                :map_name    => '/etc/autofs/net__apps.map'
+              } )
+
+              is_expected.to contain_autofs__map__entry(params[:autofs_indirect_map_key]).with( {
+               :options  => '-nfsvers=4,port=2049,soft,sec=sys',
+               :location => "#{params[:nfs_server]}:#{params[:remote_path]}/&",
+               :target   => 'net__apps'
+              } )
+            end
+          end
+        end
+      end #context 'with autofs' do
 
       context 'without autofs' do
-        let(:params) {{
-          :nfs_server  => '1.2.3.4',
-          :remote_path => '/home',
-          :autofs  => false
+        let(:base_params) {{
+          :nfs_server        => nfs_server,
+          :remote_path       => title,
+          :autofs            => false
         }}
 
-        include_examples 'a base client mount define'
-
-        it {
-          is_expected.to contain_mount(title).with_device("#{params[:nfs_server]}:#{params[:remote_path]}")
-        }
-        #FIXME check v3 and v4 for mount options
-      end
-
-      context 'with stunnel' do
-        let(:pre_condition) {
-          <<-EOM
-            class { 'nfs::client': stunnel => true }
-          EOM
-        }
-
-        let(:params) {{
-          :nfs_server  => '1.2.3.4',
-          :remote_path => '/home'
-        }}
-
-        include_examples 'a base client mount define'
-
-        it { is_expected.to contain_autofs__map__entry(title).with_location("127.0.0.1:#{params[:remote_path]}") }
-        it { is_expected.to contain_exec('reload_autofs') }
-        it { is_expected.to contain_stunnel__instance("nfs_#{params[:nfs_server]}:2049_client_nfsd").that_notifies('Exec[reload_autofs]') }
-
-        context 'with nfsv4' do
-          let(:params) {{
-            :nfs_server  => '1.2.3.4',
-            :remote_path => '/home',
-            :nfs_version => 4
-          }}
+        context 'with NFSv3' do
+          let(:pre_condition) { "class { 'nfs': nfsv3 => true }" }
+          let(:params) { base_params.merge( { :nfs_version => 3, :stunnel => false } ) }
 
           include_examples 'a base client mount define'
-          it { is_expected.to contain_nfs__client__stunnel("#{params[:nfs_server]}:2049") }
+          it { is_expected.to create_nfs__client__mount__connection(title).with_nfs_version(3) }
+          it { is_expected.to contain_mount(title).with( {
+            :ensure   => 'mounted',
+            :atboot   => true,
+            :device   => "#{params[:nfs_server]}:#{params[:remote_path]}",
+            :fstype   => 'nfs',
+            :options  => 'nfsvers=3,port=2049,soft',
+            :remounts => false
+          } ) }
+
+          it { is_expected.to_not contain_class('autofs') }
+          it { is_expected.to_not contain_autofs__map__master(title) }
+          it { is_expected.to_not contain_autofs__map__entry(title) }
+          it { is_expected.to_not contain_exec('reload_autofs') }
         end
 
-        context 'without autofs' do
-          let(:params) {{
-            :nfs_server  => '1.2.3.4',
-            :remote_path => '/home',
-            :autofs  => false
-          }}
+        context 'with NFSV4 and stunnel' do
+          let(:params) { base_params.merge( { :stunnel => true } ) }
 
           include_examples 'a base client mount define'
+          it { is_expected.to create_nfs__client__mount__connection(title).with_nfs_version(4) }
+          it { is_expected.to contain_mount(title).with( {
+            :ensure   => 'mounted',
+            :atboot   => true,
+            :device   => "127.0.0.1:#{params[:remote_path]}",
+            :fstype   => 'nfs',
+            :options  => 'nfsvers=4,port=2049,soft,sec=sys,proto=tcp',
+            :remounts => false
+          } ) }
 
-          it { is_expected.to contain_mount(title).with_device("127.0.0.1:#{params[:remote_path]}") }
+          it { is_expected.to_not contain_class('autofs') }
+          it { is_expected.to_not contain_autofs__map__master(title) }
+          it { is_expected.to_not contain_autofs__map__entry(title) }
+          it { is_expected.to_not contain_exec('reload_autofs') }
         end
-        context 'with tcpwrappers enabled' do
-        end
-      end
 
-      context 'with firewall enabled' do
-        let(:pre_condition) {
-          <<-EOM
-            class { 'nfs': firewall => true }
-          EOM
-        }
-
-        context 'NFSv4' do
-          let(:params) {{
-            :nfs_server  => '1.2.3.4',
-            :remote_path => '/home',
-            :nfs_version => 4
-          }}
+        context 'with NFSV4 without stunnel' do
+          let(:params) { base_params.merge( { :stunnel => false } ) }
 
           include_examples 'a base client mount define'
-          it { is_expected.to contain_class('iptables') }
-          it { is_expected.to contain_iptables__listen__tcp_stateful('nfs_callback_1_2_3_4') }
+          it { is_expected.to create_nfs__client__mount__connection(title).with_nfs_version(4) }
+          it { is_expected.to contain_mount(title).with( {
+            :ensure   => 'mounted',
+            :atboot   => true,
+            :device   => "#{params[:nfs_server]}:#{params[:remote_path]}",
+            :fstype   => 'nfs',
+            :options  => 'nfsvers=4,port=2049,soft,sec=sys',
+            :remounts => false
+          } ) }
+
+          it { is_expected.to_not contain_class('autofs') }
+          it { is_expected.to_not contain_autofs__map__master(title) }
+          it { is_expected.to_not contain_autofs__map__entry(title) }
+          it { is_expected.to_not contain_exec('reload_autofs') }
         end
 
-        context 'NFSv3' do
-          let(:pre_condition) {
-            <<-EOM
-              class { 'nfs': firewall=> true, nfsv3 => true }
-            EOM
+        context 'with at_boot=false and ensure=present' do
+          let(:params) {
+            base_params.merge( {
+              :at_boot => false,
+              :ensure  => 'present',
+              :stunnel => false
+            } )
           }
+
+          it { is_expected.to compile.with_all_deps }
+          it { is_expected.to create_nfs__client__mount__connection(title).with_nfs_version(4) }
+          it { is_expected.to contain_mount(title).with( {
+            :ensure   => 'present',
+            :atboot   => false,
+            :device   => "#{params[:nfs_server]}:#{params[:remote_path]}",
+            :fstype   => 'nfs',
+            :options  => 'nfsvers=4,port=2049,soft,sec=sys',
+            :remounts => false
+          } ) }
+        end
+      end # context 'without autofs' do
+
+      context 'with other autodetect_remote permutations' do
+        let(:pre_condition) { "class { 'nfs': is_server => true }" }
+        let(:base_params) {{
+          :nfs_server  => nfs_server,
+          :remote_path => title,
+          :stunnel     => false,
+          :autofs      => false  # same logic exercised for static and auto mounts
+        }}
+
+        context 'autodetect_remote=false and nfs::is_server=true' do
+          let(:params) { base_params.merge( { :autodetect_remote => false } ) }
+
+          include_examples 'a base client mount define'
+          it { is_expected.to create_nfs__client__mount__connection(title).with_nfs_version(4) }
+          it 'should not use localhost for mount' do
+            is_expected.to contain_mount(title).with( {
+              :ensure   => 'mounted',
+              :atboot   => true,
+              :device   => "#{params[:nfs_server]}:#{params[:remote_path]}",
+              :fstype   => 'nfs',
+              :options  => 'nfsvers=4,port=2049,soft,sec=sys',
+              :remounts => false
+            } )
+          end
+        end
+
+        context 'autodetect_remote=true and nfs::is_server=true' do
+          let(:params) { base_params.merge( { :autodetect_remote => true } ) }
+
+          it 'should use localhost for mount' do
+            is_expected.to contain_mount(title).with( {
+              :ensure   => 'mounted',
+              :atboot   => true,
+              :device   => "127.0.0.1:#{params[:remote_path]}",
+              :fstype   => 'nfs',
+              :options  => 'nfsvers=4,port=2049,soft,sec=sys',
+              :remounts => false
+            } )
+          end
+        end
+      end #context 'with other autodetect_remote permutations' do
+
+      context 'errors' do
+        context 'title is not a full path' do
+          let(:params) {{
+            :nfs_server  => '1.2.3.4',
+            :remote_path => 'home',
+          }}
+
+          it { is_expected.to_not compile.with_all_deps }
+        end
+
+        context 'when nfs_version=3 but nfs::nfsv3=false' do
+          let(:params) {{
+            :nfs_server  => '1.2.3.4',
+            :remote_path => '/home',
+            :nfs_version => 3
+          }}
+
+          it { is_expected.to_not compile.with_all_deps }
+        end
+
+        context 'when nfs_version=3 and nfs::client::stunnel=true' do
+          let(:pre_condition) { "class { 'nfs::client': stunnel => true }" }
 
           let(:params) {{
             :nfs_server  => '1.2.3.4',
@@ -205,32 +441,9 @@ describe 'nfs::client::mount' do
             :nfs_version => 3
           }}
 
-          include_examples 'a base client mount define'
-          it { is_expected.to contain_class('iptables') }
-          it { is_expected.to contain_iptables__listen__tcp_stateful('nfs_status_tcp_1_2_3_4') }
-          it { is_expected.to contain_iptables__listen__udp('nfs_status_udp_1_2_3_4') }
+          it { is_expected.to_not compile.with_all_deps }
         end
       end
-
-
-      context 'when nfs::client::is_server is true but the remote is not the local system' do
-        let(:pre_condition) {
-          <<-EOM
-            class { 'nfs': is_server => true }
-          EOM
-        }
-
-        let(:params){{
-          :nfs_server        => '254.16.1.2',
-          :autodetect_remote => false,
-          :stunnel           => false,
-          :remote_path       => '/home'
-        }}
-
-        it { is_expected.to compile.with_all_deps }
-        it { is_expected.to contain_class('nfs::client') }
-        it { is_expected.to contain_autofs__map__entry(title).with_location("#{params[:nfs_server]}:#{params[:remote_path]}") }
-      end
-    end
-  end
-end
+    end #context "on #{os}"
+  end #on_supported_os.each
+end  #describe
