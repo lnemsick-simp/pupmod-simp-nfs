@@ -37,7 +37,6 @@ describe 'nfs::client::stunnel' do
           :firewall         => params[:firewall],
           :tcpwrappers      => params[:tcpwrappers],
           :tag              => ['nfs']
-
         } ) }
 
       end
