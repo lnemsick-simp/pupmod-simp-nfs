@@ -17,7 +17,6 @@ describe 'nfs' do
         it { is_expected.to create_class('nfs::lvm2') }
         it { is_expected.to create_class('nfs::client') }
         it { is_expected.to_not create_class('nfs::server') }
-
       end
 
       context 'with kerberos=true' do

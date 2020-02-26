@@ -126,7 +126,7 @@ describe 'nfs::client::mount' do
               :stunnel_nfsd_port      => 20500,
               :stunnel_socket_options => ['l:TCP_NODELAY=2','r:TCP_NODELAY=2'],
               :stunnel_verify         => 1,
-              :stunnel_wantedby       => ['remote-fs-pre.target', 'some-other.service'],
+              :stunnel_wantedby       => ['remote-fs-pre.target', 'some-other.service']
             } ) }
 
             it { is_expected.to contain_class('autofs') }
@@ -158,10 +158,10 @@ describe 'nfs::client::mount' do
 
             include_examples 'a base client mount define'
             it { is_expected.to create_nfs__client__mount__connection(title).with( {
-              :nfs_server             => params[:nfs_server],
-              :nfs_version            => 4,
-              :nfsd_port              => 2049,
-              :stunnel                => false
+              :nfs_server  => params[:nfs_server],
+              :nfs_version => 4,
+              :nfsd_port   => 2049,
+              :stunnel     => false
             } ) }
 
             it { is_expected.to contain_class('autofs') }
@@ -282,9 +282,9 @@ describe 'nfs::client::mount' do
 
       context 'without autofs' do
         let(:base_params) {{
-          :nfs_server        => nfs_server,
-          :remote_path       => title,
-          :autofs            => false
+          :nfs_server  => nfs_server,
+          :remote_path => title,
+          :autofs      => false
         }}
 
         context 'with NFSv3' do
@@ -416,7 +416,7 @@ describe 'nfs::client::mount' do
         context 'title is not a full path' do
           let(:params) {{
             :nfs_server  => '1.2.3.4',
-            :remote_path => 'home',
+            :remote_path => 'home'
           }}
 
           it { is_expected.to_not compile.with_all_deps }
