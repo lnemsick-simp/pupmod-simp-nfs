@@ -32,9 +32,10 @@ describe 'nfs::idmapd::config' do
   context 'with optional parameters set and multiple methods' do
     let(:params) {{
       :verbosity          => 2,
-      :local_realms       => ['realm1', 'realm2'],
+      :domain             => 'mydomain',
       :no_strip           => 'both',
-      :reformat_group     => true,
+      :reformat_group     => false,
+      :local_realms       => ['realm1', 'realm2'],
       :trans_method       => ['nsswitch', 'static'],
       :gss_methods        => ['nsswitch', 'static'],
       :static_translation => { 'key1' => 'value1', 'key2' => 'value2' }
@@ -49,8 +50,9 @@ describe 'nfs::idmapd::config' do
         [General]
 
         Verbosity = 2
+        Domain = mydomain
         No-Strip = both
-        Reformat-Group = true
+        Reformat-Group = false
         Local-Realms = realm1,realm2
 
         [Mapping]

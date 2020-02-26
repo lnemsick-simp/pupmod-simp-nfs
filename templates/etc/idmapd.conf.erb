@@ -18,7 +18,7 @@ No-Strip = <%= @no_strip %>
 Reformat-Group = <%= @reformat_group %>
 <%  end -%>
 <%  unless @local_realms.nil? -%>
-Local-Realms = <%= Array(@local_realms).join(',') %>
+Local-Realms = <%= @local_realms.join(',') %>
 <%  end -%>
 
 [Mapping]
@@ -28,9 +28,9 @@ Nobody-Group = <%= @nobody_group %>
 
 [Translation]
 
-Method = <%= Array(@trans_method).join(',') %>
+Method = <%= @trans_method.join(',') %>
 <%  unless @gss_methods.nil? -%>
-GSS-Methods = <%= Array(@gss_methods).join(',') %>
+GSS-Methods = <%= @gss_methods.join(',') %>
 <%  end -%>
 
 [Static]

@@ -137,7 +137,6 @@ MODULE TODO
   firewall?
 - cleanup
   - use epp for idmapd.conf
-  - move server export template to templates/etc for consistency
   - puppet strings documentation
   - Fix else and elsif curly braces -> make sure consistent in a file
 - Testing holes/problems
