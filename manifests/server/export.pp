@@ -129,7 +129,7 @@ define nfs::server::export (
 
   concat::fragment { "nfs_${_name}_export":
     target  => '/etc/exports',
-    content => template("${module_name}/server/export.erb")
+    content => template("${module_name}/etc/export.erb")
   }
 
   # We have to do this if we have a 'sec=sys' situation
