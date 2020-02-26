@@ -1,8 +1,8 @@
 require 'spec_helper'
 
 describe 'nfs::client::mount::connection' do
-  context 'supported operating systems' do
-    on_supported_os.each do |os, os_facts|
+  on_supported_os.each do |os, os_facts|
+    context "on #{os}" do
       before(:each) do
         # Mask 'assert_private' with mock version for testing
         Puppet::Parser::Functions.newfunction(:assert_private, :type => :rvalue) { |args| }
