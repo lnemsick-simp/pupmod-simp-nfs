@@ -31,6 +31,9 @@ define nfs::client::stunnel(
   # unnecessary and the destination IP has already been correctly configured
   # to be 127.0.0.1.
   unless simplib::host_is_me($nfs_server) {
+    simplib::assert_optional_dependency($module_name, 'simp/stunnel')
+    include 'stunnel'
+
     stunnel::instance { "nfs_${name}_client_nfsd":
       connect          => ["${nfs_server}:${nfsd_connect_port}"],
       accept           => "127.0.0.1:${nfsd_accept_port}",

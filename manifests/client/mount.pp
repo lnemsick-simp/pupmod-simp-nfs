@@ -206,6 +206,7 @@ define nfs::client::mount (
   }
 
   if $autofs {
+    simplib::assert_optional_dependency($module_name, 'simp/autofs')
     include 'autofs'
 
     Class['nfs::install'] -> Class['autofs::install']

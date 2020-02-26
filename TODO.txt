@@ -127,35 +127,32 @@
        Command failed in reboot: Uptime did not reset. Reboot appears to have failed.
 - DONE move server export template to templates/etc for consistency
 - DONE use epp for idmapd.conf
-
-MODULE TODO
-- lint
-- Is metadata.json correct
+- DONE Fix else and elsif curly braces -> make sure consistent in a file
+- NO PROBLEM lint
+- DONE should stunnel change refresh nfs::server::service?  similar to how autofs gets
+  refreshed?
+- DONE Is metadata.json correct
   - Every used module correctly represented?
   - Optional dependencies reflected properly
   - Version range correct
-- Are values in nfs::server::stunnel_wantedby correct?
-- set udp and tcp for NFS server in its param list and then use that to set
-  firewall?
+
+MODULE TODO
 - cleanup
   - puppet strings documentation
-  - Fix else and elsif curly braces -> make sure consistent in a file
 - Testing holes/problems
   - stunnel set and NFS server and client on same host fails idempotency
   - NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server at same time?
-- should stunnel change refresh nfs::server::service?  similar to how autofs gets
-  refreshed?
 - See if have to start stunnel up after service
   client goes beserk? (times out and has issues with hard mount)
 - Is nfs::server::export logic with seboolean required
 - why was the number of rpc.mountd threads decreased when applied puppet?
+- Are values in nfs::server::stunnel_wantedby correct?
 - use systemd directly to fix any dependency bugs
   - remove Puppet '->' that are handled by wants/wantedby
   - override unit file for gssproxy removing secure targets and having a After that has network.target
      - ^^^ is a bug fix to be picked up.
 - what is correct ordering?
   - Are all the notifies sufficient?
-  - nfs-server.service -> stunnel -> firewall ?
 - README.md
   - has hiera() functions...not sure we are still using them
   - has simp_options::kerberos <-- doesn't exist?
@@ -195,12 +192,14 @@ MODULE TODO
     - will be tested with stunnel client multiple servers stes
 
 QUESTIONS
+  firewall?
 - Should we manage nfsmount.conf with the module?
   - looks like client mount config
   - How does this affect compliance validation?  Do options here not get reported
     when the security scans are done?
 - What should the initial nfs.conf look like?
   - Should settings be explicit and match defaults?
+- set udp and tcp for NFS server in its param list and then use that to set
 - Do we need to handle RDMA?
   - Install the rdma-core package:
     # yum install rdma-core

@@ -63,6 +63,7 @@ define nfs::client::mount::connection (
     )
   } elsif $firewall  {
     # Open up the firewall for incoming, side-band NFS channels.
+    simplib::assert_optional_dependency($module_name, 'simp/iptables')
     include 'iptables'
 
     # WORK AROUND iptables::listen::xxx issue with invalid firewalld services

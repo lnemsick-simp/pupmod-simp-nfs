@@ -4,9 +4,10 @@ class nfs::client::tcpwrappers {
 
   assert_private()
 
+  # tcpwrappers was dropped in EL8
   if (versioncmp($facts['os']['release']['major'], '8') < 0) and
     $nfs::nfsv3 {
-    # tcpwrappers was dropped in EL8
+    simplib::assert_optional_dependency($module_name, 'simp/tcpwrappers')
     include 'tcpwrappers'
 
     # On EL7, the following NFS-client-related executables are dynamically

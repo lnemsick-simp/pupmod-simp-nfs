@@ -15,11 +15,11 @@
   ],
   "dependencies": [
     { "name": "camptocamp/systemd",
-      "version_requirement": ">= 2.2.0 < 3.0.0"
+      "version_requirement": ">= 2.8.0 < 3.0.0"
     },
     {
       "name": "herculesteam/augeasproviders_sysctl",
-      "version_requirement": ">= 2.1.0 < 3.0.0"
+      "version_requirement": ">= 2.4.0 < 3.0.0"
     },
     {
       "name": "puppetlabs/concat",
@@ -30,34 +30,42 @@
       "version_requirement": ">= 4.9.0 < 7.0.0"
     },
     {
-      "name": "simp/autofs",
-      "version_requirement": ">= 6.0.0 < 7.0.0"
-    },
-    {
-      "name": "simp/iptables",
-      "version_requirement": ">= 6.0.0 < 7.0.0"
-    },
-    {
-      "name": "simp/krb5",
-      "version_requirement": ">= 7.0.0 < 8.0.0"
-    },
-    {
       "name": "simp/simplib",
-      "version_requirement": ">= 3.15.0 < 5.0.0"
-    },
-    {
-      "name": "simp/stunnel",
-      "version_requirement": ">= 6.3.1 < 7.0.0"
+      "version_requirement": ">= 4.1.0 < 5.0.0"
     },
     {
       "name": "simp/svckill",
-      "version_requirement": ">= 3.3.0 < 4.0.0"
+      "version_requirement": ">= 3.6.0 < 4.0.0"
     },
     {
-      "name": "simp/tcpwrappers",
-      "version_requirement": ">= 6.0.0 < 7.0.0"
+      "name": "simp/vox_selinux",
+      "version_requirement": ">= 3.1.0 < 4.0.0"
     }
   ],
+  "simp": {
+    "optional_dependencies": [
+      {
+        "name": "simp/autofs",
+        "version_requirement": ">= 6.2.1 < 7.0.0"
+      },
+      {
+        "name": "simp/krb5",
+        "version_requirement": ">= 7.1.0 < 8.0.0"
+      },
+      {
+        "name": "simp/iptables",
+      "version_requirement": ">= 6.4.0 < 7.0.0"
+      },
+      {
+        "name": "simp/stunnel",
+        "version_requirement": ">= 6.6.0 < 7.0.0"
+      },
+      {
+        "name": "simp/tcpwrappers",
+        "version_requirement": ">= 6.2.0 < 7.0.0"
+      }
+    ]
+  },
   "operatingsystem_support": [
     {
       "operatingsystem": "CentOS",
