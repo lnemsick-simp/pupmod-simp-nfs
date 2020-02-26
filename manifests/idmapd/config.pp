@@ -48,7 +48,7 @@ class nfs::idmapd::config (
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
-    content => template("${module_name}/etc/idmapd.conf.erb")
+    content => epp("${module_name}/etc/idmapd.conf.epp")
   }
 
 }

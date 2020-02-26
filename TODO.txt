@@ -125,6 +125,8 @@
      Failure/Error: client.reboot
      Beaker::Host::RebootFailure:
        Command failed in reboot: Uptime did not reset. Reboot appears to have failed.
+- DONE move server export template to templates/etc for consistency
+- DONE use epp for idmapd.conf
 
 MODULE TODO
 - lint
@@ -136,7 +138,6 @@ MODULE TODO
 - set udp and tcp for NFS server in its param list and then use that to set
   firewall?
 - cleanup
-  - use epp for idmapd.conf
   - puppet strings documentation
   - Fix else and elsif curly braces -> make sure consistent in a file
 - Testing holes/problems
