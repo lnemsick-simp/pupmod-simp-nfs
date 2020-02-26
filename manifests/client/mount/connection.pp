@@ -4,14 +4,27 @@
 #
 # **This should NOT be called from outside ``nfs::client::mount``**
 #
-# All parameters map to their counterparts in ``nfs::client::mount``
 #
 # @param nfs_server
 # @param nfs_version
-# @param nfs_port
-# @param v4_remote_port
+# @param nfsd_port
+# @param firewall
 # @param stunnel
+#   * Unused when `nfs_version` is 3
+#
+# @param stunnel_nfsd_port
+#   * Unused when `stunnel` is false or `nfs_version` is 3
+#
+# @param stunnel_socket_options
+#   * Unused when `stunnel` is false or `nfs_version` is 3
+#
+# @param stunnel_verify
+#   * Unused when `stunnel` is false or `nfs_version` is 3
+#
 # @param stunnel_wantedby
+#   * Unused when `stunnel` is false or `nfs_version` is 3
+#
+# @param tcpwrappers
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
@@ -31,11 +44,10 @@ define nfs::client::mount::connection (
   # This is only meant to be called from inside nfs::client::mount
   assert_private()
 
-  if $stunnel {
-    # Only dealing with NFSv4.  stunnel-related firewall and tcpwrappers
-    # settings handled by the stunnel::instance, itself.
-
-    # It is possible that this is called for multiple mounts on the same server
+  if $stunnel and ($nfs_version == 4) {
+    # It is possible that this is called for multiple mounts on the same server.
+    # stunnel-related firewall and tcpwrappers settings handled by the
+    # stunnel::instance, itself.
     ensure_resource('nfs::client::stunnel',
       "${nfs_server}:${nfsd_port}",
       {
@@ -46,7 +58,7 @@ define nfs::client::mount::connection (
         stunnel_verify         => $stunnel_verify,
         stunnel_wantedby       => $stunnel_wantedby,
         firewall               => $firewall,
-        tcpwrappers            => $tcpwrappers,
+        tcpwrappers            => $tcpwrappers
       }
     )
   } elsif $firewall  {
