@@ -98,7 +98,7 @@ describe 'nfs::server::export' do
 
       context "with selinux disabled and 'sys' in 'sec' parameter" do
         let(:params) { base_params }
-        let(:facts) { os_facts.merge({:selinux => false})}
+        let(:facts) { os_facts.merge({ :selinux => false })}
         it { is_expected.to compile.with_all_deps }
         it { is_expected.to_not contain_selboolean('nfsd_anon_write') }
       end
