@@ -410,3 +410,22 @@ server1 export home, mount apps
 server2 export apps, mount home
 clients mount home and apps
 
+
+el8-server
+initial state of server
+  firewalld-0.6.3-7.el8.noarch
+  firewalld not enabled
+  firewalld not running
+  FirewallBackend=nftables
+
+after apply
+  firewalld-0.6.3-7.el8.noarch
+  firewalld enabled
+  firewalld not running
+  FirewallBackend=nftables
+
+Now that running, firewalld_version fact can execute and will make 
+FirewallBackend change
+
+OEL starts in the running firewalld state
+
