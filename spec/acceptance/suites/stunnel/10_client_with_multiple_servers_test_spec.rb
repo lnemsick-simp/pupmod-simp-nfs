@@ -42,17 +42,11 @@ describe 'nfs client with multiple servers' do
 
     # There is no DNS so we need to eliminate verification
     'nfs::stunnel_verify'                   => 0,
-  }
 
-  context 'configure firewalld to use iptables backend' do
-    # FIXME. Temporary workaround until can configure via firewalld module
-    # This is replicated so can run this test by itself.
-    hosts.each do |host|
-      if host.hostname.start_with?('el8')
-        on(host, "sed -i 's/FirewallBackend=nftables/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf")
-      end
-    end
-  end
+    # make sure we are using iptables and not nftables because nftables
+    # core dumps with rules from the nfs module
+    'firewalld::firewall_backend'           => 'iptables'
+  }
 
   context 'client mounting from 2 NFSv4 servers, both via stunnel' do
     opts = {

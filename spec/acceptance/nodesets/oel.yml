@@ -8,7 +8,7 @@
 HOSTS:
   el7-server:
     roles:
-      - master
+      - default
       - nfs_server
       - nfs_server_and_client
     platform: el-7-x86_64

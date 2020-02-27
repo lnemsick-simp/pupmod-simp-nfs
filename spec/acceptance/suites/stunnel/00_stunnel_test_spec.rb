@@ -58,16 +58,11 @@ describe 'nfs stunnel' do
 
     # There is no DNS so we need to eliminate verification
     'nfs::stunnel_verify'                   => 0,
-  }
 
-  context 'configure firewalld to use iptables backend' do
-    # FIXME. Temporary workaround until can configure via firewalld module
-    hosts.each do |host|
-      if host.hostname.start_with?('el8')
-        on(host, "sed -i 's/FirewallBackend=nftables/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf")
-      end
-    end
-  end
+    # make sure we are using iptables and not nftables because nftables
+    # core dumps with rules from the nfs module
+    'firewalld::firewall_backend'           => 'iptables'
+  }
 
   context 'with NFSv4 stunnel and firewall' do
     opts = {

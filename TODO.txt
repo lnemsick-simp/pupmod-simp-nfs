@@ -142,17 +142,6 @@ MODULE TODO
 - Testing holes/problems
   - stunnel set and NFS server and client on same host fails idempotency
   - NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server at same time?
-- See if have to start stunnel up after service
-  client goes beserk? (times out and has issues with hard mount)
-- Is nfs::server::export logic with seboolean required
-- why was the number of rpc.mountd threads decreased when applied puppet?
-- Are values in nfs::server::stunnel_wantedby correct?
-- use systemd directly to fix any dependency bugs
-  - remove Puppet '->' that are handled by wants/wantedby
-  - override unit file for gssproxy removing secure targets and having a After that has network.target
-     - ^^^ is a bug fix to be picked up.
-- what is correct ordering?
-  - Are all the notifies sufficient?
 - README.md
   - has hiera() functions...not sure we are still using them
   - has simp_options::kerberos <-- doesn't exist?
@@ -190,9 +179,18 @@ MODULE TODO
       i.e., when server config is customized, we haven't missed a corresponding client
       config that would be have to be set
     - will be tested with stunnel client multiple servers stes
+- See if have to start stunnel up after service
+  client goes beserk? (times out and has issues with hard mount)
+- why was the number of rpc.mountd threads decreased when applied puppet?
+- Are values in nfs::server::stunnel_wantedby correct?
+- use systemd directly to fix any dependency bugs
+  - remove Puppet '->' that are handled by wants/wantedby
+  - override unit file for gssproxy removing secure targets and having a After that has network.target
+     - ^^^ is a bug fix to be picked up.
+- what is correct ordering?
+  - Are all the notifies sufficient?
 
 QUESTIONS
-  firewall?
 - Should we manage nfsmount.conf with the module?
   - looks like client mount config
   - How does this affect compliance validation?  Do options here not get reported
@@ -212,6 +210,7 @@ QUESTIONS
     default, which requests the rdma service to load the NFSoRDMA client module.
   - Restart the nfs-server service:
     # systemctl restart nfs-server
+- Is nfs::server::export logic with seboolean required?
 - Is lvm2 workaround (lvm2.pp) still required?
   lvm = The  Logical  Volume Manager (LVM) provides tools to create virtual block devices
         from physical devices.

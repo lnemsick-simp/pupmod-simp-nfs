@@ -22,16 +22,11 @@ describe 'nfs basic' do
 
     # assuming all hosts configured to have same networks (public and private)
     'simp_options::trusted_nets'            => host_networks(hosts[0]),
-  }
 
-  context 'configure firewalld to use iptables backend' do
-    # FIXME. Temporary workaround until can configure via firewalld module
-    hosts.each do |host|
-      if host.hostname.start_with?('el8')
-        on(host, "sed -i 's/FirewallBackend=nftables/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf")
-      end
-    end
-  end
+    # make sure we are using iptables and not nftables because nftables
+    # core dumps with rules from the nfs module
+    'firewalld::firewall_backend'           => 'iptables'
+  }
 
   context 'with firewall only' do
     context 'NFSv4 with firewall' do

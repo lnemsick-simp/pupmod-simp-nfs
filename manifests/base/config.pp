@@ -1,6 +1,7 @@
-# @summary Common configuration required by both a NFS server and a NFS client
-#
+# @summary Manage common configuration required by both an NFS server and client
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
+#
 class nfs::base::config
 {
   assert_private()

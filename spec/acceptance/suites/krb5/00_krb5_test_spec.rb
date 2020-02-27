@@ -12,21 +12,21 @@ describe 'nfs krb5' do
 
   base_hiera = {
     # Set us up for a NFS using Kerberos
-    'simp_options::audit'                   => false,
-    'simp_options::firewall'                => true,
-    'simp_options::kerberos'                => true,
-    'simp_options::stunnel'                 => false,
-    'simp_options::tcpwrappers'             => true,
-    'ssh::server::conf::permitrootlogin'    => true,
-    'ssh::server::conf::authorizedkeysfile' => '.ssh/authorized_keys',
-    'simp_options::pki'                     => true,
-    'simp_options::pki::source'             => '/etc/pki/simp-testing/pki',
+    'simp_options::audit'                      => false,
+    'simp_options::firewall'                   => true,
+    'simp_options::kerberos'                   => true,
+    'simp_options::stunnel'                    => false,
+    'simp_options::tcpwrappers'                => true,
+    'ssh::server::conf::permitrootlogin'       => true,
+    'ssh::server::conf::authorizedkeysfile'    => '.ssh/authorized_keys',
+    'simp_options::pki'                        => true,
+    'simp_options::pki::source'                => '/etc/pki/simp-testing/pki',
 
     # Assuming all hosts configured to have same networks (public and private)
-    'simp_options::trusted_nets'            => host_networks(hosts[0]),
+    'simp_options::trusted_nets'               => host_networks(hosts[0]),
 
     # Fake out sync source, as this is not a full SIMP server
-    'krb5::keytab::keytab_source'           => 'file:///tmp/keytabs',
+    'krb5::keytab::keytab_source'              => 'file:///tmp/keytabs',
 
      # Config for KDC on NFS server (unused on NFS clients)
     'krb5::kdc::ldap'                          => false,
@@ -36,17 +36,12 @@ describe 'nfs krb5' do
       hosts.map{|host| [ fact_on(host,'fqdn'), {'ensure' => 'present'} ]}.to_h,
     'krb5::kdc::auto_keytabs::global_services' => [ 'nfs' ],
 
-    'nfs::secure_nfs'                       => true
-  }
+    'nfs::secure_nfs'                          => true,
 
-  context 'configure firewalld to use iptables backend' do
-    # FIXME. Temporary workaround until can configure via firewalld module
-    hosts.each do |host|
-      if host.hostname.start_with?('el8')
-        on(host, "sed -i 's/FirewallBackend=nftables/FirewallBackend=iptables/' /etc/firewalld/firewalld.conf")
-      end
-    end
-  end
+    # make sure we are using iptables and not nftables because nftables
+    # core dumps with rules from the nfs module
+    'firewalld::firewall_backend'               => 'iptables'
+  }
 
   # We need to set up the Kerberos server prior to running NFS.
   # Otherwise, there won't be a keytab to use on the system!
