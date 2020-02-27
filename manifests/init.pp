@@ -71,20 +71,18 @@
 #   Use the SIMP ``tcpwrappers`` module to manage TCP wrappers
 #
 # @param stunnel
-#   Wrap ``stunnel`` around critical NFS connections
+#   Wrap ``stunnel`` around critical NFSv4 connections
 #
 #   * This is intended for environments without a working Kerberos setup
 #     and may cause issues when used with Kerberos.
 #   * Use of Kerberos is preferred.
 #   * This will configure the NFS server to only use TCP communication
-#   * The following connections will not be secured, due to stunnel
-#     limitations
+#   * The following connections will not be secured, due to tunneling
+#     limitations in deployments using multiple NFS servers
 #
 #     - Connections to the rbcbind service
 #     - Connections to the rpc-rquotad service
 #     - The NFSv4.0 client callback side channel used in NFS delegations.
-#     - Client NSM (network status manager) messages which are exclusively
-#       sent over UDP.
 #
 # @param stunnel_tcp_nodelay
 #   Enable TCP_NODELAY for all stunnel connections

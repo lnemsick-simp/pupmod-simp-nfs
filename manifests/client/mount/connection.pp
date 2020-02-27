@@ -1,31 +1,57 @@
-# **NOTE: THIS IS A [PRIVATE](https://github.com/puppetlabs/puppetlabs-stdlib#assert_private) DEFINE**
-#
-# A helper for setting up the cross-system connectivity parts of a mount
-#
-# **This should NOT be called from outside ``nfs::client::mount``**
-#
+# @summary Manage cross-system connectivity parts of a mount
 #
 # @param nfs_server
+#   The IP address of the NFS server to which you will be connecting
+#
 # @param nfs_version
+#   The NFS major version that you want to use.
+#
 # @param nfsd_port
+#   The NFS server daemon listening port
+#
 # @param firewall
+#   Use the SIMP ``iptables`` module to manage firewall connections
+#
 # @param stunnel
-#   * Unused when `nfs_version` is 3
+#   Controls enabling ``stunnel`` for this connection
+#
+#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
 #
 # @param stunnel_nfsd_port
-#   * Unused when `stunnel` is false or `nfs_version` is 3
+#    Listening port on the NFS server for the tunneled connection to
+#    the NFS server daemon
+#
+#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
 #
 # @param stunnel_socket_options
-#   * Unused when `stunnel` is false or `nfs_version` is 3
+#   Additional stunnel socket options to be applied to the stunnel to the NFS
+#   server
+#
+#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
 #
 # @param stunnel_verify
-#   * Unused when `stunnel` is false or `nfs_version` is 3
+#   The level at which to verify TLS connections
+#
+#   * Levels:
+#
+#       * level 0 - Request and ignore peer certificate.
+#       * level 1 - Verify peer certificate if present.
+#       * level 2 - Verify peer certificate.
+#       * level 3 - Verify peer with locally installed certificate.
+#       * level 4 - Ignore CA chain and only verify peer certificate.
+#
+#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
 #
 # @param stunnel_wantedby
-#   * Unused when `stunnel` is false or `nfs_version` is 3
+#   The ``systemd`` targets that need ``stunnel`` to be active prior to being
+#   activated
+#
+#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
 #
 # @param tcpwrappers
+#   Use the SIMP ``tcpwrappers`` module to manage TCP wrappers
 #
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 define nfs::client::mount::connection (
@@ -38,7 +64,7 @@ define nfs::client::mount::connection (
   Array[String] $stunnel_socket_options,
   Integer       $stunnel_verify,
   Array[String] $stunnel_wantedby,
-  Boolean       $tcpwrappers,
+  Boolean       $tcpwrappers
 ) {
 
   # This is only meant to be called from inside nfs::client::mount

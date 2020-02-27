@@ -137,6 +137,7 @@
   - Version range correct
 
 MODULE TODO
+- fix tests for host_is_me in mount and make sure it still works
 - cleanup
   - puppet strings documentation
 - Testing holes/problems

@@ -1,39 +1,58 @@
-# **NOTE: THIS IS A [PRIVATE](https://github.com/puppetlabs/puppetlabs-stdlib#assert_private) CLASS**
+# @summary Manage configuration and services for a NFS client
 #
-# Set up the iptables hooks and the sysctl settings that are required for NFS
-# to function properly on a client system.
+# If using the ``nfs::client::mount`` define, this will be automatically called
+# for you.
 #
-# If using the ``nfs::client::stunnel::connect`` define, this will be
-# automatically called for you.
+# @param blkmap
+#   Whether to enable the ``nfs-blkmap.service`` which is required for pNFS.
+#
+#   * Required for parallel NFS (pNFS).
+#   * Only applicable for NFSv4.1 or later
 #
 # @param callback_port
 #   The port used by the server to recall delegation of responsibilities to a
-#   client in NFSv4.0.  Beginning with NFSv4.1, a separate callback side channel
-#   is not required.
+#   NFSv4 client.
+#
+#   * Only applicable in NFSv4.0.  Beginning with NFSv4.1, a separate callback
+#     side channel is not required.
 #
 # @param stunnel
-#   Enable ``stunnel`` connections for this system
+#   Enable ``stunnel`` connections from this client to each NFS server
 #
-#   * Will *attempt* to determine if the server is trying to connect to itself
+#   * Stunnel can only be used for NFSv4 connections.
+#   * Can be explicitly configured for each mount in ``nfs::client::mount``.
 #
-#   * If connecting to itself, will not use stunnel, otherwise will use stunnel
+# @param stunnel_socket_options
+#   Additional stunnel socket options to be applied to each stunnel
+#   connection to an NFS server
 #
-#   * If you are using host aliases for your NFS server names, this check
-#     may fail and you may need to disable ``$stunnel`` explicitly
+#   * Can be explicitly configured for each mount in ``nfs::client::mount``.
 #
 # @param stunnel_verify
 #   The level at which to verify TLS connections
 #
-#   * See ``stunnel::connection::verify`` for details
+#   * Levels:
 #
-# @param firewall
-#   Use the SIMP IPTables module to manipulate the firewall settings
+#       * level 0 - Request and ignore peer certificate.
+#       * level 1 - Verify peer certificate if present.
+#       * level 2 - Verify peer certificate.
+#       * level 3 - Verify peer with locally installed certificate.
+#       * level 4 - Ignore CA chain and only verify peer certificate.
 #
+#   * Can be explicitly configured for each mount in ``nfs::client::mount``.
+#
+# @param stunnel_wantedby
+#   The ``systemd`` targets that need ``stunnel`` to be active prior to being
+#   activated
+#
+#   * Can be explicitly configured for each mount in ``nfs::client::mount``.
+#
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client (
-  Boolean          $blkmap                 = false,  # NFSV4.1 or later
-  Simplib::Port    $callback_port          = 876,    # NFSV4.0
+  Boolean          $blkmap                 = false,
+  Simplib::Port    $callback_port          = 876,
   Boolean          $stunnel                = $nfs::stunnel,
   Array[String]    $stunnel_socket_options = $nfs::stunnel_socket_options,
   Integer[0]       $stunnel_verify         = $nfs::stunnel_verify,

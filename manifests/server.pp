@@ -1,9 +1,8 @@
 # **NOTE: THIS IS A [PRIVATE](https://github.com/puppetlabs/puppetlabs-stdlib#assert_private) CLASS**
 #
-# Configure a NFS server with a default configuration that nails up the ports
-# so that you can pass them through ``iptables``.
+# If using the ``nfs::server::export`` define, this will be automatically called
+# for you.
 #
-# This defaults to ``NFSv4``.
 #
 # @param trusted_nets
 #   The systems that are allowed to connect to this service
