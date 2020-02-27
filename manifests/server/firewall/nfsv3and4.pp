@@ -5,9 +5,6 @@ class nfs::server::firewall::nfsv3and4
 {
   assert_private()
 
-  simplib::assert_optional_dependency($module_name, 'simp/iptables')
-  include 'iptables'
-
   $_base_ports = [
     111, # rpcbind port
     $nfs::nfsd_port,

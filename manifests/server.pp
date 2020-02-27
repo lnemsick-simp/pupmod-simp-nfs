@@ -152,7 +152,6 @@ class nfs::server (
   }
 
   if $nfs::kerberos {
-    simplib::assert_optional_dependency($module_name, 'simp/krb5')
     include 'krb5'
 
     Class['krb5'] ~> Class['nfs::server::service']

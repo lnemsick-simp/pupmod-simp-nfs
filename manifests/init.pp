@@ -130,6 +130,18 @@ class nfs (
     warning("This version of simp-nfs may not work with ${facts['os']['name']} ${facts['os']['release']['full']}. Use simp-nfs module version < 7.0.0 instead")
   }
 
+  if $firewall {
+    simplib::assert_optional_dependency($module_name, 'simp/iptables')
+  }
+
+  if $kerberos {
+    simplib::assert_optional_dependency($module_name, 'simp/krb5')
+  }
+
+  if $tcpwrappers and (versioncmp($facts['os']['release']['major'], '8') < 0) {
+    simplib::assert_optional_dependency($module_name, 'simp/tcpwrappers')
+  }
+
   include 'nfs::install'
 
   if $kerberos and (versioncmp($facts['os']['release']['major'], '8') < 0) {

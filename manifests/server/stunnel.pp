@@ -29,8 +29,7 @@ class nfs::server::stunnel {
   # users can only run quota commands on the NFS server.  Without tunneling,
   # users can run those commands on the NFS clients a well.
 
-   simplib::assert_optional_dependency($module_name, 'simp/stunnel')
-   include 'stunnel'
+  simplib::assert_optional_dependency($module_name, 'simp/stunnel')
 
   $_accept = "${nfs::server::stunnel_accept_address}:${nfs::server::stunnel_nfsd_accept_port}"
   stunnel::instance { 'nfsd':

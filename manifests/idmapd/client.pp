@@ -1,3 +1,5 @@
+# @summary Configuration for idmapd client
+# @param timeout
 class nfs::idmapd::client(
   Integer[0] $timeout = 600
 ) {

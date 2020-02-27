@@ -115,7 +115,7 @@ class nfs::base::config
         concat::fragment { 'nfs_gss_use_proxy':
           order   => 1,
           target  => '/etc/sysconfig/nfs',
-          content => "GSS_USE_PROXY=yes"
+          content => 'GSS_USE_PROXY=yes'
         }
       }
 

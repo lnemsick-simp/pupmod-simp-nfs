@@ -1,4 +1,4 @@
-
+# @summary NFS server firewall configuration
 class nfs::server::firewall
 {
   assert_private()

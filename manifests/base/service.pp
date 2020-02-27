@@ -1,3 +1,4 @@
+# @summary Services common to the NFS server and the NFS client
 class nfs::base::service
 {
   assert_private()

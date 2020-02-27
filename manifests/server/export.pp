@@ -121,7 +121,6 @@ define nfs::server::export (
   Simplib::Port                                   $anongid        = 65534,
   Optional[String]                                $custom         = undef
 ) {
-  simplib::assert_metadata($module_name)
 
   include 'nfs::server'
 
