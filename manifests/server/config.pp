@@ -1,6 +1,8 @@
+# @summary Manage NFS server-specific configuration
+#
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
-
 class nfs::server::config
 {
   assert_private()

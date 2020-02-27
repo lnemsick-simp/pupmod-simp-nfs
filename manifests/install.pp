@@ -1,4 +1,4 @@
-# Install the required NFS packages
+# @summary Manage the required NFS packages
 #
 # @param ensure
 #    The ensure status of the nfs-utils package
@@ -12,6 +12,7 @@
 #    package.
 #
 # @api private
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::install (
   String $ensure           = simplib::lookup('simp_options::package_ensure', { 'default_value' => 'installed' }),

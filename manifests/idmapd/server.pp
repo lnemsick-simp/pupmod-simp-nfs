@@ -1,8 +1,14 @@
+# @summary Manage the ``idmapd`` server configuration and service
+#
+# Enables or masks ``rpc-idmapd.service`` per ``nfs::idmapd``.
+#
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::idmapd::server
 {
   assert_private()
+
   if $nfs::idmapd {
     include 'nfs::idmapd::config'
 

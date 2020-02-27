@@ -1,7 +1,8 @@
+# @summary Manage NFS server-specific services
 #
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
-
 class nfs::server::service
 {
   assert_private()

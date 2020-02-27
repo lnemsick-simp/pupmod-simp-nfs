@@ -1,12 +1,11 @@
-# Provides for the configuration of ``idmapd``
-#
-# The NFSV4 daemon is started from ``init.pp`` but you may need to tweak some
-# values here for your environment.
+# @summary Manage ``idmapd`` configuration
 #
 # @see idmapd.conf(5)
 #
 # @param verbosity
 # @param domain
+# @param no_strip
+# @param reformat_group
 # @param local_realms
 # @param nobody_user
 # @param nobody_group

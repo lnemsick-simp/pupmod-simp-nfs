@@ -1,4 +1,10 @@
-# @summary Services common to the NFS server and the NFS client
+# @summary Manage services common to an NFS server and an NFS client
+#
+# Enables or masks common services as appropriate.
+#
+# @api private
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
+#
 class nfs::base::service
 {
   assert_private()

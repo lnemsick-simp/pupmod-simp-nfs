@@ -1,4 +1,5 @@
-# @summary Manage common configuration required by an NFS server and an NFS client
+# @summary Manage configuration common to an NFS server and an NFS client
+#
 # @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #

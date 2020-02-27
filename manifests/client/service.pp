@@ -1,3 +1,6 @@
+# @summary Manage NFS client-specific services
+#
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client::service
