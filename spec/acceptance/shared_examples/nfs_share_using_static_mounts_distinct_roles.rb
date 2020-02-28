@@ -162,8 +162,13 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
             require 'timeout'
 
             begin
+              # After the NFS daemon restarts, it waits grace-time seconds before
+              # allowing new file open requests (NFSv4) or file locks via NLM
+              # (NFSv3). This is intended to give the client time to recover
+              # state. The default grace-time is 90 seconds
+              nfsd_grace_time = 90
               lock_seconds = 1
-              timeout_seconds = lock_seconds + 60
+              timeout_seconds = nfsd_grace_time + lock_seconds + 2
               Timeout::timeout(timeout_seconds) do
                 on(client, "date; flock  #{mount_dir}/#{filename} -c 'sleep #{lock_seconds}'; date")
               end

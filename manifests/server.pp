@@ -1,70 +1,72 @@
 # @summary Manage configuration and services for a NFS server
 #
-# If using the ``nfs::server::export`` define, this will be automatically called
+# If using the `nfs::server::export` define, this will be automatically called
 # for you.
 #
 # @param nfsd_vers4
 #   Allow use of NFSv4
 #
-#   * Sets the ``vers4`` option in the ``nfsd`` section of ``/etc/nfs.conf``
+#   * Sets the `vers4` option in the `nfsd` section of `/etc/nfs.conf`
 #
 # @param nfsd_vers4_0
 #   Allow use of NFSv4.0
 #
-#   * Sets the ``vers4.0`` option in the ``nfsd`` section of ``/etc/nfs.conf``
+#   * NFSv4.0 uses a side channel to the NFS client to recall delegation
+#     responsibilities.  When this is used, all communications cannot be
+#     encrypted with `stunnel`.
+#   * Sets the `vers4.0` option in the `nfsd` section of `/etc/nfs.conf`
 #
 # @param nfsd_vers4_1
 #   Allow use of NFSv4.1
 #
-#   * Sets the ``vers4.1`` option in the ``nfsd`` section of ``/etc/nfs.conf``
+#   * Sets the `vers4.1` option in the `nfsd` section of `/etc/nfs.conf`
 #
 # @param nfsd_vers4_2
 #   Allow use of NFSv4.2
 #
-#   * Sets the ``vers4.2`` option in the ``nfsd`` section of ``/etc/nfs.conf``
-#   * Applicable to EL8 and later
+#   * Sets the `vers4.2` option in the `nfsd` section of `/etc/nfs.conf`
+#   * NFSv4.2 is available beggining with EL8.
 #
 # @param custom_rpcrquotad_opts
+#   * Additional arguments to pass to the `rpc.rquotad` daemon
 #
 # @param sunrpc_udp_slot_table_entries
-#
 #   Set the default UDP slot table entries in the kernel
 #
 #   * Most NFS server performance guides seem to recommend this setting
-#
 #   * If you have a low memory system, you may want to reduce this
 #
 # @param sunrpc_tcp_slot_table_entries
-#
 #   Set the default TCP slot table entries in the kernel
 #
 #   * Most NFS server performance guides seem to recommend this setting
-#
 #   * If you have a low memory system, you may want to reduce this
 #
 # @param stunnel
-#   Controls enabling ``stunnel`` to encrypt critical NFSv4 connections
+#   Controls enabling `stunnel` to encrypt critical NFSv4 connections
 #
 #   * This will configure the NFS server to only use TCP communication
+#   * This cannot be effectively used with NFSv4.0 connections because of the
+#     side channel to the NFS client.
 #
 # @param stunnel_accept_address
 #   The address upon which the NFS server will listen for stunnel connections
 #
-#   * You should be set this to ``0.0.0.0`` for all interfaces
-#   * Unused when ``stunnel`` is ``false``
+#   * You should be set this to `0.0.0.0` for all interfaces
+#   * Unused when `stunnel` is `false`
 #
 # @param stunnel_nfsd_accept_port
 #   Listening port on the NFS server for the tunneled connection to
 #   the NFS server daemon
 #
-#   * Decrypted traffic will be forwarded to ``nfsd_port`` on the NFS server
+#   * Decrypted traffic will be forwarded to `nfsd_port` on the NFS server
 #     daemon.
-#   * Unused when ``stunnel`` is ``false``
+#   * Unused when `stunnel` is `false`
 #
 # @param stunnel_socket_options
 #   Additional socket options to set for stunnel connections
 #
-#   * Unused when ``stunnel`` is ``false``
+#   * Unused when `stunnel` is `false`
 #
 # @param stunnel_verify
 #   The level at which to verify TLS connections from clients
@@ -77,13 +79,13 @@
 #       * level 3 - Verify peer with locally installed certificate.
 #       * level 4 - Ignore CA chain and only verify peer certificate.
 #
-#   * Unused when ``stunnel`` is ``false``
+#   * Unused when `stunnel` is `false`
 #
 # @param stunnel_wantedby
-#   The ``systemd`` targets that need ``stunnel`` to be active prior to being
+#   The `systemd` targets that need `stunnel` to be active prior to being
 #   activated
 #
-#   * Unused when ``stunnel`` is ``false``
+#   * Unused when `stunnel` is `false`
 #
 # @param trusted_nets
 #   The systems that are allowed to connect to this service
