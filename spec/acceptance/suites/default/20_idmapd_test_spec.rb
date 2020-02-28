@@ -32,6 +32,12 @@ describe 'nfs basic idmapd' do
     it_behaves_like 'a firewalld fixer', hosts
   end
 
+  context 'long running test' do
+    it 'should ensure vagrant connectivity' do
+      on(hosts, 'date')
+    end
+  end
+
   context 'with idmapd enabled' do
     opts = {
       :base_hiera      => base_hiera,

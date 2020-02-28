@@ -120,6 +120,12 @@ describe 'nfs krb5' do
         end
       end
 
+      context 'long running test' do
+        it 'should ensure vagrant connectivity' do
+          on(hosts, 'date')
+        end
+      end
+
       context 'Secure NFSv4 with firewall and tcpwrappers' do
         server_krb5_manifest_extras = <<~EOM
           # Keep KRB5 (kadmin & krb5kdc) ports open in firewall so clients can

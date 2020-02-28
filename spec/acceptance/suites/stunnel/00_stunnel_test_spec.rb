@@ -85,6 +85,12 @@ describe 'nfs stunnel' do
     it_behaves_like 'a NFS share using autofs with distinct client/server roles', servers, clients, opts
   end
 
+  context 'long running test' do
+    it 'should ensure vagrant connectivity' do
+      on(hosts, 'date')
+    end
+  end
+
   context 'with NFSv4 stunnel, firewall and tcpwrappers' do
     tcpwrappers_hiera = {
       'simp_options::tcpwrappers' => true,

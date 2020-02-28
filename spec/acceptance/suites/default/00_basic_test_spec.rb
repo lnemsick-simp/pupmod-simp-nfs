@@ -66,6 +66,12 @@ describe 'nfs basic' do
     end
   end
 
+  context 'long running test' do
+    it 'should ensure vagrant connectivity' do
+      on(hosts, 'date')
+    end
+  end
+
   context 'with firewall and tcpwrappers' do
     tcpwrappers_hiera = {
       'simp_options::tcpwrappers' => true,
