@@ -1,6 +1,8 @@
+# @summary NFS server firewall configuration for NFSv3 and NFSv4
+#
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
-
 class nfs::server::firewall::nfsv3and4
 {
   assert_private()

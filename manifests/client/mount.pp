@@ -91,24 +91,25 @@
 #     NFS server for which a stunneled mount connection is to be made.
 #
 # @param stunnel
-#   Controls enabling ``stunnel`` for this connection
+#   Controls enabling ``stunnel`` to encrypt NFSv4 connection to the NFS server
 #
 #   * If left unset, the value will be taken from ``nfs::client::stunnel``
 #   * May be set to ``false`` to ensure that ``stunnel`` will not be used for
 #     this connection
-#   * Must be set to ``false`` for NFSv3 mounts
+#   * Must be set to ``false`` for a NFSv3 mount
 #   * May be set to ``true`` to force the use of ``stunnel`` on this connection
 #   * Will *attempt* to determine if the host is trying to connect to itself
-#     and use a local connection in lieu of a stunnel in this case.
+#     and use a direct, local connection in lieu of a stunnel in this case.
 #
 #     * When you know this host is also the NFS server, setting this to
-#       ``false`` and ``nfs_server`` to ``127.0.0.1`` is preferred.
+#       ``false`` and ``nfs_server`` to ``127.0.0.1`` is best.
 #     * Auto-detect logic only works with IPv4 addresses.
 #
 # @param stunnel_nfsd_port
-#    Listening port on the NFS server for the tunneled connection to
-#    the NFS server daemon
+#   Listening port on the NFS server for the tunneled connection to
+#   the NFS server daemon
 #
+#   * Decrypted traffic will be forwarded to ``nfsd_port`` on the NFS server
 #   * If left unset, the value will be taken from ``nfs::stunnel_nfsd_port``
 #   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
 #

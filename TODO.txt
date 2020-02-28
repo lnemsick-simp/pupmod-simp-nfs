@@ -137,15 +137,13 @@
   - Version range correct
 
 MODULE TODO
+- should we set nfs::server::export::insecure to 'true' when stunneling?
 - fix tests for host_is_me in mount and make sure it still works
-- cleanup
-  - puppet strings documentation
 - Testing holes/problems
   - stunnel set and NFS server and client on same host fails idempotency
   - NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server at same time?
 - README.md
   - has hiera() functions...not sure we are still using them
-  - has simp_options::kerberos <-- doesn't exist?
   - is the kerberos discussion still correct? Thought there was a test for it.
   - document  if overlapping export rules and one has insecure and one has secure, the secure one
     wins, even if the one with insecure is a specific ip, not a network or wildcard (anonymous).

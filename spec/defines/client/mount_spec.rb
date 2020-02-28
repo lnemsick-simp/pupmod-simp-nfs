@@ -14,6 +14,11 @@ describe 'nfs::client::mount' do
       let(:title) { '/net/apps' }
       let(:nfs_server) { '1.2.3.4'}
 
+      let(:pre_condition) do
+        # Mask 'simplib::host_is_me' with mock version for testing
+        'function simplib::host_is_me($host) { return false }'
+      end
+
       context 'with default parameters' do
         let(:params) {{
           :nfs_server  => nfs_server,
@@ -77,7 +82,6 @@ describe 'nfs::client::mount' do
         let(:base_params) {{
           :nfs_server        => nfs_server,
           :remote_path       => title,
-          :autodetect_remote => true,
           :autofs            => true
         }}
 
@@ -371,7 +375,11 @@ describe 'nfs::client::mount' do
       end # context 'without autofs' do
 
       context 'with other autodetect_remote permutations' do
-        let(:pre_condition) { "class { 'nfs': is_server => true }" }
+        let(:pre_condition) do
+          # Mask 'simplib::host_is_me' with mock version for testing
+          'function simplib::host_is_me($host) { return true }'
+        end
+
         let(:base_params) {{
           :nfs_server  => nfs_server,
           :remote_path => title,
@@ -379,7 +387,7 @@ describe 'nfs::client::mount' do
           :autofs      => false  # same logic exercised for static and auto mounts
         }}
 
-        context 'autodetect_remote=false and nfs::is_server=true' do
+        context 'autodetect_remote=false and simplib::host_is_me($host)=true' do
           let(:params) { base_params.merge( { :autodetect_remote => false } ) }
 
           include_examples 'a base client mount define'
@@ -396,7 +404,7 @@ describe 'nfs::client::mount' do
           end
         end
 
-        context 'autodetect_remote=true and nfs::is_server=true' do
+        context 'autodetect_remote=true and simplib::host_is_me($host)=true' do
           let(:params) { base_params.merge( { :autodetect_remote => true } ) }
 
           it 'should use localhost for mount' do

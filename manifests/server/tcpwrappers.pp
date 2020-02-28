@@ -1,6 +1,8 @@
+# @summary Configure TCP wrappers for NFS server services
+#
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
-
 class nfs::server::tcpwrappers
 {
   assert_private()

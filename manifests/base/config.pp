@@ -153,14 +153,15 @@ class nfs::base::config
     # To support upgrades to EL8, the nfs-utils RPM provides and enables
     # the nfs-convert.service which is run when NFS services are started.
     # It generates /etc/nfs.conf from /etc/sysconfig/nfs and then moves
-    # /etc/sysconfig/nfs to a backup file.
+    # /etc/sysconfig/nfs to a backup file.  We don't want this generated
+    # /etc/nfs.conf!
     file { '/etc/sysconfig/nfs':
       ensure => 'absent',
       before => Concat['/etc/nfs.conf']
     }
   }
 
-  # make sure gssproxy gets restarted in the correct order along with
+  # Make sure gssproxy gets restarted in the correct order along with
   # all the other NFS services
   if $nfs::secure_nfs and $nfs::gssd_use_gss_proxy  {
     $_override = @(OVERRIDE)

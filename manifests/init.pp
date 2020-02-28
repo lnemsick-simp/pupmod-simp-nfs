@@ -11,41 +11,124 @@
 #   * Further configuration can be be made via the ```nfs::client`` classes
 #
 # @param nfsv3
-#   Allow use of NFSv3.  When false, only NFSv4 will be supported.
+#   Allow use of NFSv3.  When false, only NFSv4 will be allowed.
 #
-# @param rquotad_port
-#   The port upon which ``rquotad`` on the NFS server should listen
+# @param gssd_avoid_dns
+#   Use a reverse DNS lookup, even if the server name looks like a canonical name
 #
-#   * The ``rquotad`` service port reported by ``rpcinfo``
+#   * Sets the ``avoid-dns`` option in the ``gssd`` section of ``/etc/nfs.conf``
+#
+# @param gssd_limit_to_legacy_enctypes
+#   Restrict sessions to weak encryption types
+#
+#   * Sets the ``limit-to-legacy-enctypes`` option in the ``gssd`` section of
+#     ``/etc/nfs.conf``
+#
+# @param gssd_use_gss_proxy
+#   Use the gssproxy daemon to hold the credentials used in secure NFS and
+#   perform GSSAPI operations on behalf of NFS.
+#
+#   * Sets the ``use-gss-proxy`` option in the ``gssd`` section of ``/etc/nfs.conf``
+#     This is not yet documented in the rpc.gssd man page for EL8, but is set in the
+#     delivered ``/etc/nsf.conf file``.
+#   * Sets GSS_USE_PROXY in ``/etc/sysconfig/nfs`` in EL7.  ``use-gss-proxy`` is not
+#     used (yet) in the versions of ``nfs-utils`` available in EL7.
 #
 # @param lockd_port
-#   The TCP port upon which ``lockd`` should listen on both the
-#   server and the client (NFSv3)
+#   The TCP port upon which ``lockd`` should listen on both the NFS server and
+#   the NFS client (NFSv3)
 #
-#   * The ``nlockmgr`` service TCP port reported by ``rpcinfo``
+#   * Sets the ``port`` option in the ``lockd`` section of ``/etc/nfs.conf``
+#   * Corresponds to the ``nlockmgr`` service TCP port reported by ``rpcinfo``
 #
-# @param lockd_udpport
-#   The UDP port upon which ``lockd`` should listen on both the
-#   server and the client (NFSv3)
+# @param lockd_udp_port
+#   The UDP port upon which ``lockd`` should listen on both the NFS server and
+#   the NFS client (NFSv3)
 #
-#   * The ``nlockmgr`` service UDP port reported by ``rpcinfo``
+#   * Sets the ``udp-port`` option in the ``lockd`` section of ``/etc/nfs.conf``
+#   * Corresponds to the ``nlockmgr`` service UDP port reported by ``rpcinfo``
 #
 # @param mountd_port
 #   The port upon which ``mountd`` should listen on the server (NFSv3)
 #
-#   * The ``mountd`` service port reported by ``rpcinfo``
+#   * Sets the ``port`` option in the ``mountd`` section of ``/etc/nfs.conf``
+#   * Corresponds to the ``mountd`` service port reported by ``rpcinfo``
+#
+# @param nfsd_port
+#   The port upon which NFS daemon on the NFS server should listen
+#
+#   * Sets the ``port`` option in the ``nfsd`` section of ``/etc/nfs.conf``
+#   * Corresponds to the ``nfs`` and ``nfs_acl`` service ports reported by
+#     ``rpcinfo``
+#
+# @param rquotad_port
+#   The port upon which ``rquotad`` on the NFS server should listen
+#
+#   * Sets the port command line option in ``RPCRQUOTADOPTS`` in
+#     ``/etc/sysconfig/rpc-rquotad``
+#   * Corresponds to the ``rquotad`` service port reported by ``rpcinfo``
+#
+# @param sm_notify_outgoing_port
+#   The port that ``sm-notify`` will use when notifying NFSv3 peers
+#
+#   * Sets the ``outgoing-port`` option in the ``sm-notify`` section of
+#     ``/etc/nfs.conf``
 #
 # @param statd_port
-#   The port upon which ``statd`` should listen on both the server
-#   and the client (NFSv3)
+#   The port upon which ``statd`` should listen on both the NFS server
+#   and the NFS client (NFSv3)
 #
-#   * The ``status`` service port reported by ``rpcinfo``
+#   * Sets the ``port`` option in the ``statd`` section of ``/etc/nfs.conf``
+#   * Corresponds to the ``status`` service port reported by ``rpcinfo``
 #
 # @param statd_outgoing_port
-#   The port that ``statd`` will use when connecting to NFSv3 peers
+#   The port that ``statd`` will use when communitcatng with NFSv3 peers
+#
+#   * Sets the ``outgoing-port`` option in the ``status`` section of
+#     ``/etc/nfs.conf``
+#
+# @param custom_nfs_conf_opts
+#   Hash that allows other configuration options to be set in ``/etc/nfs.conf``
+#
+#   * Each key is a known section of ``/etc/nfs.conf``, such as ``nfsd``.
+#   * Each value is a Hash of config parameter names and values.
+#   * Configuration values are not validated
+#   * If a new section needs to be added to ``/etc/nfs.conf``, you can use
+#     ``concat::fragment``.
+#
+#   @example Set NFS server's grace and lease times in Hiera
+#     nfs::custom_nfs_conf_opts:
+#       nfsd:
+#         grace-time: 60
+#         lease-time: 60
+#
+# @param custom_daemon_args
+#   Hash that allows other configuration options to be set as daemon
+#   arguments in ``/etc/sysconfig/nfs`` in EL7
+#
+#   * Necessary to address the deficiency in which not all configuration
+#     options in EL7 can be specified in ``/etc/nfs.conf``
+#   * Each key is the name of the shell variables processed by
+#     ``/usr/lib/systemd/scripts/nfs-utils_env.sh`` in order to generate
+#     the shell variables with daemon command line arguments in
+#     ``/run/sysconfig/nfs-utils``.
+#
+#     * CAUTION: Not all shell variable names in ``/etc/sysconfig/nfs`` match
+#       the generated variable names in ``/run/sysconfig/nfs-utils``.
+#       For example, ``STATDARG`` gets transformed into ``STATDARGS``.
+#
+#   * Each value is the argument string which will be wrapped in double
+#     quotes.
+#
+#   @example Disable syslog messages from the NFSv3 ``rpc.statd`` daemon
+#     nfs::custom_daemon_args:
+#       STATDARG: "--no-syslog"
+#
+# @param idmapd
+#   Whether to use ``idmapd`` for NFSv4 ID to name mapping
 #
 # @param secure_nfs
-#   Enable secure NFS mounts
+#   Whether to enable secure NFS mounts
 #
 # @param ensure_latest_lvm2
 #   See ``nfs::lvm2`` for further description
@@ -59,7 +142,7 @@
 # @param keytab_on_puppet
 #   Whether the NFS server will pull its keytab directly from the Puppet server
 #
-#   * Only applicable if ``$kerberos` is ``true.
+#   * Only applicable if ``kerberos` is ``true.
 #   * If ``false``, you will need to ensure the appropriate services are restarted
 #     and cached credentials are destroyed (e.g., gssproxy cache), when the keytab
 #     is changed.
@@ -76,7 +159,8 @@
 #   * This is intended for environments without a working Kerberos setup
 #     and may cause issues when used with Kerberos.
 #   * Use of Kerberos is preferred.
-#   * This will configure the NFS server to only use TCP communication
+#   * This will configure the NFS server and client mount to only use
+#     TCP communication
 #   * The following connections will not be secured, due to tunneling
 #     limitations in deployments using multiple NFS servers
 #
@@ -84,11 +168,50 @@
 #     - Connections to the rpc-rquotad service
 #     - The NFSv4.0 client callback side channel used in NFS delegations.
 #
-# @param stunnel_tcp_nodelay
-#   Enable TCP_NODELAY for all stunnel connections
+#   * Use of stunnel for an individual client mount can be controlled
+#     by the ``stunnel`` parameter in the ``nfs::client::mount`` define.
+#   * Use of stunnel for just the NFS server on this host can be controlled
+#     by the ``stunnel`` parameter in the ``nfs::server`` class.
+#
+# @param stunnel_nfsd_port
+#   Listening port on the NFS server for the tunneled connection to
+#   the NFS server daemon
+#
+#   * Decrypted traffic will be forwarded to ``nfsd_port`` on the NFS server
 #
 # @param stunnel_socket_options
 #   Additional socket options to set for all stunnel connections
+#
+#   * Stunnel socket options for an individual client mount can be controlled
+#     by the ``stunnel_socket_options`` parameter in the ``nfs::client::mount``
+#     define.
+#   * Stunnel socket options for just the NFS server on this host can be
+#     controlled by the ``stunnel_socket_options`` parameter in the
+#     ``nfs::server`` class.
+#
+# @param stunnel_verify
+#   The level at which to verify TLS connections
+#
+#   * Levels:
+#
+#       * level 0 - Request and ignore peer certificate.
+#       * level 1 - Verify peer certificate if present.
+#       * level 2 - Verify peer certificate.
+#       * level 3 - Verify peer with locally installed certificate.
+#       * level 4 - Ignore CA chain and only verify peer certificate.
+#
+#   * Stunnel verify for an individual client mount can be controlled
+#     by the ``stunnel_verify`` parameter in the ``nfs::client::mount`` define.
+#   * Stunnel verify for just the NFS server on this host can be controlled
+#     by the ``stunnel_verify`` parameter in the ``nfs::server`` class.
+#
+# @param tcpwrappers
+#   Use the SIMP ``tcpwrappers`` module to manage TCP wrappers
+#
+# @param trusted_nets
+#   The systems that are allowed to connect to this service
+#
+#   * Set to ``any`` or ``ALL`` to allow the world
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
@@ -96,8 +219,8 @@ class nfs (
   Boolean               $is_server                     = false,
   Boolean               $is_client                     = true,
   Boolean               $nfsv3                         = false,
-  Boolean               $gssd_avoid_dns                = true, # false is considered a security hole
-  Boolean               $gssd_limit_to_legacy_enctypes = false, # do not want old ciphers
+  Boolean               $gssd_avoid_dns                = true,
+  Boolean               $gssd_limit_to_legacy_enctypes = false,
   Boolean               $gssd_use_gss_proxy            = true,
   Simplib::Port         $lockd_port                    = 32803,
   Simplib::Port         $lockd_udp_port                = 32769,

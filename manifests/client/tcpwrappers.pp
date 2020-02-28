@@ -1,3 +1,6 @@
+# @summary Configure TCP wrappers for NFS client services
+#
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::client::tcpwrappers {

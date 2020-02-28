@@ -1,4 +1,4 @@
-# Defined Type to set up the ``/etc/exports`` file
+# @summary Create entries in ``/etc/exports`` for a filesystem to export
 #
 # @see exports(5)
 #
@@ -19,10 +19,14 @@
 #   * Use ['*'] for client wildcard
 #
 # @param comment
-#   A comment to be added to the entry
+#   A comment to be added to the set of entries
 #
 # @param insecure
 #   Do not require that requests originate on a Port less than ``1024``
+#
+#   * Due to a NFS kernel bug, you must set this to ``true`` when allowing
+#     stunneled NFSv4 connections.  See
+#     https://bugzilla.redhat.com/show_bug.cgi?id=1804912
 #
 # @param rw
 #   Allow both reads and writes on this volume
@@ -68,6 +72,17 @@
 #
 #   * There will be **minimal** validation and they will be joined by ``:``
 #
+# @param replicas
+#   Alternative locations for the export point
+#
+# @param pnfs
+#   Enables use of pNFS extensions for NFSv4.1 or higher and the filesystem
+#   supports pNFS exports
+#
+# @param security_label
+#   Allow clients using NFSv4.2 or higher to set and retrieve security labels
+#   (such as those used by SELinux)
+#
 # @param sec
 #   Security flavors, in order of preference
 #
@@ -93,7 +108,7 @@
 #   * Do *not* include the parenthesis if you are writing a custom options
 #     string.
 #
-# @author Trevor Vaughan <mailto:tvaughan@onyxpoint.com>
+# @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 define nfs::server::export (
   Stdlib::Absolutepath                            $export_path,

@@ -21,6 +21,7 @@
 #    Listening port on the NFS server for the tunneled connection to
 #    the NFS server daemon
 #
+#   * Decrypted traffic will be forwarded to ``nfsd_port`` on the NFS server
 #   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
 #
 # @param stunnel_socket_options

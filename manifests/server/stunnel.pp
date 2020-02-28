@@ -1,5 +1,6 @@
 # Configures a server for NFSv4 over stunnel
-
+#
+# @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::server::stunnel {
