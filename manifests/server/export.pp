@@ -1,4 +1,4 @@
-# @summary Create entries in ``/etc/exports`` for a filesystem to export
+# @summary Create entries in `/etc/exports` for a filesystem to export
 #
 # @see exports(5)
 #
@@ -22,9 +22,9 @@
 #   A comment to be added to the set of entries
 #
 # @param insecure
-#   Do not require that requests originate on a Port less than ``1024``
+#   Do not require that requests originate on a Port less than `1024`
 #
-#   * Due to a NFS kernel bug, you must set this to ``true`` when allowing
+#   * Due to a NFS kernel bug, you must set this to `true` when allowing
 #     stunneled NFSv4 connections.  See
 #     https://bugzilla.redhat.com/show_bug.cgi?id=1804912
 #
@@ -38,14 +38,14 @@
 # @param no_wdelay
 #   Disable write delays
 #
-#   * Has no effect if ``$async`` is set
+#   * Has no effect if `$async` is set
 #
 # @param nohide
 #   Disable hiding of subordinate filesystems
 #
 # @param crossmnt
 #   Allow clients to access all filesystems mounted on a filesystem marked with
-#   ``crossmnt``
+#   `crossmnt`
 #
 # @param subtree_check
 #   Enable subtree checking
@@ -56,24 +56,27 @@
 # @param mountpoint
 #   Require this path to be successfully mounted on disk
 #
-#   * If a ``Boolean``, require the export path to be successfully mounted
+#   * If a `Boolean`, require the export path to be successfully mounted
 #
 # @param fsid
 #   A specific ID for the exported filesystem
 #
 # @param nordirplus
-#   Disable ``READDIRPLUS`` request handling on ``NFSv3`` clients
+#   Disable `READDIRPLUS` request handling on `NFSv3` clients
 #
 # @param refer
 #   A list of alternate locations for the filesystem
 #
 #   * This should be in the form specified by the man page:
-#     ``path@host[+host]``
-#
-#   * There will be **minimal** validation and they will be joined by ``:``
+#     `path@host[+host]`
+#   * There will be **minimal** validation and they will be joined by `:`
 #
 # @param replicas
 #   Alternative locations for the export point
+#
+#   * This should be in the form specified by the man page:
+#     `path@host[+host]`
+#   * There will be **minimal** validation and they will be joined by `:`
 #
 # @param pnfs
 #   Enables use of pNFS extensions for NFSv4.1 or higher and the filesystem
@@ -92,19 +95,19 @@
 #   * This should only be done if you *really* know what you are doing!
 #
 # @param all_squash
-#   Map all uids and gids to the ``anonymous`` user
+#   Map all uids and gids to the `anonymous` user
 #
 # @param anonuid
-#   Explicity set the ``UID`` of the ``anonymous`` user
+#   Explicity set the `UID` of the `anonymous` user
 #
 # @param anongid
-#   Explicity set the ``GID`` of the ``anonymous`` user
+#   Explicity set the `GID` of the `anonymous` user
 #
 # @param custom
 #   A custom set of options
 #
 #   * If set, all other options will be ignored
-#   * ``$mountpoint`` and ``$client`` must still be set
+#   * `$mountpoint` and `$client` must still be set
 #   * Do *not* include the parenthesis if you are writing a custom options
 #     string.
 #

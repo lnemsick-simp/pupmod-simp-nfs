@@ -8,8 +8,8 @@
 _Public Classes_
 
 * [`nfs`](#nfs): Provides the base configuration and services for an NFS server and/or client.
-* [`nfs::idmapd::client`](#nfsidmapdclient): Manage the ``idmapd`` client configuration
-* [`nfs::idmapd::config`](#nfsidmapdconfig): Manage ``idmapd`` configuration
+* [`nfs::idmapd::client`](#nfsidmapdclient): Manage the `idmapd` client configuration
+* [`nfs::idmapd::config`](#nfsidmapdconfig): Manage `idmapd` configuration
 * [`nfs::lvm2`](#nfslvm2): Class to counterract a packaging bug with ``nfs-utils``.
 
 _Private Classes_
@@ -20,7 +20,7 @@ _Private Classes_
 * `nfs::client::config`: Manage NFS client-specific configuration
 * `nfs::client::service`: Manage NFS client-specific services
 * `nfs::client::tcpwrappers`: Configure TCP wrappers for NFS client services
-* `nfs::idmapd::server`: Manage the ``idmapd`` server configuration and service
+* `nfs::idmapd::server`: Manage the `idmapd` server configuration and service
 * `nfs::install`: Manage the required NFS packages
 * `nfs::selinux_hotfix`: Provides hotfix for broken SElinux policy
 * `nfs::server`: Manage configuration and services for a NFS server
@@ -37,7 +37,7 @@ _Private Classes_
 _Public Defined types_
 
 * [`nfs::client::mount`](#nfsclientmount): Set up a NFS client mount, optionally using autofs
-* [`nfs::server::export`](#nfsserverexport): Create entries in ``/etc/exports`` for a filesystem to export
+* [`nfs::server::export`](#nfsserverexport): Create entries in `/etc/exports` for a filesystem to export
 
 _Private Defined types_
 
@@ -306,7 +306,7 @@ Data type: `Boolean`
 
 Whether the NFS server will pull its keytab directly from the Puppet server
 
-* Only applicable if `kerberos` is `true.
+* Only applicable if `$kerberos` is `true.
 * If `false`, you will need to ensure the appropriate services are restarted
   and cached credentials are destroyed (e.g., gssproxy cache), when the keytab
   is changed.
@@ -362,7 +362,7 @@ Data type: `Simplib::Port`
 Listening port on the NFS server for the tunneled connection to
 the NFS server daemon
 
-* Decrypted traffic will be forwarded to `nfsd_port` on the NFS server
+* Decrypted traffic will be forwarded to `$nfsd_port` on the NFS server
 
 Default value: 20490
 
@@ -420,9 +420,9 @@ Default value: simplib::lookup('simp_options::trusted_nets', { 'default_value' =
 
 ### nfs::idmapd::client
 
-When using ``idmapd``, an NFSv4 client uses ``nfsidmap``, directly, instead
-of ``nfs-idmapd.service``. ``nfsidmap`` is configured by ``/etc/idmapd.conf``,
-but must be hooked into ``/sbin/request-key`` via ``/etc/request-key.conf``.
+When using `idmapd`, an NFSv4 client uses `nfsidmap`, directly, instead
+of `nfs-idmapd.service`. `nfsidmap` is configured by `/etc/idmapd.conf`,
+but must be hooked into `/sbin/request-key` via `/etc/request-key.conf`.
 
 #### Parameters
 
@@ -432,13 +432,13 @@ The following parameters are available in the `nfs::idmapd::client` class.
 
 Data type: `Integer[0]`
 
-``nfsidmap`` key expiration timeout in seconds
+`nfsidmap` key expiration timeout in seconds
 
 Default value: 600
 
 ### nfs::idmapd::config
 
-Manage ``idmapd`` configuration
+Manage `idmapd` configuration
 
 * **See also**
 idmapd.conf(5)
@@ -507,10 +507,10 @@ Default value: 'nobody'
 
 Data type: `Array[Enum['nsswitch','static'],1]`
 
-``[Translation]`` Method
+`[Translation]` Method
 
-* ``Method`` is a reserved word in Ruby
-* ``umich_ldap`` is not yet supported
+* `Method` is a reserved word in Ruby
+* `umich_ldap` is not yet supported
 
 Default value: ['nsswitch']
 
@@ -526,10 +526,10 @@ Default value: `undef`
 
 Data type: `Optional[Hash[String[1],String[1]]]`
 
-Will be translated into the ``[Static]`` section variables as presented in
+Will be translated into the `[Static]` section variables as presented in
 the man page
 
-* For example: ``{ 'foo' => 'bar' }`` will be ``foo = bar`` in the output file
+* For example: `{ 'foo' => 'bar' }` will be `foo = bar` in the output file
 
 Default value: `undef`
 
@@ -537,7 +537,7 @@ Default value: `undef`
 
 Data type: `Optional[String]`
 
-Use this as the explicit content for the ``idmapd`` configuration file
+Use this as the explicit content for the `idmapd` configuration file
 
 * Overrides **all** other options
 
@@ -618,19 +618,19 @@ The following parameters are available in the `nfs::client::mount` defined type.
 
 The local mount path
 
-* When not using autofs (`autofs` is `false`), this will be a static
+* When not using autofs (`$autofs` is `false`), this will be a static
   mount and you must ensure the target directory exists.  This define will
   **NOT** create the target directory for you.
 
-* When using autofs (`autofs` is `true`)
+* When using autofs (`$autofs` is `true`)
 
   * autofs will create the target directory for you (full path).
-  * If `autofs_indirect_map_key` is unset, a direct mount will be created
+  * If `$autofs_indirect_map_key` is unset, a direct mount will be created
     for this path.
-  * If `autofs_indirect_map_key` is set, an indirect mount will be created:
+  * If `$autofs_indirect_map_key` is set, an indirect mount will be created:
 
-    * `name` will be the mount point
-    * `autofs_indirect_map_key` will be the map key
+    * `$name` will be the mount point
+    * `$autofs_indirect_map_key` will be the map key
 
 ##### `nfs_server`
 
@@ -652,9 +652,9 @@ Data type: `Boolean`
 
 Attempts to figure out if this host is also the NFS server and adjust
 the connection to the local IP address, `127.0.0.1`, in lieu of the
-IP address specified in `nfs_server`.
+IP address specified in `$nfs_server`.
 
-* When you know this host is also the NFS server, setting `nfs_server`
+* When you know this host is also the NFS server, setting `$nfs_server`
   to `127.0.0.1` is best.
 * Auto-detect logic only works with IPv4 addresses.
 
@@ -668,7 +668,7 @@ The NFS major version that you want to use.
 
 * Used to set the `nfsvers` mount option
 * If you need to specify an explicit minor version of NFSv4, include
-  'minorversion=<#>' in `options`.
+  'minorversion=<#>' in `$options`.
 
 Default value: 4
 
@@ -704,7 +704,7 @@ The mount state of the specified mount point
 * `present`   => Just add the entry to the fstab and do not mount it
 * `unmounted` => Add the entry to the fstab and ensure that it is not
                    mounted
-* Has no effect if `autofs` is `true`
+* Has no effect if `$autofs` is `true`
 
 Default value: 'mounted'
 
@@ -714,7 +714,7 @@ Data type: `Boolean`
 
 Ensure that this mount is mounted at boot time
 
-* Has no effect if `autofs` is `true`
+* Has no effect if `$autofs` is `true`
 
 Default value: `true`
 
@@ -743,7 +743,7 @@ Data type: `Boolean`
 This enables map key substitution for a wildcard map key in an indirect map.
 
 * Appends '/&' to the remote location.
-* Only makes sense if `autofs_indirect_map_key` is set to '*', the wildcard
+* Only makes sense if `$autofs_indirect_map_key` is set to '*', the wildcard
   map key.
 
 Default value: `false`
@@ -755,7 +755,7 @@ Data type: `Optional[Simplib::Port]`
 The NFS server daemon listening port
 
 * Used to set the `port` mount option
-* If left unset, the value will be taken from `nfs::nfsd`
+* If left unset, the value will be taken from `$nfs::nfsd`
 * When using stunnel, must be a different value for each distinct
   NFS server for which a stunneled mount connection is to be made.
 
@@ -767,7 +767,7 @@ Data type: `Optional[Boolean]`
 
 Controls enabling `stunnel` to encrypt NFSv4 connection to the NFS server
 
-* If left unset, the value will be taken from `nfs::client::stunnel`
+* If left unset, the value will be taken from `$nfs::client::stunnel`
 * May be set to `false` to ensure that `stunnel` will not be used for
   this connection
 * Must be set to `false` for a NFSv3 mount
@@ -776,7 +776,7 @@ Controls enabling `stunnel` to encrypt NFSv4 connection to the NFS server
   and use a direct, local connection in lieu of a stunnel in this case.
 
   * When you know this host is also the NFS server, setting this to
-    `false` and `nfs_server` to `127.0.0.1` is best.
+    `false` and `$nfs_server` to `127.0.0.1` is best.
   * Auto-detect logic only works with IPv4 addresses.
 
 Default value: `undef`
@@ -789,8 +789,8 @@ Listening port on the NFS server for the tunneled connection to
 the NFS server daemon
 
 * Decrypted traffic will be forwarded to `nfsd_port` on the NFS server
-* If left unset, the value will be taken from `nfs::stunnel_nfsd_port`
-* Unused when `stunnel` is `false`
+* If left unset, the value will be taken from `$nfs::stunnel_nfsd_port`
+* Unused when `$stunnel` is `false`
 
 Default value: `undef`
 
@@ -802,8 +802,8 @@ Additional stunnel socket options to be applied to the stunnel to the NFS
 server
 
 * If left unset, the value will be taken from
-  `nfs::client::stunnel_socket_options`
-* Unused when `stunnel` is `false`
+  `$nfs::client::stunnel_socket_options`
+* Unused when `$stunnel` is `false`
 
 Default value: `undef`
 
@@ -822,8 +822,8 @@ The level at which to verify TLS connections
     * level 4 - Ignore CA chain and only verify peer certificate.
 
 * If left unset, the value will be taken from
-  `nfs::client::stunnel_socket_verify`
-* Unused when `stunnel` is `false`
+  `$nfs::client::stunnel_socket_verify`
+* Unused when `$stunnel` is `false`
 
 Default value: `undef`
 
@@ -834,8 +834,8 @@ Data type: `Optional[Array[String]]`
 The `systemd` targets that need `stunnel` to be active prior to being
 activated
 
-* If left unset, the value will be taken from `nfs::client::stunnel_wantedby`
-* Unused when `stunnel` is `false`
+* If left unset, the value will be taken from `$nfs::client::stunnel_wantedby`
+* Unused when `$stunnel` is `false`
 
 Default value: `undef`
 
@@ -882,9 +882,9 @@ Default value: `undef`
 
 Data type: `Boolean`
 
-Do not require that requests originate on a Port less than ``1024``
+Do not require that requests originate on a Port less than `1024`
 
-* Due to a NFS kernel bug, you must set this to ``true`` when allowing
+* Due to a NFS kernel bug, you must set this to `true` when allowing
   stunneled NFSv4 connections.  See
   https://bugzilla.redhat.com/show_bug.cgi?id=1804912
 
@@ -913,7 +913,7 @@ Data type: `Boolean`
 
 Disable write delays
 
-* Has no effect if ``$async`` is set
+* Has no effect if `$async` is set
 
 Default value: `false`
 
@@ -930,7 +930,7 @@ Default value: `false`
 Data type: `Boolean`
 
 Allow clients to access all filesystems mounted on a filesystem marked with
-``crossmnt``
+`crossmnt`
 
 Default value: `false`
 
@@ -956,7 +956,7 @@ Data type: `Optional[Variant[Stdlib::Absolutepath,Boolean]]`
 
 Require this path to be successfully mounted on disk
 
-* If a ``Boolean``, require the export path to be successfully mounted
+* If a `Boolean`, require the export path to be successfully mounted
 
 Default value: `undef`
 
@@ -972,7 +972,7 @@ Default value: `undef`
 
 Data type: `Boolean`
 
-Disable ``READDIRPLUS`` request handling on ``NFSv3`` clients
+Disable `READDIRPLUS` request handling on `NFSv3` clients
 
 Default value: `false`
 
@@ -983,9 +983,8 @@ Data type: `Optional[Array[Pattern['^/.+@.+$']]]`
 A list of alternate locations for the filesystem
 
 * This should be in the form specified by the man page:
-  ``path@host[+host]``
-
-* There will be **minimal** validation and they will be joined by ``:``
+  `path@host[+host]`
+* There will be **minimal** validation and they will be joined by `:`
 
 Default value: `undef`
 
@@ -994,6 +993,10 @@ Default value: `undef`
 Data type: `Optional[Array[Pattern['^/.+@.+$']]]`
 
 Alternative locations for the export point
+
+* This should be in the form specified by the man page:
+  `path@host[+host]`
+* There will be **minimal** validation and they will be joined by `:`
 
 Default value: `undef`
 
@@ -1037,7 +1040,7 @@ Default value: `false`
 
 Data type: `Boolean`
 
-Map all uids and gids to the ``anonymous`` user
+Map all uids and gids to the `anonymous` user
 
 Default value: `false`
 
@@ -1045,7 +1048,7 @@ Default value: `false`
 
 Data type: `Simplib::Port`
 
-Explicity set the ``UID`` of the ``anonymous`` user
+Explicity set the `UID` of the `anonymous` user
 
 Default value: 65534
 
@@ -1053,7 +1056,7 @@ Default value: 65534
 
 Data type: `Simplib::Port`
 
-Explicity set the ``GID`` of the ``anonymous`` user
+Explicity set the `GID` of the `anonymous` user
 
 Default value: 65534
 
@@ -1064,7 +1067,7 @@ Data type: `Optional[String]`
 A custom set of options
 
 * If set, all other options will be ignored
-* ``$mountpoint`` and ``$client`` must still be set
+* `$mountpoint` and `$client` must still be set
 * Do *not* include the parenthesis if you are writing a custom options
   string.
 

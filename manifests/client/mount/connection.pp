@@ -10,25 +10,25 @@
 #   The NFS server daemon listening port
 #
 # @param firewall
-#   Use the SIMP ``iptables`` module to manage firewall connections
+#   Use the SIMP `iptables` module to manage firewall connections
 #
 # @param stunnel
-#   Controls enabling ``stunnel`` for this connection
+#   Controls enabling `stunnel` for this connection
 #
-#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+#   * Unused when `$stunnel` is `false`
 #
 # @param stunnel_nfsd_port
 #    Listening port on the NFS server for the tunneled connection to
 #    the NFS server daemon
 #
-#   * Decrypted traffic will be forwarded to ``nfsd_port`` on the NFS server
-#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+#   * Decrypted traffic will be forwarded to `$nfsd_port` on the NFS server
+#   * Unused when `$stunnel` is `false`
 #
 # @param stunnel_socket_options
 #   Additional stunnel socket options to be applied to the stunnel to the NFS
 #   server
 #
-#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+#   * Unused when `$stunnel` is `false`
 #
 # @param stunnel_verify
 #   The level at which to verify TLS connections
@@ -41,16 +41,16 @@
 #       * level 3 - Verify peer with locally installed certificate.
 #       * level 4 - Ignore CA chain and only verify peer certificate.
 #
-#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+#   * Unused when `$stunnel` is `false`
 #
 # @param stunnel_wantedby
-#   The ``systemd`` targets that need ``stunnel`` to be active prior to being
+#   The `systemd` targets that need `stunnel` to be active prior to being
 #   activated
 #
-#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+#   * Unused when `$stunnel` is `false`
 #
 # @param tcpwrappers
-#   Use the SIMP ``tcpwrappers`` module to manage TCP wrappers
+#   Use the SIMP `tcpwrappers` module to manage TCP wrappers
 #
 # @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors

@@ -1,6 +1,6 @@
-# @summary Manage the ``idmapd`` server configuration and service
+# @summary Manage the `idmapd` server configuration and service
 #
-# Enables or masks ``rpc-idmapd.service`` per ``nfs::idmapd``.
+# Enables or masks `rpc-idmapd.service` per `nfs::idmapd`.
 #
 # @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
@@ -27,7 +27,7 @@ class nfs::idmapd::server
       notify  => Service['nfs-idmapd.service']
     }
   } else {
-    # service { NAME: enable => mask } does not seem to work in puppet.
+    # 'service { NAME: enable => mask }' does not seem to work in puppet.
     # So, we will enforce masking of the service here.
 
     service { 'nfs-idmapd.service':

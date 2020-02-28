@@ -142,7 +142,7 @@
 # @param keytab_on_puppet
 #   Whether the NFS server will pull its keytab directly from the Puppet server
 #
-#   * Only applicable if `kerberos` is `true.
+#   * Only applicable if `$kerberos` is `true.
 #   * If `false`, you will need to ensure the appropriate services are restarted
 #     and cached credentials are destroyed (e.g., gssproxy cache), when the keytab
 #     is changed.
@@ -178,7 +178,7 @@
 #   Listening port on the NFS server for the tunneled connection to
 #   the NFS server daemon
 #
-#   * Decrypted traffic will be forwarded to `nfsd_port` on the NFS server
+#   * Decrypted traffic will be forwarded to `$nfsd_port` on the NFS server
 #
 # @param stunnel_socket_options
 #   Additional socket options to set for all stunnel connections

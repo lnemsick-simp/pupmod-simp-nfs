@@ -36,7 +36,6 @@ class nfs::server::service
   service { 'rpc-rquotad.service':
     ensure     => 'running',
     enable     => true,
-    hasrestart => true,
+    hasrestart => true
   }
-
 }

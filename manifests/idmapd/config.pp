@@ -1,4 +1,4 @@
-# @summary Manage ``idmapd`` configuration
+# @summary Manage `idmapd` configuration
 #
 # @see idmapd.conf(5)
 #
@@ -10,20 +10,20 @@
 # @param nobody_user
 # @param nobody_group
 # @param trans_method
-#   ``[Translation]`` Method
+#   `[Translation]` Method
 #
-#   * ``Method`` is a reserved word in Ruby
-#   * ``umich_ldap`` is not yet supported
+#   * `Method` is a reserved word in Ruby
+#   * `umich_ldap` is not yet supported
 #
 # @param gss_methods
 # @param static_translation
-#   Will be translated into the ``[Static]`` section variables as presented in
+#   Will be translated into the `[Static]` section variables as presented in
 #   the man page
 #
-#   * For example: ``{ 'foo' => 'bar' }`` will be ``foo = bar`` in the output file
+#   * For example: `{ 'foo' => 'bar' }` will be `foo = bar` in the output file
 #
 # @param content
-#   Use this as the explicit content for the ``idmapd`` configuration file
+#   Use this as the explicit content for the `idmapd` configuration file
 #
 #   * Overrides **all** other options
 #
@@ -49,5 +49,4 @@ class nfs::idmapd::config (
     mode    => '0644',
     content => epp("${module_name}/etc/idmapd.conf.epp")
   }
-
 }

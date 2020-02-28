@@ -47,13 +47,13 @@
 #
 #   * This will configure the NFS server to only use TCP communication
 #   * This cannot be effectively used with NFSv4.0 connections because of the
-#     side channel to the NFS client.
+#     delegation side channel to the NFS client.
 #
 # @param stunnel_accept_address
 #   The address upon which the NFS server will listen for stunnel connections
 #
 #   * You should be set this to `0.0.0.0` for all interfaces
-#   * Unused when `stunnel` is `false`
+#   * Unused when `$stunnel` is `false`
 #
 # @param stunnel_nfsd_accept_port
 #   Listening port on the NFS server for the tunneled connection to
@@ -61,12 +61,12 @@
 #
 #   * Decrypted traffic will be forwarded to `nfsd_port` on the NFS server
 #     daemon.
-#   * Unused when `stunnel` is `false`
+#   * Unused when `$stunnel` is `false`
 #
 # @param stunnel_socket_options
 #   Additional socket options to set for stunnel connections
 #
-#   * Unused when `stunnel` is `false`
+#   * Unused when `$stunnel` is `false`
 #
 # @param stunnel_verify
 #   The level at which to verify TLS connections from clients
@@ -79,13 +79,13 @@
 #       * level 3 - Verify peer with locally installed certificate.
 #       * level 4 - Ignore CA chain and only verify peer certificate.
 #
-#   * Unused when `stunnel` is `false`
+#   * Unused when `$stunnel` is `false`
 #
 # @param stunnel_wantedby
 #   The `systemd` targets that need `stunnel` to be active prior to being
 #   activated
 #
-#   * Unused when `stunnel` is `false`
+#   * Unused when `$stunnel` is `false`
 #
 # @param trusted_nets
 #   The systems that are allowed to connect to this service

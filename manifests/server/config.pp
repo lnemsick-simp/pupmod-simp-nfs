@@ -10,8 +10,8 @@ class nfs::server::config
   # Required config options for all possible NFS server services.
   # * Augments the base config shared with NFS client.
   # * Only config appropriate for specified NFS versions will actually be set.
-  # * Will override any user-input options, because firewall and stunnels
-  #   will not work otherwise!
+  # * Will override any $nfs::custom_nfs_conf_opts settings, because the
+  #   firewall will not work otherwise!
   $_required_nfs_conf_opts = {
     'mountd' => {
       'port' => $nfs::mountd_port,
@@ -29,7 +29,7 @@ class nfs::server::config
 
   if $nfs::server::stunnel {
     # UDP can't be encapsulated by stunnel, so we have to force this
-    # setting.
+    # setting.manifests/base/service.pp
     $_stunnel_opts = { 'nfsd' => { 'tcp' => true, 'udp' => false } }
   } else {
     $_stunnel_opts = {}

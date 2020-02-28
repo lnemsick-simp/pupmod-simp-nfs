@@ -11,7 +11,7 @@ class nfs::base::config
   # by NFS client and NFS server
   # * Only config appropriate for specified NFS versions will actually be set.
   # * All values can be set via nfs class parameters
-  # * Will override any $nfs::custom_nfs_conf_opts settings, because the 
+  # * Will override any $nfs::custom_nfs_conf_opts settings, because the
   #   firewall will not work otherwise!
   $_required_nfs_conf_opts = {
     'gssd'     => {

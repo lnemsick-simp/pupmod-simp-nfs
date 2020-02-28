@@ -48,7 +48,7 @@ class nfs::base::service
     }
 
   } else {
-    # service { NAME: enable => mask } does not seem to work in puppet.
+    # 'service { NAME: enable => mask }' does not seem to work in puppet.
     # So, we will enforce masking of the service here.
 
     service { 'rpc-statd.service':
@@ -63,7 +63,7 @@ class nfs::base::service
   }
 
   if $nfs::secure_nfs {
-    # static service, so don't attempt to enable
+    # 'static' service, so don't attempt to enable
     service { 'rpc-gssd.service':
       ensure     => 'running',
       hasrestart => true
@@ -87,7 +87,7 @@ class nfs::base::service
     }
 
   } else {
-    # service { NAME: enable => mask } does not seem to work in puppet.
+    # 'service { NAME: enable => mask }' does not seem to work in puppet.
     # So, we will enforce masking of the service here.
 
     service { 'rpc-gssd.service':
