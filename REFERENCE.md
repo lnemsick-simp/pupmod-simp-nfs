@@ -67,7 +67,7 @@ Data type: `Boolean`
 
 Explicitly state that this system should be an NFS server
 
-* Further configuration can be made via the ``nfs::server`` classes
+* Further configuration can be made via the `nfs::server` class
 
 Default value: `false`
 
@@ -77,7 +77,7 @@ Data type: `Boolean`
 
 Explicitly state that this system should be an NFS client
 
-* Further configuration can be be made via the ```nfs::client`` classes
+* Further configuration can be be made via the `nfs::client` class
 
 Default value: `true`
 
@@ -95,7 +95,7 @@ Data type: `Boolean`
 
 Use a reverse DNS lookup, even if the server name looks like a canonical name
 
-* Sets the ``avoid-dns`` option in the ``gssd`` section of ``/etc/nfs.conf``
+* Sets the `avoid-dns` option in the `gssd` section of `/etc/nfs.conf`
 
 Default value: `true`
 
@@ -105,8 +105,8 @@ Data type: `Boolean`
 
 Restrict sessions to weak encryption types
 
-* Sets the ``limit-to-legacy-enctypes`` option in the ``gssd`` section of
-  ``/etc/nfs.conf``
+* Sets the `limit-to-legacy-enctypes` option in the `gssd` section of
+  `/etc/nfs.conf`
 
 Default value: `false`
 
@@ -117,11 +117,11 @@ Data type: `Boolean`
 Use the gssproxy daemon to hold the credentials used in secure NFS and
 perform GSSAPI operations on behalf of NFS.
 
-* Sets the ``use-gss-proxy`` option in the ``gssd`` section of ``/etc/nfs.conf``
-  This is not yet documented in the rpc.gssd man page for EL8, but is set in the
-  delivered ``/etc/nsf.conf file``.
-* Sets GSS_USE_PROXY in ``/etc/sysconfig/nfs`` in EL7.  ``use-gss-proxy`` is not
-  used (yet) in the versions of ``nfs-utils`` available in EL7.
+* Sets the `use-gss-proxy` option in the `gssd` section of `/etc/nfs.conf`
+  This is not yet documented in the rpc.gssd man page for EL8, but is
+  available in the example `/etc/nsf.conf file` packaged with `nfs-utils`.
+* Sets GSS_USE_PROXY in `/etc/sysconfig/nfs` in EL7, because the
+  `use-gss-proxy` option in `/etc/nfs.conf` is not yet used in EL7.
 
 Default value: `true`
 
@@ -129,11 +129,11 @@ Default value: `true`
 
 Data type: `Simplib::Port`
 
-The TCP port upon which ``lockd`` should listen on both the NFS server and
+The TCP port upon which `lockd` should listen on both the NFS server and
 the NFS client (NFSv3)
 
-* Sets the ``port`` option in the ``lockd`` section of ``/etc/nfs.conf``
-* Corresponds to the ``nlockmgr`` service TCP port reported by ``rpcinfo``
+* Sets the `port` option in the `lockd` section of `/etc/nfs.conf`
+* Corresponds to the `nlockmgr` service TCP port reported by `rpcinfo`
 
 Default value: 32803
 
@@ -141,11 +141,11 @@ Default value: 32803
 
 Data type: `Simplib::Port`
 
-The UDP port upon which ``lockd`` should listen on both the NFS server and
+The UDP port upon which `lockd` should listen on both the NFS server and
 the NFS client (NFSv3)
 
-* Sets the ``udp-port`` option in the ``lockd`` section of ``/etc/nfs.conf``
-* Corresponds to the ``nlockmgr`` service UDP port reported by ``rpcinfo``
+* Sets the `udp-port` option in the `lockd` section of `/etc/nfs.conf`
+* Corresponds to the `nlockmgr` service UDP port reported by `rpcinfo`
 
 Default value: 32769
 
@@ -153,10 +153,10 @@ Default value: 32769
 
 Data type: `Simplib::Port`
 
-The port upon which ``mountd`` should listen on the server (NFSv3)
+The port upon which `mountd` should listen on the server (NFSv3)
 
-* Sets the ``port`` option in the ``mountd`` section of ``/etc/nfs.conf``
-* Corresponds to the ``mountd`` service port reported by ``rpcinfo``
+* Sets the `port` option in the `mountd` section of `/etc/nfs.conf`
+* Corresponds to the `mountd` service port reported by `rpcinfo`
 
 Default value: 20048
 
@@ -166,9 +166,9 @@ Data type: `Simplib::Port`
 
 The port upon which NFS daemon on the NFS server should listen
 
-* Sets the ``port`` option in the ``nfsd`` section of ``/etc/nfs.conf``
-* Corresponds to the ``nfs`` and ``nfs_acl`` service ports reported by
-  ``rpcinfo``
+* Sets the `port` option in the `nfsd` section of `/etc/nfs.conf`
+* Corresponds to the `nfs` and `nfs_acl` service ports reported by
+  `rpcinfo`
 
 Default value: 2049
 
@@ -176,11 +176,11 @@ Default value: 2049
 
 Data type: `Simplib::Port`
 
-The port upon which ``rquotad`` on the NFS server should listen
+The port upon which `rquotad` on the NFS server should listen
 
-* Sets the port command line option in ``RPCRQUOTADOPTS`` in
-  ``/etc/sysconfig/rpc-rquotad``
-* Corresponds to the ``rquotad`` service port reported by ``rpcinfo``
+* Sets the port command line option in `RPCRQUOTADOPTS` in
+  `/etc/sysconfig/rpc-rquotad`
+* Corresponds to the `rquotad` service port reported by `rpcinfo`
 
 Default value: 875
 
@@ -188,10 +188,10 @@ Default value: 875
 
 Data type: `Simplib::Port`
 
-The port that ``sm-notify`` will use when notifying NFSv3 peers
+The port that `sm-notify` will use when notifying NFSv3 peers
 
-* Sets the ``outgoing-port`` option in the ``sm-notify`` section of
-  ``/etc/nfs.conf``
+* Sets the `outgoing-port` option in the `sm-notify` section of
+  `/etc/nfs.conf`
 
 Default value: 2021
 
@@ -199,11 +199,11 @@ Default value: 2021
 
 Data type: `Simplib::Port`
 
-The port upon which ``statd`` should listen on both the NFS server
+The port upon which `statd` should listen on both the NFS server
 and the NFS client (NFSv3)
 
-* Sets the ``port`` option in the ``statd`` section of ``/etc/nfs.conf``
-* Corresponds to the ``status`` service port reported by ``rpcinfo``
+* Sets the `port` option in the `statd` section of `/etc/nfs.conf`
+* Corresponds to the `status` service port reported by `rpcinfo`
 
 Default value: 662
 
@@ -211,10 +211,10 @@ Default value: 662
 
 Data type: `Simplib::Port`
 
-The port that ``statd`` will use when communitcatng with NFSv3 peers
+The port that `statd` will use when communicating with NFSv3 peers
 
-* Sets the ``outgoing-port`` option in the ``status`` section of
-  ``/etc/nfs.conf``
+* Sets the `outgoing-port` option in the `status` section of
+  `/etc/nfs.conf`
 
 Default value: 2020
 
@@ -222,13 +222,13 @@ Default value: 2020
 
 Data type: `Nfs::NfsConfHash`
 
-Hash that allows other configuration options to be set in ``/etc/nfs.conf``
+Hash that allows other configuration options to be set in `/etc/nfs.conf`
 
-* Each key is a known section of ``/etc/nfs.conf``, such as ``nfsd``.
+* Each key is a known section of `/etc/nfs.conf`, such as `nfsd`.
 * Each value is a Hash of config parameter names and values.
-* Configuration values are not validated
-* If a new section needs to be added to ``/etc/nfs.conf``, you can use
-  ``concat::fragment``.
+* Configuration values are not validated.
+* If a new section needs to be added to `/etc/nfs.conf`, you can use
+  `concat::fragment`.
 
 @example Set NFS server's grace and lease times in Hiera
   nfs::custom_nfs_conf_opts:
@@ -243,23 +243,23 @@ Default value: {}
 Data type: `Nfs::LegacyDaemonArgs`
 
 Hash that allows other configuration options to be set as daemon
-arguments in ``/etc/sysconfig/nfs`` in EL7
+arguments in `/etc/sysconfig/nfs` in EL7
 
-* Necessary to address the deficiency in which not all configuration
-  options in EL7 can be specified in ``/etc/nfs.conf``
+* Necessary to address `/etc/nfs.conf` limitations - Not all configuration
+  options in EL7 can be specified in `/etc/nfs.conf`
 * Each key is the name of the shell variables processed by
-  ``/usr/lib/systemd/scripts/nfs-utils_env.sh`` in order to generate
-  the shell variables with daemon command line arguments in
-  ``/run/sysconfig/nfs-utils``.
+  `/usr/lib/systemd/scripts/nfs-utils_env.sh`
 
-  * CAUTION: Not all shell variable names in ``/etc/sysconfig/nfs`` match
-    the generated variable names in ``/run/sysconfig/nfs-utils``.
-    For example, ``STATDARG`` gets transformed into ``STATDARGS``.
+  * `nfs-utils_env.sh` generates `/run/sysconfig/nfs-utils` which contains
+    the NFS daemon command line shell variables used by NFS services
+  * Unfortunately, not all shell variable names in `/etc/sysconfig/nfs`
+    match the generated variable names in `/run/sysconfig/nfs-utils`.
+    For example, `STATDARG` gets transformed into `STATDARGS`.
 
 * Each value is the argument string which will be wrapped in double
-  quotes.
+  quotes in `/etc/sysconfig/nfs`.
 
-@example Disable syslog messages from the NFSv3 ``rpc.statd`` daemon
+@example Disable syslog messages from the NFSv3 `rpc.statd` daemon in Hiera
   nfs::custom_daemon_args:
     STATDARG: "--no-syslog"
 
@@ -269,7 +269,7 @@ Default value: {}
 
 Data type: `Boolean`
 
-Whether to use ``idmapd`` for NFSv4 ID to name mapping
+Whether to use `idmapd` for NFSv4 ID to name mapping
 
 Default value: `false`
 
@@ -285,7 +285,7 @@ Default value: `false`
 
 Data type: `Boolean`
 
-See ``nfs::lvm2`` for further description
+See `nfs::lvm2` for further description
 
 Default value: `true`
 
@@ -293,9 +293,9 @@ Default value: `true`
 
 Data type: `Boolean`
 
-Use the SIMP ``krb5`` module for Kerberos support
+Use the SIMP `krb5` module for Kerberos support
 
-* You may need to set variables in ``krb5::config`` via Hiera or your ENC
+* You may need to set variables in `krb5::config` via Hiera or your ENC
   if you do not like the defaults.
 
 Default value: simplib::lookup('simp_options::kerberos', { 'default_value' => false })
@@ -306,8 +306,8 @@ Data type: `Boolean`
 
 Whether the NFS server will pull its keytab directly from the Puppet server
 
-* Only applicable if ``kerberos` is ``true.
-* If ``false``, you will need to ensure the appropriate services are restarted
+* Only applicable if `kerberos` is `true.
+* If `false`, you will need to ensure the appropriate services are restarted
   and cached credentials are destroyed (e.g., gssproxy cache), when the keytab
   is changed.
 
@@ -317,7 +317,7 @@ Default value: simplib::lookup('simp_options::kerberos', { 'default_value' => tr
 
 Data type: `Boolean`
 
-Use the SIMP ``iptables`` module to manage firewall connections
+Use the SIMP `iptables` module to manage firewall connections
 
 Default value: simplib::lookup('simp_options::firewall', { 'default_value' => false})
 
@@ -325,7 +325,7 @@ Default value: simplib::lookup('simp_options::firewall', { 'default_value' => fa
 
 Data type: `Boolean`
 
-Use the SIMP ``tcpwrappers`` module to manage TCP wrappers
+Use the SIMP `tcpwrappers` module to manage TCP wrappers
 
 Default value: simplib::lookup('simp_options::tcpwrappers', { 'default_value' => false })
 
@@ -333,24 +333,25 @@ Default value: simplib::lookup('simp_options::tcpwrappers', { 'default_value' =>
 
 Data type: `Boolean`
 
-Wrap ``stunnel`` around critical NFSv4 connections
+Wrap `stunnel` around critical NFSv4 connections
 
 * This is intended for environments without a working Kerberos setup
   and may cause issues when used with Kerberos.
 * Use of Kerberos is preferred.
 * This will configure the NFS server and client mount to only use
   TCP communication
+* Cannot be used for NFSv4.0 connections, because NFSv4.0 uses a side
+  channel to each NFS client to recall delegation responsibilities.
 * The following connections will not be secured, due to tunneling
   limitations in deployments using multiple NFS servers
 
   - Connections to the rbcbind service
   - Connections to the rpc-rquotad service
-  - The NFSv4.0 client callback side channel used in NFS delegations.
 
 * Use of stunnel for an individual client mount can be controlled
-  by the ``stunnel`` parameter in the ``nfs::client::mount`` define.
+  by the `stunnel` parameter in the `nfs::client::mount` define.
 * Use of stunnel for just the NFS server on this host can be controlled
-  by the ``stunnel`` parameter in the ``nfs::server`` class.
+  by the `stunnel` parameter in the `nfs::server` class.
 
 Default value: simplib::lookup('simp_options::stunnel', { 'default_value' => false })
 
@@ -361,7 +362,7 @@ Data type: `Simplib::Port`
 Listening port on the NFS server for the tunneled connection to
 the NFS server daemon
 
-* Decrypted traffic will be forwarded to ``nfsd_port`` on the NFS server
+* Decrypted traffic will be forwarded to `nfsd_port` on the NFS server
 
 Default value: 20490
 
@@ -372,11 +373,11 @@ Data type: `Array[String]`
 Additional socket options to set for all stunnel connections
 
 * Stunnel socket options for an individual client mount can be controlled
-  by the ``stunnel_socket_options`` parameter in the ``nfs::client::mount``
+  by the `stunnel_socket_options` parameter in the `nfs::client::mount`
   define.
 * Stunnel socket options for just the NFS server on this host can be
-  controlled by the ``stunnel_socket_options`` parameter in the
-  ``nfs::server`` class.
+  controlled by the `stunnel_socket_options` parameter in the
+  `nfs::server` class.
 
 Default value: ['l:TCP_NODELAY=1','r:TCP_NODELAY=1']
 
@@ -395,15 +396,15 @@ The level at which to verify TLS connections
     * level 4 - Ignore CA chain and only verify peer certificate.
 
 * Stunnel verify for an individual client mount can be controlled
-  by the ``stunnel_verify`` parameter in the ``nfs::client::mount`` define.
+  by the `stunnel_verify` parameter in the `nfs::client::mount` define.
 * Stunnel verify for just the NFS server on this host can be controlled
-  by the ``stunnel_verify`` parameter in the ``nfs::server`` class.
+  by the `stunnel_verify` parameter in the `nfs::server` class.
 
 Default value: 2
 
 ##### `tcpwrappers`
 
-Use the SIMP ``tcpwrappers`` module to manage TCP wrappers
+Use the SIMP `tcpwrappers` module to manage TCP wrappers
 
 Default value: simplib::lookup('simp_options::tcpwrappers', { 'default_value' => false })
 
@@ -413,7 +414,7 @@ Data type: `Simplib::Netlist`
 
 The systems that are allowed to connect to this service
 
-* Set to ``any`` or ``ALL`` to allow the world
+* Set to 'any' or 'ALL' to allow the world
 
 Default value: simplib::lookup('simp_options::trusted_nets', { 'default_value' => ['127.0.0.1'] })
 
@@ -565,6 +566,50 @@ Default value: simplib::lookup('simp_options::package_ensure', { 'default_value'
 
 Set up a NFS client mount, optionally using autofs
 
+#### Examples
+
+##### Static mount
+
+```puppet
+nfs::client::mount { '/mnt/apps1':
+  nfs_server  => '10.0.1.2',
+  remote_path => '/exports/apps1',
+  autofs      => false
+}
+```
+
+##### Direct automount
+
+```puppet
+nfs::client::mount { '/mnt/apps2':
+  nfs_server  => '10.0.1.3',
+  remote_path => '/exports/apps2'
+}
+```
+
+##### Indirect automount with map key substitution
+
+```puppet
+nfs::client::mount { '/home':
+  nfs_server              => '10.0.1.4',
+  remote_path             => '/exports/home',
+  autofs_indirect_map_key => '*',
+  autofs_add_key_subst    => true
+}
+```
+
+##### NFSv3 mount
+
+```puppet
+nfs::client::mount { '/mnt/apps3':
+  nfs_server  => '10.0.1.5',
+  nfs_version => 3,
+  remote_path => '/exports/apps3',
+  autofs      => false,
+  stunnel     => false
+}
+```
+
 #### Parameters
 
 The following parameters are available in the `nfs::client::mount` defined type.
@@ -573,19 +618,19 @@ The following parameters are available in the `nfs::client::mount` defined type.
 
 The local mount path
 
-* When not using autofs (``autofs`` is ``false``), this will be a static
+* When not using autofs (`autofs` is `false`), this will be a static
   mount and you must ensure the target directory exists.  This define will
   **NOT** create the target directory for you.
 
-* When using autofs (``autofs`` is ``true``):
+* When using autofs (`autofs` is `true`)
 
   * autofs will create the target directory for you (full path).
-  * If ``autofs_indirect_map_key`` is unset, a direct mount will be created
+  * If `autofs_indirect_map_key` is unset, a direct mount will be created
     for this path.
-  * If ``autofs_indirect_map_key`` is set, an indirect mount will be created:
+  * If `autofs_indirect_map_key` is set, an indirect mount will be created:
 
-    * ``name`` will be the mount point
-    * ``autofs_indirect_map_key`` will be the map key
+    * `name` will be the mount point
+    * `autofs_indirect_map_key` will be the map key
 
 ##### `nfs_server`
 
@@ -593,7 +638,7 @@ Data type: `Simplib::Ip`
 
 The IP address of the NFS server to which you will be connecting
 
-* If this host is also the NFS server, please set this to ``127.0.0.1``.
+* If this host is also the NFS server, please set this to `127.0.0.1`.
 
 ##### `remote_path`
 
@@ -606,11 +651,11 @@ The NFS share that you want to mount
 Data type: `Boolean`
 
 Attempts to figure out if this host is also the NFS server and adjust
-the connection to the local IP address, ``127.0.0.1``, in lieu of the
-IP address specified in ``nfs_server``.
+the connection to the local IP address, `127.0.0.1`, in lieu of the
+IP address specified in `nfs_server`.
 
-* When you know this host is also the NFS server, setting ``nfs_server``
-  to ``127.0.0.1`` is preferred.
+* When you know this host is also the NFS server, setting `nfs_server`
+  to `127.0.0.1` is best.
 * Auto-detect logic only works with IPv4 addresses.
 
 Default value: `true`
@@ -621,9 +666,9 @@ Data type: `Integer[3,4]`
 
 The NFS major version that you want to use.
 
-* Used to set the ``nfsvers`` mount option
+* Used to set the `nfsvers` mount option
 * If you need to specify an explicit minor version of NFSv4, include
-  'minorversion=<#>' in ``options``.
+  'minorversion=<#>' in `options`.
 
 Default value: 4
 
@@ -633,7 +678,7 @@ Data type: `Nfs::SecurityFlavor`
 
 The security flavor for the mount
 
-* Used to set the ``sec`` mount option for NFSv4 mounts
+* Used to set the `sec` mount option for NFSv4 mounts
 * Ignored for NFSv3 mounts
 
 Default value: 'sys'
@@ -644,8 +689,8 @@ Data type: `String`
 
 String containing comma-separated list of additional mount options
 
-* ``fstype`` will already be set for you
-* If using stunnel with NFSv4, ``proto`` will be set to ``tcp`` for you
+* `fstype` will already be set for you
+* If using stunnel with NFSv4, `proto` will be set to `tcp` for you
 
 Default value: 'soft'
 
@@ -655,11 +700,11 @@ Data type: `Nfs::MountEnsure`
 
 The mount state of the specified mount point
 
-* ``mounted``   => Ensure that the mount point is actually mounted
-* ``present``   => Just add the entry to the fstab and do not mount it
-* ``unmounted`` => Add the entry to the fstab and ensure that it is not
+* `mounted`   => Ensure that the mount point is actually mounted
+* `present`   => Just add the entry to the fstab and do not mount it
+* `unmounted` => Add the entry to the fstab and ensure that it is not
                    mounted
-* Has no effect if ``autofs`` is ``true``
+* Has no effect if `autofs` is `true`
 
 Default value: 'mounted'
 
@@ -669,7 +714,7 @@ Data type: `Boolean`
 
 Ensure that this mount is mounted at boot time
 
-* Has no effect if ``autofs`` is ``true``
+* Has no effect if `autofs` is `true`
 
 Default value: `true`
 
@@ -698,8 +743,8 @@ Data type: `Boolean`
 This enables map key substitution for a wildcard map key in an indirect map.
 
 * Appends '/&' to the remote location.
-* Only makes sense if ``autofs_indirect_map_key`` is set to '*', the
-  wildcard map key.
+* Only makes sense if `autofs_indirect_map_key` is set to '*', the wildcard
+  map key.
 
 Default value: `false`
 
@@ -709,8 +754,8 @@ Data type: `Optional[Simplib::Port]`
 
 The NFS server daemon listening port
 
-* Used to set the ``port`` mount option
-* If left unset, the value will be taken from ``nfs::stunnel_nfsd``
+* Used to set the `port` mount option
+* If left unset, the value will be taken from `nfs::nfsd`
 * When using stunnel, must be a different value for each distinct
   NFS server for which a stunneled mount connection is to be made.
 
@@ -720,18 +765,18 @@ Default value: `undef`
 
 Data type: `Optional[Boolean]`
 
-Controls enabling ``stunnel`` to encrypt NFSv4 connection to the NFS server
+Controls enabling `stunnel` to encrypt NFSv4 connection to the NFS server
 
-* If left unset, the value will be taken from ``nfs::client::stunnel``
-* May be set to ``false`` to ensure that ``stunnel`` will not be used for
+* If left unset, the value will be taken from `nfs::client::stunnel`
+* May be set to `false` to ensure that `stunnel` will not be used for
   this connection
-* Must be set to ``false`` for a NFSv3 mount
-* May be set to ``true`` to force the use of ``stunnel`` on this connection
+* Must be set to `false` for a NFSv3 mount
+* May be set to `true` to force the use of `stunnel` on this connection
 * Will *attempt* to determine if the host is trying to connect to itself
   and use a direct, local connection in lieu of a stunnel in this case.
 
   * When you know this host is also the NFS server, setting this to
-    ``false`` and ``nfs_server`` to ``127.0.0.1`` is best.
+    `false` and `nfs_server` to `127.0.0.1` is best.
   * Auto-detect logic only works with IPv4 addresses.
 
 Default value: `undef`
@@ -743,9 +788,9 @@ Data type: `Optional[Simplib::Port]`
 Listening port on the NFS server for the tunneled connection to
 the NFS server daemon
 
-* Decrypted traffic will be forwarded to ``nfsd_port`` on the NFS server
-* If left unset, the value will be taken from ``nfs::stunnel_nfsd_port``
-* Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+* Decrypted traffic will be forwarded to `nfsd_port` on the NFS server
+* If left unset, the value will be taken from `nfs::stunnel_nfsd_port`
+* Unused when `stunnel` is `false`
 
 Default value: `undef`
 
@@ -757,8 +802,8 @@ Additional stunnel socket options to be applied to the stunnel to the NFS
 server
 
 * If left unset, the value will be taken from
-  ``nfs::client::stunnel_socket_options``
-* Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+  `nfs::client::stunnel_socket_options`
+* Unused when `stunnel` is `false`
 
 Default value: `undef`
 
@@ -777,8 +822,8 @@ The level at which to verify TLS connections
     * level 4 - Ignore CA chain and only verify peer certificate.
 
 * If left unset, the value will be taken from
-  ``nfs::client::stunnel_socket_verify``
-* Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+  `nfs::client::stunnel_socket_verify`
+* Unused when `stunnel` is `false`
 
 Default value: `undef`
 
@@ -786,11 +831,11 @@ Default value: `undef`
 
 Data type: `Optional[Array[String]]`
 
-The ``systemd`` targets that need ``stunnel`` to be active prior to being
+The `systemd` targets that need `stunnel` to be active prior to being
 activated
 
-* If left unset, the value will be taken from ``nfs::client::stunnel_wantedby``
-* Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+* If left unset, the value will be taken from `nfs::client::stunnel_wantedby`
+* Unused when `stunnel` is `false`
 
 Default value: `undef`
 

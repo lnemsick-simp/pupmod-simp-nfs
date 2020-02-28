@@ -7,7 +7,7 @@ class nfs::server::tcpwrappers
 {
   assert_private()
 
-  # tcpwrappers was dropped in EL8
+  # TCP wrappers was dropped in EL8
   if (versioncmp($facts['os']['release']['major'], '8') < 0) {
     include 'tcpwrappers'
 

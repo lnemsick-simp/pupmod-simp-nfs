@@ -5,19 +5,19 @@
 # connection is required.
 #
 # When you know this host is also the NFS server, configuring the mount for
-# a direct connection to ``127.0.0.1`` is best.  However, this *attempts* to
+# a direct connection to `127.0.0.1` is best.  However, this *attempts* to
 # determine if the host is trying to connect to itself and use a direct, local
 # connection in lieu of a stunnel in this case.
 #
 # * Auto-detect logic only works with IPv4 addresses.
 # * When the auto-detect logic detects a local connection, this define does not
-#   need to do anything further, because ``nfs::client::mount`` has already set
-#   the NFS server IP to ``127.0.0.1`` in the mount.
+#   need to do anything further, because `nfs::client::mount` has already set
+#   the NFS server IP to `127.0.0.1` in the mount.
 #
 # @param name [Simplib::Host::Port]
-#   An ``<ip>:<port>`` combination to the remote NFSv4 server
+#   An `<ip>:<port>` combination to the remote NFSv4 server
 #
-#   * The ``port`` is the listening port of the NFS server daemon.
+#   * The `port` is the listening port of the NFS server daemon.
 #
 # @param nfs_server
 #   The IP address of the NFS server to which you will be connecting
@@ -37,14 +37,14 @@
 #   The level at which to verify TLS connections
 #
 # @param stunnel_wantedby
-#   The ``systemd`` targets that need ``stunnel`` to be active prior to being
+#   The `systemd` targets that need `stunnel` to be active prior to being
 #   activated
 #
 # @param firewall
-#   Use the SIMP ``iptables`` module to manage firewall connections
+#   Use the SIMP `iptables` module to manage firewall connections
 #
 # @param tcpwrappers
-#   Use the SIMP ``tcpwrappers`` module to manage TCP wrappers
+#   Use the SIMP `tcpwrappers` module to manage TCP wrappers
 #
 # @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors

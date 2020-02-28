@@ -3,69 +3,69 @@
 # @param name
 #   The local mount path
 #
-#   * When not using autofs (``autofs`` is ``false``), this will be a static
+#   * When not using autofs (`autofs` is `false`), this will be a static
 #     mount and you must ensure the target directory exists.  This define will
 #     **NOT** create the target directory for you.
 #
-#   * When using autofs (``autofs`` is ``true``):
+#   * When using autofs (`autofs` is `true`)
 #
 #     * autofs will create the target directory for you (full path).
-#     * If ``autofs_indirect_map_key`` is unset, a direct mount will be created
+#     * If `autofs_indirect_map_key` is unset, a direct mount will be created
 #       for this path.
-#     * If ``autofs_indirect_map_key`` is set, an indirect mount will be created:
+#     * If `autofs_indirect_map_key` is set, an indirect mount will be created:
 #
-#       * ``name`` will be the mount point
-#       * ``autofs_indirect_map_key`` will be the map key
+#       * `name` will be the mount point
+#       * `autofs_indirect_map_key` will be the map key
 #
 # @param nfs_server
 #   The IP address of the NFS server to which you will be connecting
 #
-#   * If this host is also the NFS server, please set this to ``127.0.0.1``.
+#   * If this host is also the NFS server, please set this to `127.0.0.1`.
 #
 # @param remote_path
 #   The NFS share that you want to mount
 #
 # @param autodetect_remote
 #   Attempts to figure out if this host is also the NFS server and adjust
-#   the connection to the local IP address, ``127.0.0.1``, in lieu of the
-#   IP address specified in ``nfs_server``.
+#   the connection to the local IP address, `127.0.0.1`, in lieu of the
+#   IP address specified in `nfs_server`.
 #
-#   * When you know this host is also the NFS server, setting ``nfs_server``
-#     to ``127.0.0.1`` is preferred.
+#   * When you know this host is also the NFS server, setting `nfs_server`
+#     to `127.0.0.1` is best.
 #   * Auto-detect logic only works with IPv4 addresses.
 #
 # @param nfs_version
 #   The NFS major version that you want to use.
 #
-#   * Used to set the ``nfsvers`` mount option
+#   * Used to set the `nfsvers` mount option
 #   * If you need to specify an explicit minor version of NFSv4, include
-#     'minorversion=<#>' in ``options``.
+#     'minorversion=<#>' in `options`.
 #
 # @param sec
 #   The security flavor for the mount
 #
-#   * Used to set the ``sec`` mount option for NFSv4 mounts
+#   * Used to set the `sec` mount option for NFSv4 mounts
 #   * Ignored for NFSv3 mounts
 #
 # @param options
 #   String containing comma-separated list of additional mount options
 #
-#   * ``fstype`` will already be set for you
-#   * If using stunnel with NFSv4, ``proto`` will be set to ``tcp`` for you
+#   * `fstype` will already be set for you
+#   * If using stunnel with NFSv4, `proto` will be set to `tcp` for you
 #
 # @param ensure
 #   The mount state of the specified mount point
 #
-#   * ``mounted``   => Ensure that the mount point is actually mounted
-#   * ``present``   => Just add the entry to the fstab and do not mount it
-#   * ``unmounted`` => Add the entry to the fstab and ensure that it is not
+#   * `mounted`   => Ensure that the mount point is actually mounted
+#   * `present`   => Just add the entry to the fstab and do not mount it
+#   * `unmounted` => Add the entry to the fstab and ensure that it is not
 #                      mounted
-#   * Has no effect if ``autofs`` is ``true``
+#   * Has no effect if `autofs` is `true`
 #
 # @param at_boot
 #   Ensure that this mount is mounted at boot time
 #
-#   * Has no effect if ``autofs`` is ``true``
+#   * Has no effect if `autofs` is `true`
 #
 # @param autofs
 #   Enable automounting with Autofs
@@ -79,47 +79,47 @@
 #   This enables map key substitution for a wildcard map key in an indirect map.
 #
 #   * Appends '/&' to the remote location.
-#   * Only makes sense if ``autofs_indirect_map_key`` is set to '*', the
-#     wildcard map key.
+#   * Only makes sense if `autofs_indirect_map_key` is set to '*', the wildcard
+#     map key.
 #
 # @param nfsd_port
 #   The NFS server daemon listening port
 #
-#   * Used to set the ``port`` mount option
-#   * If left unset, the value will be taken from ``nfs::stunnel_nfsd``
+#   * Used to set the `port` mount option
+#   * If left unset, the value will be taken from `nfs::nfsd`
 #   * When using stunnel, must be a different value for each distinct
 #     NFS server for which a stunneled mount connection is to be made.
 #
 # @param stunnel
-#   Controls enabling ``stunnel`` to encrypt NFSv4 connection to the NFS server
+#   Controls enabling `stunnel` to encrypt NFSv4 connection to the NFS server
 #
-#   * If left unset, the value will be taken from ``nfs::client::stunnel``
-#   * May be set to ``false`` to ensure that ``stunnel`` will not be used for
+#   * If left unset, the value will be taken from `nfs::client::stunnel`
+#   * May be set to `false` to ensure that `stunnel` will not be used for
 #     this connection
-#   * Must be set to ``false`` for a NFSv3 mount
-#   * May be set to ``true`` to force the use of ``stunnel`` on this connection
+#   * Must be set to `false` for a NFSv3 mount
+#   * May be set to `true` to force the use of `stunnel` on this connection
 #   * Will *attempt* to determine if the host is trying to connect to itself
 #     and use a direct, local connection in lieu of a stunnel in this case.
 #
 #     * When you know this host is also the NFS server, setting this to
-#       ``false`` and ``nfs_server`` to ``127.0.0.1`` is best.
+#       `false` and `nfs_server` to `127.0.0.1` is best.
 #     * Auto-detect logic only works with IPv4 addresses.
 #
 # @param stunnel_nfsd_port
 #   Listening port on the NFS server for the tunneled connection to
 #   the NFS server daemon
 #
-#   * Decrypted traffic will be forwarded to ``nfsd_port`` on the NFS server
-#   * If left unset, the value will be taken from ``nfs::stunnel_nfsd_port``
-#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+#   * Decrypted traffic will be forwarded to `nfsd_port` on the NFS server
+#   * If left unset, the value will be taken from `nfs::stunnel_nfsd_port`
+#   * Unused when `stunnel` is `false`
 #
 # @param stunnel_socket_options
 #   Additional stunnel socket options to be applied to the stunnel to the NFS
 #   server
 #
 #   * If left unset, the value will be taken from
-#     ``nfs::client::stunnel_socket_options``
-#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+#     `nfs::client::stunnel_socket_options`
+#   * Unused when `stunnel` is `false`
 #
 # @param stunnel_verify
 #   The level at which to verify TLS connections
@@ -133,15 +133,45 @@
 #       * level 4 - Ignore CA chain and only verify peer certificate.
 #
 #   * If left unset, the value will be taken from
-#     ``nfs::client::stunnel_socket_verify``
-#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+#     `nfs::client::stunnel_socket_verify`
+#   * Unused when `stunnel` is `false`
 #
 # @param stunnel_wantedby
-#   The ``systemd`` targets that need ``stunnel`` to be active prior to being
+#   The `systemd` targets that need `stunnel` to be active prior to being
 #   activated
 #
-#   * If left unset, the value will be taken from ``nfs::client::stunnel_wantedby``
-#   * Unused when ``stunnel`` is ``false`` or `nfs_version`` is 3
+#   * If left unset, the value will be taken from `nfs::client::stunnel_wantedby`
+#   * Unused when `stunnel` is `false`
+#
+# @example Static mount
+#  nfs::client::mount { '/mnt/apps1':
+#    nfs_server  => '10.0.1.2',
+#    remote_path => '/exports/apps1',
+#    autofs      => false
+#  }
+#
+# @example Direct automount
+#  nfs::client::mount { '/mnt/apps2':
+#    nfs_server  => '10.0.1.3',
+#    remote_path => '/exports/apps2'
+#  }
+#
+# @example Indirect automount with map key substitution
+#  nfs::client::mount { '/home':
+#    nfs_server              => '10.0.1.4',
+#    remote_path             => '/exports/home',
+#    autofs_indirect_map_key => '*',
+#    autofs_add_key_subst    => true
+#  }
+#
+# @example NFSv3 mount
+#  nfs::client::mount { '/mnt/apps3':
+#    nfs_server  => '10.0.1.5',
+#    nfs_version => 3,
+#    remote_path => '/exports/apps3',
+#    autofs      => false,
+#    stunnel     => false
+#  }
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #

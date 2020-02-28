@@ -17,13 +17,13 @@ class nfs::server::config
       'port' => $nfs::mountd_port,
     },
     'nfsd'   => {
-      'port'        => $nfs::nfsd_port,
-      'vers2'       => false,
-      'vers3'       => $nfs::nfsv3,
-      'vers4'       => $nfs::server::nfsd_vers4,
-      'vers4.0'     => $nfs::server::nfsd_vers4_0,
-      'vers4.1'     => $nfs::server::nfsd_vers4_1,
-      'vers4.2'     => $nfs::server::nfsd_vers4_2
+      'port'    => $nfs::nfsd_port,
+      'vers2'   => false,
+      'vers3'   => $nfs::nfsv3,
+      'vers4'   => $nfs::server::nfsd_vers4,
+      'vers4.0' => $nfs::server::nfsd_vers4_0,
+      'vers4.1' => $nfs::server::nfsd_vers4_1,
+      'vers4.2' => $nfs::server::nfsd_vers4_2
     },
   }
 
@@ -172,7 +172,7 @@ class nfs::server::config
     | HEREDOC
 
   systemd::unit_file { 'simp_etc_exports.service':
-    # static service can't really be enabled, but this does no harm and
+    # 'static' service can't really be enabled, but this does no harm and
     # prevents svckill from killing it when it is running
     enable  => true,
     content => $_simp_etc_exports_service

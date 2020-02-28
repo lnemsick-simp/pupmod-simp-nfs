@@ -1,10 +1,10 @@
 # @summary Manage configuration and services for a NFS client
 #
-# If using the ``nfs::client::mount`` define, this will be automatically called
+# If using the `nfs::client::mount` define, this will be automatically called
 # for you.
 #
 # @param blkmap
-#   Whether to enable the ``nfs-blkmap.service`` which is required for pNFS.
+#   Whether to enable the `nfs-blkmap.service`
 #
 #   * Required for parallel NFS (pNFS).
 #   * Only applicable for NFSv4.1 or later
@@ -17,16 +17,16 @@
 #     side channel is not required.
 #
 # @param stunnel
-#   Enable ``stunnel`` connections from this client to each NFS server
+#   Enable `stunnel` connections from this client to each NFS server
 #
 #   * Stunnel can only be used for NFSv4 connections.
-#   * Can be explicitly configured for each mount in ``nfs::client::mount``.
+#   * Can be explicitly configured for each mount in `nfs::client::mount`.
 #
 # @param stunnel_socket_options
 #   Additional stunnel socket options to be applied to each stunnel
 #   connection to an NFS server
 #
-#   * Can be explicitly configured for each mount in ``nfs::client::mount``.
+#   * Can be explicitly configured for each mount in `nfs::client::mount`.
 #
 # @param stunnel_verify
 #   The level at which to verify TLS connections
@@ -39,13 +39,13 @@
 #       * level 3 - Verify peer with locally installed certificate.
 #       * level 4 - Ignore CA chain and only verify peer certificate.
 #
-#   * Can be explicitly configured for each mount in ``nfs::client::mount``.
+#   * Can be explicitly configured for each mount in `nfs::client::mount`.
 #
 # @param stunnel_wantedby
-#   The ``systemd`` targets that need ``stunnel`` to be active prior to being
+#   The `systemd` targets that need `stunnel` to be active prior to being
 #   activated
 #
-#   * Can be explicitly configured for each mount in ``nfs::client::mount``.
+#   * Can be explicitly configured for each mount in `nfs::client::mount`.
 #
 # @api private
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
