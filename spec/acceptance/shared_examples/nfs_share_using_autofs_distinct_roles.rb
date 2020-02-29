@@ -240,7 +240,7 @@ shared_examples 'a NFS share using autofs with distinct client/server roles' do 
 
           it 'automount should be valid after client reboot' do
             client.reboot
-            wait_for_reboot_hack
+            wait_for_reboot_hack(client)
             mounted_files.each do |file|
               auto_dir = File.dirname(file)
               filename = File.basename(file)
@@ -252,7 +252,7 @@ shared_examples 'a NFS share using autofs with distinct client/server roles' do 
 
           it 'automount should be valid after server reboot' do
             server.reboot
-            wait_for_reboot_hack
+            wait_for_reboot_hack(server)
             mounted_files.each do |file|
               auto_dir = File.dirname(file)
               filename = File.basename(file)

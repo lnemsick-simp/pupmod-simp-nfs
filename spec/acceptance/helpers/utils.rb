@@ -59,11 +59,32 @@ module Acceptance
       end
     end
 
-    def wait_for_reboot_hack
-      # beaker logic to ensure host has rebooted is faulty.  This is brute force
-      # temporary workaround that will be removed when beaker is fixed.
-      wait_seconds = ENV['NFS_TEST_REBOOT_WAIT'] ?  ENV['NFS_TEST_REBOOT_WAIT'] : 15
+    # Temporary hack to try to ensure connection to a host after reboot
+    # with beaker 4.14.1
+    # TODO: Remove this when beaker is fixed
+    def wait_for_reboot_hack(host)
+      # Sometimes beaker connects to the host before it has rebooted, so first sleep
+      # to give the host time to get farther along in its shutdown
+      wait_seconds = ENV['NFS_TEST_REBOOT_WAIT'] ?  ENV['NFS_TEST_REBOOT_WAIT'] : 10
       sleep(wait_seconds)
+
+      # If beaker has already connected successfully before the reboot, it will think
+      # the necessity to reconnect is a failure.  So it will close the connection and
+      # raise an exception. If we catch that exception and retry, beaker will then
+      # create a new connection.
+      tries = ENV['NFS_TEST_RECONNECT_TRIES'] ?  ENV['NFS_TEST_RECONNECT_TRIES'] : 10
+      begin
+        on(host, 'uptime')
+      rescue Beaker::Host::CommandFailure => e
+        if e.message.include?('connection failure') && (tries > 0)
+          puts "Retrying due to << #{e.message.strip} >>"
+          tries -= 1
+          sleep 1
+          retry
+        else
+          raise e
+        end
+      end
     end
   end
 end
