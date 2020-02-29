@@ -193,6 +193,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
             # mount will cause the Exec[modprove_nfsv4] to be executed.
             it 'client manifest should be idempotent after reboot' do
               client.reboot
+              wait_for_reboot_hack
               apply_manifest_on(client, client_manifest, :catch_changes => true)
             end
           end
@@ -203,6 +204,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
 
           it 'server manifest should be idempotent after reboot' do
             server.reboot
+            wait_for_reboot_hack
             apply_manifest_on(server, server_manifest, :catch_changes => true)
           end
 

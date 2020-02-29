@@ -58,5 +58,12 @@ module Acceptance
         puts '<'*80
       end
     end
+
+    def wait_for_reboot_hack
+      # beaker logic to ensure host has rebooted is faulty.  This is brute force
+      # temporary workaround that will be removed when beaker is fixed.
+      wait_seconds = ENV['NFS_TEST_REBOOT_WAIT'] ?  ENV['NFS_TEST_REBOOT_WAIT'] : 15
+      sleep(wait_seconds)
+    end
   end
 end
