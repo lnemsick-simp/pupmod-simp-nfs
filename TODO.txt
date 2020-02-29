@@ -151,7 +151,7 @@ MODULE TODO
   - note in readme that we are intentionally not stunneling rpcbind because
     can't stunnel them and support multiple servers
     - rpcbind port is not intended to be configured (but could munge with unit drop-in file)
-  - note not manage gssproxy config files or /etc/nfsmounts.conf
+  - DONE note not manage gssproxy config files or /etc/nfsmounts.conf
 - regenerate REFERENCE.md
 - verify that if change config file, everything restarts ok
   - For NFSv3 and NFSv4

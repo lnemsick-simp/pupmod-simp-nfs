@@ -6,27 +6,30 @@
 
 #### Table of Contents
 
-1. [Description](#description)
-2. [Setup - The basics of getting started with nfs](#setup)
+* [Description](#description)
+  * [This is a SIMP module](#this-is-a-simp-module)
+* [Setup](#setup)
+    * [What nfs affects](#what-nfs-affects)
     * [Setup requirements](#setup-requirements)
     * [Beginning with nfs](#beginning-with-nfs)
-3. [Usage - Configuration options and additional functionality](#usage)
+* [Usage](#usage)
     * [Basic Usage](#basic-usage)
     * [Usage with krb5](#usage-with-krb5)
+    * [Usage with stunnel](#usage-with-stunnel)
     * [Automatic mounting of home directories](#automatic-mounting-of-home-directories)
-4. [Reference - An under-the-hood peek at what the module is doing and how](#reference)
-5. [Limitations - OS compatibility, etc.](#limitations)
-6. [Development - Guide for contributing to the module](#development)
+* [Reference - An under-the-hood peek at what the module is doing and how](#reference)
+* [Limitations - OS compatibility, etc.](#limitations)
+* [Development - Guide for contributing to the module](#development)
     * [Acceptance Tests - Beaker env variables](#acceptance-tests)
 
 ## Description
 
-The SIMP nfs module can manage the exporting and mounting of nfs devices. It
-provides all the infrastructure needed to share a folder over the network.
+The is a module for managing the exporting and mounting of NFS devices. It
+provides all the infrastructure needed to share folders over the network.
 
 The module is broken into two parts: the server and the client. It supports
-security with either krb5 or stunnel, but not both. The services conflict at a
-system level.
+security with either krb5 or stunnel, but not both. These security services
+conflict at a system level.
 
 ### This is a SIMP module
 
@@ -41,67 +44,83 @@ it can be used independently:
  * When included within the SIMP ecosystem, security compliance settings will
    be managed from the Puppet server.
  * If used independently, all SIMP-managed security subsystems are disabled by
-   default and must be explicitly opted into by administrators.  See
-   simp_options for more detail.
+   default and must be explicitly opted into by administrators.  See the
+   ``simp-simp_options`` module for more detail.
 
 ## Setup
 
+### What nfs affects
+
+The ``nfs`` module installs NFS packages, configures services for the
+NFS server and/or client and manages most NFS configuration files.
+
 ### Setup Requirements
 
-The only thing necessary to begin using nfs is to install ``pupmod-simp-nfs``
-and ``pupmod-simp-autofs`` into your modulepath.
+The only requirement is to include the nfs module in your modulepath.  If
+you are using autofs, please also include SIMP's autofs module in your
+modulepath.
 
 ### Beginning with nfs
 
-To get started with this module, a few settings have to be set in hiera.
+You can use the nfs module to manage NFS settings for a host that is a NFS
+client, a NFS server or both.
 
-To be applied to all nodes, in ``default.yaml``:
+#### NFS client
 
-``` yaml
-nfs::server: "your.server.fqdn"
-nfs::server::trusted_nets: "%{alias('simp_options::trusted_nets')}"
-nfs::simp_iptables: true
-```
+Including one or more ``nfs::client::mount`` defines in a host's manifest
+will automatically include the ``nfs::client`` class, which, in turn, will
+ensure the appropriate packages are installed and appropriate services
+are configured and started.
 
-On the node intended to be the server:
+#### NFS server
+
+Including one or more ``nfs::server::export`` defines in a host's manifest
+and setting the hiera below will automatically include the ``nfs::server``
+class, which, in turn, will ensure the appropriate packages are installed and
+appropriate services are configured.
 
 ``` yaml
 nfs::is_server: true
-
-classes:
-  - 'site::nfs_server'
+nfs::is_client: false
 ```
-On a node intended to be a client:
+
+#### NFS server and client
+
+Including one or more ``nfs::server::export`` or ``nfs::client::mount`` defines
+in a host's manifest and setting the hiera below will automatically include
+the ``nfs::server`` and ``nfs::client`` classes. This will, in turn, ensure
+the appropriate packages are installed and appropriate services are configured
+for both roles.
 
 ``` yaml
-classes:
-  - 'site::nfs_client'
+nfs::is_server: true
 ```
 
 ## Usage
 
 ### Basic Usage
 
-In order to export ``/srv/nfs_share`` and mount it as ``/mnt/nfs`` on a client,
-you need to create a couple of profile classes.
+This section will demonstrate basic usage of the nfs module via two simple
+profiles: ``site::nfs_server`` and ``site::nfs_client``.
 
-One to be added to the node intended to be the server, to define the exported
-path:
+* ``site::nfs_server`` will export ``/exports/apps`` and ``/exports/home`` on
+    the server.
+* ``site::nfs_client`` will mount those directories as follows:
+    * statically mount ``/export/apps`` as ``/mnt/apps``
+    * automount ``/exports/home`` as ``/home`` using an indirect mount, key
+      wildcard, and key substitution
 
 ``` puppet
 class site::nfs_server (
   $kerberos = simplib::lookup('simp_options::kerberos', { 'default_value' => false, 'value_type' => Boolean }),
   $trusted_nets = defined('$simp_options::trusted_nets') ? { true => $simp_options::trusted_nets, default => hiera('simp_options::trusted_nets') }
   ){
-  include '::nfs'
 
   if $kerberos {
     $security = 'krb5p'
   } else {
     $security = 'sys'
   }
-
-  include 'nfs'
 
   $security = $kerberos ? { true => 'krb5p', false => 'sys' }
 
@@ -143,7 +162,7 @@ class site::nfs_client (
   mount { "/mnt/nfs":
     ensure  => 'mounted',
     fstype  => 'nfs4',
-    device  => '<your_server_fqdn>:/srv/nfs_share',
+    device  => '<your_server_ip>:/srv/nfs_share',
     options => "sec=${security}",
     require => File['/mnt/nfs']
   }
@@ -156,8 +175,8 @@ class site::nfs_client (
 
 > **WARNING**
 >
-> This functionality requires some manual configuration and is largely
-> untested.
+> This functionality requires some manual configuration and when keys
+> change may require manual purging of the ``gssproxy`` cache.
 
 --------------------
 
@@ -172,7 +191,6 @@ To be applied on every node in ``default.yaml``:
 
 ``` yaml
 simp_options::kerberos : true
-nfs::kerberos : true
 nfs::secure_nfs : true
 
 krb5::config::dns_lookup_kdc : false
@@ -257,8 +275,20 @@ Please refer to the [REFERENCE.md](./REFERENCE.md).
 
 ## Limitations
 
-- Manage rdma config file and package install?
-- Not managing pNFS service (nfs-blkmap.service).  Will need to add service and svckill::ignore resources for it.
+This module does not yet manage the following:
+
+* `/etc/nfsmounts.conf`
+* `gssproxy` configuration
+
+  * If you are using a custom keytab location, you must fix the `cred_store`
+    entries in `/etc/gssproxy/24-nfs-server.conf` and
+    `/etc/gssproxy/99-nfs-client.conf`.
+
+* RDMA packages or its service
+* `idmapd` configuration for the `umich_ldap` translation method
+
+  * If you need to configure this, consider using `nfs::idmpad::config::content`
+    to specify full contents of the `/etc/idmapd.conf` file.
 
 SIMP Puppet modules are generally intended for use on Red Hat Enterprise Linux
 and compatible distributions, such as CentOS. Please see the [`metadata.json` file](./metadata.json)
