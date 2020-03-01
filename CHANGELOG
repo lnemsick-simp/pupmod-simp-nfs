@@ -22,6 +22,8 @@
         set by those parameters.
     - Now masks NFS services that are not needed, so they are not unnecessarily
       started when the nfs-server.service or nfs-client.target are restarted.
+    - Move simp-autofs, simp-krb5, simp-iptables, simp-stunnel, and
+      simp-tcpwrappers to simp/optional_dependencies in the metadata.json.
   - nfs::client
     - Added support for pNFS.  Set $blkmap to true to enable the pNFS service,
       nfs-blkmap.service.
@@ -97,6 +99,7 @@
       the 'nfs' fstype and use of the 'nfsvers' option to specify the version of
       NFS to use.
     - The 'proto' previously was not set to 'tcp' when stunnel is being used.
+  - Fixed bug with a duplicate exec reource in nfs::client::mount
   - Fixed erronously server/client-only configuration that appeared to be able
     to be set independently for the NFS client and NFS server on the same node,
     but because of shared services applied to the node as a whole.

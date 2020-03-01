@@ -24,9 +24,14 @@
 # @param insecure
 #   Do not require that requests originate on a Port less than `1024`
 #
-#   * Due to a NFS kernel bug, you must set this to `true` when allowing
-#     stunneled NFSv4 connections.  See
-#     https://bugzilla.redhat.com/show_bug.cgi?id=1804912
+#   * Due to a NFS kernel bug when processing exports, you must set this
+#     to `true` when allowing stunneled NFSv4 connections.
+#
+#     * The export rule processor is supposed to select the most specific
+#       rule that matches.  However, when rules overlap and one rule is
+#       has insecure enabled and another does not, the rule without
+#       insecure specified is selected, even when it is **less** specific.
+#     * See https://bugzilla.redhat.com/show_bug.cgi?id=1804912
 #
 # @param rw
 #   Allow both reads and writes on this volume

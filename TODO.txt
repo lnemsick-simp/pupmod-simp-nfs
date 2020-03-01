@@ -93,31 +93,31 @@
   mount connections
 ->> FIXED Make sure export parameters in nfs::server::export still make sense
   add replicas, pnfs, security_label
-- FIXED - Collapsed into 1 parameter with a default
+->> FIXED - Collapsed into 1 parameter with a default
   fix problem with stunnel_systemd_deps and stunnel_wantedby
   - hard to understand what is being set where
   - dlookup
 - Beefed up acceptance tests
   - Added NFSv3 tests
   - Added basic idmapd test
-- RESOLVED - yes, for haveged - Is EPEL repo needed in acceptance tests?
-- Fixed bug with duplicate exec resource in client::mount
-- DONE test NFSv4 when idmapd default config is used
-- DONE make sure no error messages when idmapd.conf is enabled
-- DONE Remove rquota tunnels I had added in
+->> RESOLVED - yes, for haveged - Is EPEL repo needed in acceptance tests?
+->> Fixed bug with duplicate exec resource in client::mount
+->> DONE test NFSv4 when idmapd default config is used
+->> DONE make sure no error messages when idmapd.conf is enabled
+->> DONE Remove rquota tunnels I had added in
   - examined quota using xfs file system with user quota on and group quota off
   - rquotad used UDP to IP address in mount
   - won't work with stunnel,even if TCP, if you want to allow connection to
     more than 1 server
-- RESOLVED name of stunnels don't have the full port info in them ->  does it make sense to
+->> RESOLVED name of stunnels don't have the full port info in them ->  does it make sense to
   have the nfsd port in its name?  Yes, now that only nfsd tunnel
-- DONE change exportfs reload to be unit file
-- RESOLVED Move lockd configuration out of /etc/modprobe.d/nfs.conf to /etc/modprobe.d/lockd.conf
+->> DONE change exportfs reload to be unit file
+->> RESOLVED Move lockd configuration out of /etc/modprobe.d/nfs.conf to /etc/modprobe.d/lockd.conf
   - Should we use a sysctl resource as well?
     NO nothing to notify on client until mount has happened and will pick up correct
     config at mount time.
-- DONE stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
-- RESOLVED - beaker change is the problem
+->> DONE stunnel test with a client mounting NFSv4 or NFSv3 from 2 servers
+->> RESOLVED - beaker change is the problem
   Figure out if this test failure is a real problem or a timimg issue:
     1) nfs basic with firewall only NFSv4 with firewall behaves like a NFS share using autofs
        with distinct client/server roles as just a NFS client el7-client using NFS server
@@ -125,30 +125,31 @@
      Failure/Error: client.reboot
      Beaker::Host::RebootFailure:
        Command failed in reboot: Uptime did not reset. Reboot appears to have failed.
-- DONE move server export template to templates/etc for consistency
-- DONE use epp for idmapd.conf
-- DONE Fix else and elsif curly braces -> make sure consistent in a file
-- NO PROBLEM lint
-- DONE should stunnel change refresh nfs::server::service?  similar to how autofs gets
+->> DONE move server export template to templates/etc for consistency
+->> DONE use epp for idmapd.conf
+->> DONE Fix else and elsif curly braces -> make sure consistent in a file
+->> NO PROBLEM lint
+->> DONE should stunnel change refresh nfs::server::service?  similar to how autofs gets
   refreshed?
-- DONE Is metadata.json correct
+->> DONE Is metadata.json correct
   - Every used module correctly represented?
   - Optional dependencies reflected properly
   - Version range correct
+->> RESOLVE YES. have to due to export processing bug. should we set
+    nfs::server::export::insecure to 'true' when stunneling?
+->> DONE fix tests for host_is_me in mount and make sure it still works
 
 MODULE TODO
-- should we set nfs::server::export::insecure to 'true' when stunneling?
-- fix tests for host_is_me in mount and make sure it still works
 - Testing holes/problems
   - stunnel set and NFS server and client on same host fails idempotency
   - NFS server:  NFSv3 unstunneled and NFSv4 stunneled on same server at same time?
-- README.md
-  - has hiera() functions...not sure we are still using them
-  - is the kerberos discussion still correct? Thought there was a test for it.
-  - document  if overlapping export rules and one has insecure and one has secure, the secure one
+->> README.md
+  -FIXED has hiera() functions...not sure we are still using them
+  - UPDATED is the kerberos discussion still correct? Thought there was a test for it.
+  - DONE document  if overlapping export rules and one has insecure and one has secure, the secure one
     wins, even if the one with insecure is a specific ip, not a network or wildcard (anonymous).
     So overlapping rule must have insecure
-  - note in readme that we are intentionally not stunneling rpcbind because
+  -DONE note in readme that we are intentionally not stunneling rpcbind because
     can't stunnel them and support multiple servers
     - rpcbind port is not intended to be configured (but could munge with unit drop-in file)
   - DONE note not manage gssproxy config files or /etc/nfsmounts.conf

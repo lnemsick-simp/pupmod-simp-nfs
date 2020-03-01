@@ -149,17 +149,6 @@ the NFS client (NFSv3)
 
 Default value: 32769
 
-##### `mountd_port`
-
-Data type: `Simplib::Port`
-
-The port upon which `mountd` should listen on the server (NFSv3)
-
-* Sets the `port` option in the `mountd` section of `/etc/nfs.conf`
-* Corresponds to the `mountd` service port reported by `rpcinfo`
-
-Default value: 20048
-
 ##### `nfsd_port`
 
 Data type: `Simplib::Port`
@@ -171,18 +160,6 @@ The port upon which NFS daemon on the NFS server should listen
   `rpcinfo`
 
 Default value: 2049
-
-##### `rquotad_port`
-
-Data type: `Simplib::Port`
-
-The port upon which `rquotad` on the NFS server should listen
-
-* Sets the port command line option in `RPCRQUOTADOPTS` in
-  `/etc/sysconfig/rpc-rquotad`
-* Corresponds to the `rquotad` service port reported by `rpcinfo`
-
-Default value: 875
 
 ##### `sm_notify_outgoing_port`
 
@@ -891,9 +868,14 @@ Data type: `Boolean`
 
 Do not require that requests originate on a Port less than `1024`
 
-* Due to a NFS kernel bug, you must set this to `true` when allowing
-  stunneled NFSv4 connections.  See
-  https://bugzilla.redhat.com/show_bug.cgi?id=1804912
+* Due to a NFS kernel bug when processing exports, you must set this
+  to `true` when allowing stunneled NFSv4 connections.
+
+  * The export rule processor is supposed to select the most specific
+    rule that matches.  However, when rules overlap and one rule is
+    has insecure enabled and another does not, the rule without
+    insecure specified is selected, even when it is **less** specific.
+  * See https://bugzilla.redhat.com/show_bug.cgi?id=1804912
 
 Default value: `false`
 

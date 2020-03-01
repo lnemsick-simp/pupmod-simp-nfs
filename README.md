@@ -281,7 +281,8 @@ To export `/srv/nfs_share`, add the following to the NFS server's manifest:
 nfs::server::export { 'nfs4_root':
   client      => [ <trusted networks> ]
   export_path => '/srv/nfs_share',
-  # This MUST be set to true due to a NFS exports processing bug
+  # This MUST be set to true due to a NFS exports processing bug.
+  # See description in nfs::server::export.
   insecure    => true,
   require     => File['/srv/nfs_share']
 }
