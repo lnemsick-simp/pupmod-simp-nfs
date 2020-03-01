@@ -46,8 +46,8 @@ it can be used independently:
    be managed from the Puppet server.
  * If used independently, all SIMP-managed security subsystems are disabled by
    default and must be explicitly opted into by administrators.  See the
-   [SIMP simp_options module](https://github.com/simp/simp_options) for more
-   detail.
+   [SIMP `simp_options` module](https://github.com/simp/pupmod-simp-simp_options)
+   for more detail.
 
 ## Setup
 
@@ -58,13 +58,17 @@ NFS server and/or client and manages most NFS configuration files.
 
 ### Setup Requirements
 
-The only requirement is to include the nfs module in your modulepath.  If
-you are using autofs, please also include SIMP's autofs module in your
-modulepath.
+The only requirement is to include the `nfs` module and its dependencies
+in your modulepath.
+
+*  If you are using any of the `nfs` module's optional dependencies, e.g.
+  `autofs`, please also include those modules in the module path as well.
+   The list of optional dependencies can be found in the `nfs` module's
+   `metadata.json` file under `simp/optional_dependencies`.
 
 ### Beginning with nfs
 
-You can use the nfs module to manage NFS settings for a node that is a NFS
+You can use the `nfs` module to manage NFS settings for a node that is a NFS
 client, a NFS server or both.
 
 #### NFS client
@@ -107,17 +111,17 @@ nfs::is_server: true
 To export `/srv/nfs_share`, add the following to the NFS server's manifest:
 
 ``` puppet
+  nfs::server::export { 'nfs4_root':
+    client      => [ <trusted networks> ]
+    export_path => '/srv/nfs_share',
+    require     => File['/srv/nfs_share']
+  }
+
   file { '/srv/nfs_share':
     ensure => 'directory',
     owner  => 'root',
     group  => 'root',
     mode   => '0644'
-  }
-
-  nfs::server::export { 'nfs4_root':
-    client      => [ <trusted networks> ]
-    export_path => '/srv/nfs_share',
-    require     => File['/srv/nfs_share']
   }
 ```
 
@@ -135,37 +139,48 @@ To mount `/srv/nfs_share` statically to `/mnt/nfs` on the NFS client using
 NFSv4, add the following to the NFS client's manifest:
 
 ``` puppet
-  $mount_dir = '/mnt/nfs'
+$mount_dir = '/mnt/nfs'
 
-  nfs::client::mount { $mount_dir:
-    nfs_server  => '<NFS server IP>',
-    remote_path => '/srv/nfs_share',
-    autofs      => false
-  }
+nfs::client::mount { $mount_dir:
+  nfs_server  => '<NFS server IP>',
+  remote_path => '/srv/nfs_share',
+  autofs      => false
+}
 
-  # mount directory must exist if not using autofs
-  file { $mount_dir:
-   ensure => 'directory',
-   owner  => 'root',
-   group  => 'root',
-   mode   => '0644'
-  }
+# mount directory must exist if not using autofs
+file { $mount_dir:
+  ensure => 'directory',
+  owner  => 'root',
+  group  => 'root',
+  mode   => '0644'
+}
 
-  File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
+File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
+```
+##### Automatic direct mount
+
+To automount `/exports/data` as `/data` using an direct mount,
+add the following to the NFS client's manifest:
+
+``` puppet
+nfs::client::mount { '/data':
+  nfs_server  => '<NFS server IP>',
+  remote_path => '/exports/data'
+}
 ```
 
-##### Automatic mount general
+##### Automatic indirect mount
 
 To automount `/exports/apps` as `/apps` using an indirect mount with key
 substitution, add the following to the NFS client's manifest:
 
 ``` puppet
-  nfs::client::mount { '/apps':
-    nfs_server              => '<NFS server IP>',
-    remote_path             => '/exports/apps',
-    autofs_indirect_map_key => '*',
-    autofs_add_key_subst    => true
-  }
+nfs::client::mount { '/apps':
+  nfs_server              => '<NFS server IP>',
+  remote_path             => '/exports/apps',
+  autofs_indirect_map_key => '*',
+  autofs_add_key_subst    => true
+}
 ```
 
 ##### Automatic mount of home directories for LDAP users
@@ -183,7 +198,7 @@ Please reference the [SIMP documentation](https://simp.readthedocs.io/en/stable/
 
 --------------------
 
-This module, used with the [SIMP krb5 module](https://github.com/simp/pupmod-simp-krb5),
+This module, used with the [SIMP `krb5` module](https://github.com/simp/pupmod-simp-krb5),
 can automatically use kerberos to secure the exported filesystem. The module
 can create and manage the entire kerberos configuration automatically, but
 check the `krb5` module itself if you want more control.
@@ -211,17 +226,16 @@ On the NFS server and client nodes, add the following to each node's manifest:
 ```puppet
 # If your realm is not your domain name then change this
 # to the string that is your realm
+$myrealm = upcase($facts['domain'])
 
-myrealm = upcase($facts['domain'])
-
-krb5::setting::realm { ${myrealm}:
+krb5::setting::realm { $myrealm:
   admin_server   => <KDC fqnd>,
-  default_domain => ${myrealm}
+  default_domain => $myrealm
 }
 ```
 
 SIMP does not have kerberos set up to work automatically with LDAP yet. You
-must add a pricipal for each user you want to give access to the krb5 protected
+must add a principal for each user you want to give access to the krb5 protected
 directories. To do this log onto the KDC and run:
 
 ```bash
@@ -246,7 +260,7 @@ When use of kerberos is not viable, but you want to encrypt NFS traffic,
 you can configure the NFS server and client to use `stunnel` automatically
 on NFSv4 connections.
 
-This module uses the [SIMP stunnel module](https://github.com/simp/pupmod-simp-stunnel)
+This module uses the [SIMP `stunnel` module](https://github.com/simp/pupmod-simp-stunnel)
 for `stunnel` management.
 
 #### NFSv4 stunnel, one NFS server
@@ -264,20 +278,20 @@ nfs::stunnel: true
 To export `/srv/nfs_share`, add the following to the NFS server's manifest:
 
 ``` puppet
-  file { '/srv/nfs_share':
-    ensure => 'directory',
-    owner  => 'root',
-    group  => 'root',
-    mode   => '0644'
-  }
+nfs::server::export { 'nfs4_root':
+  client      => [ <trusted networks> ]
+  export_path => '/srv/nfs_share',
+  # This MUST be set to true due to a NFS exports processing bug
+  insecure    => true,
+  require     => File['/srv/nfs_share']
+}
 
-  nfs::server::export { 'nfs4_root':
-    client      => [ <trusted networks> ]
-    export_path => '/srv/nfs_share',
-    # This MUST be set to true due to a NFS exports processing bug
-    insecure    => true,
-    require     => File['/srv/nfs_share']
-  }
+file { '/srv/nfs_share':
+  ensure => 'directory',
+  owner  => 'root',
+  group  => 'root',
+  mode   => '0644'
+}
 ```
 
 ##### Mount with stunnel
@@ -292,23 +306,23 @@ To mount `/srv/nfs_share` statically to `/mnt/nfs` on the NFS client,
 add the following to the NFS client's manifest:
 
 ``` puppet
-  $mount_dir = '/mnt/nfs'
+$mount_dir = '/mnt/nfs'
 
-  nfs::client::mount { $mount_dir:
-    nfs_server  => '<NFS server IP>',
-    remote_path => '/srv/nfs_share',
-    autofs      => false
-  }
+nfs::client::mount { $mount_dir:
+  nfs_server  => '<NFS server IP>',
+  remote_path => '/srv/nfs_share',
+  autofs      => false
+}
 
-  # mount directory must exist if not using autofs
-  file { $mount_dir:
-   ensure => 'directory',
-   owner  => 'root',
-   group  => 'root',
-   mode   => '0644'
-  }
+# mount directory must exist if not using autofs
+file { $mount_dir:
+ ensure => 'directory',
+ owner  => 'root',
+ group  => 'root',
+ mode   => '0644'
+}
 
-  File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
+File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
 ```
 
 In this simple case, the mount manifest looks exactly the same as
@@ -316,7 +330,7 @@ in the unencrypted case.  Only the hieradata has changed.
 
 #### NFSv4 stunnel, multiple NFS servers
 
-In this scenario, we will consider a site with two NFS servers. The examples
+In this scenario, we will consider a site with two NFS servers. The example
 shown can be extrapolated to any number of NFS servers.
 
 ##### Server 1 export with stunnel
@@ -334,20 +348,20 @@ nfs::stunnel: true
 Server 1 manifest:
 
 ``` puppet
-  file { '/srv/nfs_share':
-    ensure => 'directory',
-    owner  => 'root',
-    group  => 'root',
-    mode   => '0644'
-  }
+nfs::server::export { 'nfs4_root':
+  client      => [ <trusted networks> ]
+  export_path => '/srv/nfs_share',
+  # This MUST be set to true due to a NFS exports processing bug
+  insecure    => true,
+  require     => File['/srv/nfs_share']
+}
 
-  nfs::server::export { 'nfs4_root':
-    client      => [ <trusted networks> ]
-    export_path => '/srv/nfs_share',
-    # This MUST be set to true due to a NFS exports processing bug
-    insecure    => true,
-    require     => File['/srv/nfs_share']
-  }
+file { '/srv/nfs_share':
+  ensure => 'directory',
+  owner  => 'root',
+  group  => 'root',
+  mode   => '0644'
+}
 ```
 
 ##### Server 2 export with stunnel
@@ -372,20 +386,20 @@ nfs::stunnel_nfsd_port: 20500
 To export `/srv/nfs_share2`, add the following to Server 2's manifest:
 
 ``` puppet
-  file { '/srv/nfs_share2':
-    ensure => 'directory',
-    owner  => 'root',
-    group  => 'root',
-    mode   => '0644'
-  }
+nfs::server::export { 'nfs4_root':
+  client      => [ <trusted networks> ]
+  export_path => '/srv/nfs_share2',
+  # This MUST be set to true due to a NFS exports processing bug
+  insecure    => true,
+  require     => File['/srv/nfs_share2']
+}
 
-  nfs::server::export { 'nfs4_root':
-    client      => [ <trusted networks> ]
-    export_path => '/srv/nfs_share2',
-    # This MUST be set to true due to a NFS exports processing bug
-    insecure    => true,
-    require     => File['/srv/nfs_share2']
-  }
+file { '/srv/nfs_share2':
+  ensure => 'directory',
+  owner  => 'root',
+  group  => 'root',
+  mode   => '0644'
+}
 ```
 
 ##### Mounts to servers with stunnel
@@ -401,37 +415,37 @@ and `/srv/nfs_share2` from Server 2 statically to `/mnt/nfs2`,
 add the following to the NFS client's manifest:
 
 ``` puppet
-  $mount_dir = '/mnt/nfs'
+$mount_dir = '/mnt/nfs'
 
-  # this mount uses the defaults, because Server 1 uses nfs
-  # module defaults
-  nfs::client::mount { $mount_dir:
-    nfs_server  => '<NFS Server 1 IP>',
-    remote_path => '/srv/nfs_share',
-    autofs      => false
-  }
+# this mount uses the defaults, because Server 1 uses nfs
+# module defaults
+nfs::client::mount { $mount_dir:
+  nfs_server  => '<NFS Server 1 IP>',
+  remote_path => '/srv/nfs_share',
+  autofs      => false
+}
 
-  $mount_dir2 = '/mnt/nfs2'
+$mount_dir2 = '/mnt/nfs2'
 
-  # this mount sets ports to match those of Server 2
-  nfs::client::mount { $mount_dir2:
-    nfs_server        => '<NFS Server 2 IP>',
-    remote_path       => '/srv/nfs_share2',
-    autofs            => false,
-    nfsd_port         => 2050,
-    stunnel_nfsd_port => 20500
-  }
+# this mount sets ports to match those of Server 2
+nfs::client::mount { $mount_dir2:
+  nfs_server        => '<NFS Server 2 IP>',
+  remote_path       => '/srv/nfs_share2',
+  autofs            => false,
+  nfsd_port         => 2050,
+  stunnel_nfsd_port => 20500
+}
 
-  # mount directories must exist if not using autofs
-  file { [ $mount_dir, $mount_dir2 ]:
-   ensure => 'directory',
-   owner  => 'root',
-   group  => 'root',
-   mode   => '0644'
-  }
+# mount directories must exist if not using autofs
+file { [ $mount_dir, $mount_dir2 ]:
+ ensure => 'directory',
+ owner  => 'root',
+ group  => 'root',
+ mode   => '0644'
+}
 
-  File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
-  File[$mount_dir2] -> Nfs::Client::Mount[$mount_dir2]
+File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
+File[$mount_dir2] -> Nfs::Client::Mount[$mount_dir2]
 ```
 
 #### NFSv3 considerations
@@ -448,10 +462,10 @@ NFSv3 traffic cannot be encrypted with `stunnel` because of two key reasons:
   to use a non-standard port.
 
   * NFSv3 heavily relies upon `rpcbind` to determine the side-band channel ports
-    in use on the NFS nodes.  This includes the `status` and `lockd` ports used
+    in use on the NFS nodes.  This includes the `statd` and `lockd` ports used
     in NSM and NLM, respectively.
   * A unique `rpcbind` port per server is required in order for a NFS client
-    to be able tunnel its server-specific NFS RPC requests to the appropriate
+    to be able tunnel its server-specific RPC requests to the appropriate
     server.
 
 Despite this limitation, this module still fully supports unencrypted NFSv3
@@ -484,8 +498,8 @@ with stunneled NFSv4.
 
 This module can be configured to automatically add firewall rules and allow
 NFS services in TCP wrappers using the
-[SIMP iptables module](https://github.com/simp/pupmod-simp-iptables) and the
-[SIMP tcpwrappers module](https://github.com/simp/pupmod-simp-tcpwrappers),
+[SIMP `iptables` module](https://github.com/simp/pupmod-simp-iptables) and the
+[SIMP `tcpwrappers` module](https://github.com/simp/pupmod-simp-tcpwrappers),
 respectively.
 
 To enable these features on the NFS server and NFS client nodes, add the
@@ -510,6 +524,11 @@ This module does not yet manage the following:
   * If you are using a custom keytab location, you must fix the `cred_store`
     entries in `/etc/gssproxy/24-nfs-server.conf` and
     `/etc/gssproxy/99-nfs-client.conf`.
+  * If a node's keytab has changed content and the old keytab entries
+    are no longer valid, you will have to manually clear the `gssproxy`
+    credential cache using `kdestroy -c <gssproxy cache>`.
+    Simply restarting the `gssproxy` service does not clear the cache
+    and re-read the keytab!
 
 * RDMA packages or its service
 * `idmapd` configuration for the `umich_ldap` translation method
