@@ -415,19 +415,17 @@ and `/srv/nfs_share2` from Server 2 statically to `/mnt/nfs2`,
 add the following to the NFS client's manifest:
 
 ``` puppet
-$mount_dir = '/mnt/nfs'
-
 # this mount uses the defaults, because Server 1 uses nfs
 # module defaults
+$mount_dir = '/mnt/nfs'
 nfs::client::mount { $mount_dir:
   nfs_server  => '<NFS Server 1 IP>',
   remote_path => '/srv/nfs_share',
   autofs      => false
 }
 
-$mount_dir2 = '/mnt/nfs2'
-
 # this mount sets ports to match those of Server 2
+$mount_dir2 = '/mnt/nfs2'
 nfs::client::mount { $mount_dir2:
   nfs_server        => '<NFS Server 2 IP>',
   remote_path       => '/srv/nfs_share2',
