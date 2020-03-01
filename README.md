@@ -480,24 +480,6 @@ with stunneled NFSv4.
   nfs::stunnel: true
   ```
 
-  Here is an example manifest snippet:
-
-  ``` puppet
-    # stunneled NFSv4
-    nfs::client::mount { '/apps':
-      nfs_server  => '<NFSv4 server IP>',
-      remote_path => '/exports/apps'
-    }
-
-    # unencrypted NFSv3
-    nfs::client::mount { '/old_apps':
-      nfs_server  => '<NFSv3 server IP>',
-      nfs_version => 3,
-      remote_path => '/exports/old_apps',
-      stunnel     => false
-    }
-  ```
-
 ### Other security features
 
 This module can be configured to automatically add firewall rules and allow

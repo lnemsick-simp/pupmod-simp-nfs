@@ -193,7 +193,9 @@ describe 'nfs::client::mount' do
               base_params.merge( {
                 :nfs_version             => 3,
                 :autofs_indirect_map_key => 'some_dir',
-                :stunnel                 => false
+
+                # this will be ignored
+                :stunnel                 => true
               } )
             }
 
@@ -431,18 +433,6 @@ describe 'nfs::client::mount' do
         end
 
         context 'when nfs_version=3 but nfs::nfsv3=false' do
-          let(:params) {{
-            :nfs_server  => '1.2.3.4',
-            :remote_path => '/home',
-            :nfs_version => 3
-          }}
-
-          it { is_expected.to_not compile.with_all_deps }
-        end
-
-        context 'when nfs_version=3 and nfs::client::stunnel=true' do
-          let(:pre_condition) { "class { 'nfs::client': stunnel => true }" }
-
           let(:params) {{
             :nfs_server  => '1.2.3.4',
             :remote_path => '/home',

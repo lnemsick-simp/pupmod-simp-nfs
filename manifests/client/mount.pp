@@ -96,8 +96,16 @@
 #   * If left unset, the value will be taken from `$nfs::client::stunnel`
 #   * May be set to `false` to ensure that `stunnel` will not be used for
 #     this connection
-#   * Must be set to `false` for a NFSv3 mount
 #   * May be set to `true` to force the use of `stunnel` on this connection
+#   * Unused when `$nfs_version` is 3.
+#
+#     * stunneled connections are not viable for NFSv3 because of the UDP-only
+#       NFS client NSM notifications and the inability to effectively configure
+#       the rpcbind port.
+#     * If you know the NFS version negotiated with the NFS server will
+#       fallback to NFSv3, you must set `$nfs_version` to 3 or `$stunnel` to
+#       false. The mount will fail otherwise.
+#
 #   * Will *attempt* to determine if the host is trying to connect to itself
 #     and use a direct, local connection in lieu of a stunnel in this case.
 #
@@ -169,8 +177,7 @@
 #    nfs_server  => '10.0.1.5',
 #    nfs_version => 3,
 #    remote_path => '/exports/apps3',
-#    autofs      => false,
-#    stunnel     => false
+#    autofs      => false
 #  }
 #
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
@@ -214,14 +221,12 @@ define nfs::client::mount (
     $_nfsd_port = $nfs::nfsd_port
   }
 
-  if $stunnel !~ Undef {
+  if $nfs_version == 3 {
+    $_stunnel = false
+  } elsif $stunnel !~ Undef {
     $_stunnel = $stunnel
   } else {
     $_stunnel = $nfs::client::stunnel
-  }
-
-  if ($nfs_version == 3) and $_stunnel {
-    fail("NFSv3 mounts with stunnel are unsupported.  Set 'stunnel' to false for Nfs::Client::Mount[${name}] to fix.")
   }
 
   if $stunnel_nfsd_port !~ Undef {
