@@ -9,8 +9,8 @@ class nfs::server::firewall::nfsv4
 
   $_ports = [
     111, # rpcbind port; rpcbind required for rpc.rquotad
-    $nfs::nfsd_port,
-    $nfs::rquotad_port
+    $nfs::server::nfsd_port,
+    $nfs::server::rquotad_port
   ]
 
   iptables::listen::tcp_stateful { 'nfs_client_tcp_ports':

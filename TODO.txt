@@ -31,9 +31,9 @@
   - mount.nfs used to handle NFSv2/3 exclusively and mount.nfsv4 used to handle NFSv4 exclusively.
   - FIXME mount.nfs now handles all mount types.
 ->> FIXED removed OBE intr mount option
-- CHANGE hard -> soft mount option
+->> CHANGE hard -> soft mount option
 ->> FIXED use vox_selinux::module to build gss_hotfix selinux policy
-- DONE (need to verify this was a fix) add tcpwrappers to client rcpbind
+->> DONE (need to verify this was a fix) add tcpwrappers to client rcpbind
 ->> RESOLVED Do we need the selinux gss_hotfix
   - mounts wouldn't work when selinux enabled
   - Fixed in later nfs-utils versions https://access.redhat.com/solutions/3969161
@@ -43,55 +43,55 @@
   - Do we need to manage /etc/gssproxy/24-nfs-server.conf from nfs-utils RPM
   - Do we need to manage /etc/gssproxy/99-nfs-client.conf from gssproxy RPM
   - htps://pagure.io/gssproxy/
-- FIXED Do we need to handle pNFS (nfs-blkmap.service)?
+->> FIXED Do we need to handle pNFS (nfs-blkmap.service)?
   - allow management of the client service
   - no daemon configuration required
-- RESOLVED Is the sysctl fs.nfs.nfs_callback_tcpport and /etc/modprobe.d/nfs.conf still required?
+->> RESOLVED Is the sysctl fs.nfs.nfs_callback_tcpport and /etc/modprobe.d/nfs.conf still required?
     "The NFSv4 client sends a port to the server for delegation callbacks.  The server attempts to
      open a connection to the client on this port. By default, this port is ephemeral, and will be
      blocked if the client is running a firewall."
      the sysctl does not become available until *after* the mount has been created
      YES ^-- hence the need for the /etc/modprobe/nfs.conf
-- RESOLVED mount security options:  Why not supporting krb5 for NFSv3?
+->> RESOLVED mount security options:  Why not supporting krb5 for NFSv3?
  - RPCGSS auth can be supported, but does not protect side channels
  - Too much trouble.  Only supporting NFSv3 for some legacy appliances.
-- FIXED stunnels for rpcbind and rpc-rquotad service were not created
+->> NOT A PROBLEM stunnels for rpcbind and rpc-rquotad service were not created
   in NFSv4
-- FIXED bug in which nfs::server::stunnel::version had to be set to 3 in
+->> OBE bug in which nfs::server::stunnel::version had to be set to 3 in
   hieradata for NFSv3
-- RESOLVED with systemd, make sure gssproxy is part of nfs-utils so we can restart nfs-utils
+->> RESOLVED with systemd, make sure gssproxy is part of nfs-utils so we can restart nfs-utils
   and ensure it is picked up as well
-- RESOLVED NO Should we be blocking rpcbind's port 111 and just use known ports?
+->> RESOLVED NO Should we be blocking rpcbind's port 111 and just use known ports?
   - May work on client, but would have to be tested
     - need to pass mountport as a mount option
   - Cannot be done for server because no mechanism to specify the rquotad
     port in the client's mount command.  Client has to query rpcbind to
     determine the port.  So even though the port is fixed, it is not
     configurable in the client.
-- RESOLVED NO:does the server use rpcbind for the callback port or is that sent another way?
+->> RESOLVED NO:does the server use rpcbind for the callback port or is that sent another way?
 - FIXED move tcpwrappers and firewall settings out of nfs::server and nfs::client, as they
   must be the same for both when on the same machine.
-- FIXED make sure UDP open on the server statd port even when using stunnel
+->>OBE make sure UDP open on the server statd port even when using stunnel
 
        The  client  sends Network Status Manager (NSM) notifications via UDP
        no matter what transport  options  are  specified,  but  listens  for
        server NSM notifications on both UDP and TCP.  The NFS Access Control
        List (NFSACL) protocol shares the same transport as the main NFS ser‐
        vice.
-- FIXED Replace $::nfs::.. with $nfs::
-- NO FIX POSSIBLE nfs is not idempotent...takes 2 runs for sysctl for client
-- RESOLVED NO not necessary - figure out if include krb5 needed (i.e., kerberos
+->> FIXED Replace $::nfs::.. with $nfs::
+->> NO FIX POSSIBLE nfs is not idempotent...takes 2 runs for sysctl for client
+->> RESOLVED NO not necessary - figure out if include krb5 needed (i.e., kerberos
   packages installed) to build policy
-- RESOLVED stunnel_wantedby brings up stunnel first
+->> RESOLVED stunnel_wantedby brings up stunnel first
   have to make sure sm-modify's reboot notification goes out when stunnels
   up...so need to make sure stunnel service is before nfs-server?
   - This conflicts with server coming up before stunnel...notifications
     won't actually go out.
   - If notifications don't actually go out (blocked by firewall), will NFS retry
     later or will they be lost
-- FIXED handle stunnel when on server correctly and same way for NFSv4 and NFSv3 client
+->> OBE handle stunnel when on server correctly and same way for NFSv4 and NFSv3 client
   mount connections
-- FIXED Make sure export parameters in nfs::server::export still make sense
+->> FIXED Make sure export parameters in nfs::server::export still make sense
   add replicas, pnfs, security_label
 - FIXED - Collapsed into 1 parameter with a default
   fix problem with stunnel_systemd_deps and stunnel_wantedby

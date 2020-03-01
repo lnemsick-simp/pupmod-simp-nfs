@@ -25,7 +25,28 @@
 #   Allow use of NFSv4.2
 #
 #   * Sets the `vers4.2` option in the `nfsd` section of `/etc/nfs.conf`
-#   * NFSv4.2 is available beggining with EL8.
+#   * NFSv4.2 is available beginning with EL8, so this setting will be
+#     ignored in EL7.
+#
+# @param mountd_port
+#   The port upon which `mountd` should listen on the server (NFSv3)
+#
+#   * Sets the `port` option in the `mountd` section of `/etc/nfs.conf`
+#   * Corresponds to the `mountd` service port reported by `rpcinfo`
+#
+# @param nfsd_port
+#   The port upon which NFS daemon on the NFS server should listen
+#
+#   * Sets the `port` option in the `nfsd` section of `/etc/nfs.conf`
+#   * Corresponds to the `nfs` and `nfs_acl` service ports reported by
+#     `rpcinfo`
+#
+# @param rquotad_port
+#   The port upon which `rquotad` on the NFS server should listen
+#
+#   * Sets the port command line option in `RPCRQUOTADOPTS` in
+#     `/etc/sysconfig/rpc-rquotad`
+#   * Corresponds to the `rquotad` service port reported by `rpcinfo`
 #
 # @param custom_rpcrquotad_opts
 #   * Additional arguments to pass to the `rpc.rquotad` daemon
@@ -100,6 +121,9 @@ class nfs::server (
   Boolean          $nfsd_vers4_0                  = false,
   Boolean          $nfsd_vers4_1                  = true,
   Boolean          $nfsd_vers4_2                  = true,
+  Simplib::Port    $mountd_port                   = 20048,
+  Simplib::Port    $nfsd_port                     = $nfs::nfsd_port,
+  Simplib::Port    $rquotad_port                  = 875,
   Optional[String] $custom_rpcrquotad_opts        = undef,
   Integer[1]       $sunrpc_udp_slot_table_entries = 128,
   Integer[1]       $sunrpc_tcp_slot_table_entries = 128,

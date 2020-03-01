@@ -48,25 +48,12 @@
 #   * Sets the `udp-port` option in the `lockd` section of `/etc/nfs.conf`
 #   * Corresponds to the `nlockmgr` service UDP port reported by `rpcinfo`
 #
-# @param mountd_port
-#   The port upon which `mountd` should listen on the server (NFSv3)
-#
-#   * Sets the `port` option in the `mountd` section of `/etc/nfs.conf`
-#   * Corresponds to the `mountd` service port reported by `rpcinfo`
-#
 # @param nfsd_port
 #   The port upon which NFS daemon on the NFS server should listen
 #
 #   * Sets the `port` option in the `nfsd` section of `/etc/nfs.conf`
 #   * Corresponds to the `nfs` and `nfs_acl` service ports reported by
 #     `rpcinfo`
-#
-# @param rquotad_port
-#   The port upon which `rquotad` on the NFS server should listen
-#
-#   * Sets the port command line option in `RPCRQUOTADOPTS` in
-#     `/etc/sysconfig/rpc-rquotad`
-#   * Corresponds to the `rquotad` service port reported by `rpcinfo`
 #
 # @param sm_notify_outgoing_port
 #   The port that `sm-notify` will use when notifying NFSv3 peers
@@ -225,9 +212,7 @@ class nfs (
   Boolean               $gssd_use_gss_proxy            = true,
   Simplib::Port         $lockd_port                    = 32803,
   Simplib::Port         $lockd_udp_port                = 32769,
-  Simplib::Port         $mountd_port                   = 20048,
   Simplib::Port         $nfsd_port                     = 2049,
-  Simplib::Port         $rquotad_port                  = 875,
   Simplib::Port         $sm_notify_outgoing_port       = 2021,
   Simplib::Port         $statd_port                    = 662,
   Simplib::Port         $statd_outgoing_port           = 2020,

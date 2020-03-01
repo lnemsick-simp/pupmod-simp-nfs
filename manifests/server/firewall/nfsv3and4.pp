@@ -9,9 +9,9 @@ class nfs::server::firewall::nfsv3and4
 
   $_base_ports = [
     111, # rpcbind port
-    $nfs::nfsd_port,
-    $nfs::rquotad_port,
-    $nfs::mountd_port,
+    $nfs::server::nfsd_port,
+    $nfs::server::rquotad_port,
+    $nfs::server::mountd_port,
     $nfs::statd_port
   ]
 

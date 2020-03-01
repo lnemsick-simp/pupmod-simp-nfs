@@ -14,10 +14,10 @@ class nfs::server::config
   #   firewall will not work otherwise!
   $_required_nfs_conf_opts = {
     'mountd' => {
-      'port' => $nfs::mountd_port,
+      'port' => $nfs::server::mountd_port,
     },
     'nfsd'   => {
-      'port'    => $nfs::nfsd_port,
+      'port'    => $nfs::server::nfsd_port,
       'vers2'   => false,
       'vers3'   => $nfs::nfsv3,
       'vers4'   => $nfs::server::nfsd_vers4,
@@ -117,9 +117,9 @@ class nfs::server::config
   }
 
   if $nfs::server::custom_rpcrquotad_opts {
-    $_rpcrquotadopts = "${nfs::server::custom_rpcrquotad_opts} -p ${nfs::rquotad_port}"
+    $_rpcrquotadopts = "${nfs::server::custom_rpcrquotad_opts} -p ${nfs::server::rquotad_port}"
   } else {
-    $_rpcrquotadopts = "-p ${nfs::rquotad_port}"
+    $_rpcrquotadopts = "-p ${nfs::server::rquotad_port}"
   }
 
   $_sysconfig_rpc_rquotad = @("SYSCONFIGRPCRQUOTAD")

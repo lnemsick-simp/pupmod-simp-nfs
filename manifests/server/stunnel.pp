@@ -36,7 +36,7 @@ class nfs::server::stunnel {
   stunnel::instance { 'nfsd':
     client           => false,
     trusted_nets     => $nfs::server::trusted_nets,
-    connect          => [$nfs::nfsd_port],
+    connect          => [$nfs::server::nfsd_port],
     accept           => $_accept,
     verify           => $nfs::server::stunnel_verify,
     socket_options   => $nfs::server::stunnel_socket_options,
