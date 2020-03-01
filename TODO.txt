@@ -1,44 +1,44 @@
   MODULE DONE
-- FIXED Figure out solution for sunrpc_tuning initV service exist at all?
+->> FIXED Figure out solution for sunrpc_tuning initV service exist at all?
    -YES Under the management of sysctl, and RHEL docs say to use sysctl or the
     file shown in the sunrpc_tuning script...
     https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html-single/kernel_administration_guide/index#displaying_information_about_a_module
     Should use sysctl Puppet resource
-- FIXED rpc.quotad
+->> FIXED rpc.quotad
   - on NFS server only
   - Install quota-rpc on el8 and enable service if quotad args are specified
   - Create /etc/sysconfig/rpc-rquotad file and remove any such config from /etc/sysconfig/nfs
-- RESOLVED gssproxy.service has wrong Before (old name nfs-secure.service,
+->> RESOLVED gssproxy.service has wrong Before (old name nfs-secure.service,
   nfs-secure-server.service in el7
     nfs-secure.service is link to rpc-gssd.service in el7
-- FIXED remove intr option in mount, as it doesn't do anything anymore
-- Make sure not to use ephemeral ports lockd on NFS clients.  This port is used when
+->> FIXED remove intr option in mount, as it doesn't do anything anymore
+->> Make sure not to use ephemeral ports lockd on NFS clients.  This port is used when
   multiple NFS clients attempt to lock the same file.
-- FIXED did not set sm-notify port on NFS servers and clients to a non-ephemeral value.
+->> FIXED did not set sm-notify port on NFS servers and clients to a non-ephemeral value.
   This port is used in NFSv3 when a NFS client or server reboots and a file has been locked.
-- FIXED Did not set lockd ports on NFS clients to a no-ephemeral value.  These ports
+->> FIXED Did not set lockd ports on NFS clients to a no-ephemeral value.  These ports
   are used in NFSv3 when then NFS servers need to communicate lock status to the NFS client
-- FIXED trusted_nets with hostnames does not work in nfs::client::mount::connection
+->> FIXED trusted_nets with hostnames does not work in nfs::client::mount::connection
   Have to use IP addresses
-- Fixed SIMP-2944 with API change
+->> Fixed SIMP-2944 with API change
   - terminology matches autofs man pages
   - simp_nfs will need to change
-- FIXED idmapd
+->> FIXED idmapd
   - only applies to NFSv4 (logic previously applied it to NFSv3)
   - manage /etc/idmapd.conf and nfs-idmapd.service on NFS server
   - manage /etc/idmapd.conf and /etc/request-key.conf entry for nfsidmap on NFS client
-- FIXED nfs,nfsv4  old syntax for mounts
+->> FIXED nfs,nfsv4  old syntax for mounts
   - mount.nfs used to handle NFSv2/3 exclusively and mount.nfsv4 used to handle NFSv4 exclusively.
   - FIXME mount.nfs now handles all mount types.
-- FIXED removed OBE intr mount option
+->> FIXED removed OBE intr mount option
 - CHANGE hard -> soft mount option
-- FIXED use vox_selinux::module to build gss_hotfix selinux policy
-- DONE (need to verify this was a fix) add tcpwrappers to client tcpbind
-- RESOLVED Do we need the selinux gss_hotfix
+->> FIXED use vox_selinux::module to build gss_hotfix selinux policy
+- DONE (need to verify this was a fix) add tcpwrappers to client rcpbind
+->> RESOLVED Do we need the selinux gss_hotfix
   - mounts wouldn't work when selinux enabled
   - Fixed in later nfs-utils versions https://access.redhat.com/solutions/3969161
   - building it on EL7
-- NEW TICKET CREATED Do we need to do anything with gssproxy configuration?
+->> NEW TICKET CREATED Do we need to do anything with gssproxy configuration?
   - Should we (are we) managing /etc/gssproxy/gssproxy.conf
   - Do we need to manage /etc/gssproxy/24-nfs-server.conf from nfs-utils RPM
   - Do we need to manage /etc/gssproxy/99-nfs-client.conf from gssproxy RPM

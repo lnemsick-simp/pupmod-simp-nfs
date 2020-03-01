@@ -1,7 +1,72 @@
 * Fri Jan 10 2020 Liz Nemsick <lnemsick.simp@gmail.com> - 7.0.0-0
-- Add EL8 support
-- Drop EL6 support
-- Update the upper bound of simp-simplib to < 5.0.0
+- Added EL8 support
+- Dropped EL6 support
+- Refactored the module.  Notable feature/API changes:
+  - Dropped stunnel support for NFSv3.  This tunneling did not work because:
+    - The NFS client sends the NFS server Network Status Manager (NSM)
+      notifications via UDP, exclusively.
+    - At multi-NFS-server sites, a unique `rpcbind` port per server is required
+      in order for a NFS client to be able tunnel its server-specific RPC
+      requests to the appropriate server.
+  - Remove $stunnel_systemd_deps and $sunnel_tcp_nodelay parameters throughout
+    the module.  Those parameters were not consistently used in the manifest
+    code (declared but not used) and were confusing.  The corresponding
+    $stunnel_socket_options and $stunnel_wantedby parameters now use defaults
+    that were intended to be set by those parameters.
+  - nfs class
+    - Reworked parameters to reflect configuration of /etc/nfs.conf and,
+      for EL7-only in limited cases, /etc/sysconfig/nfs.  See the class
+      documentation for full details.
+  - nfs::client::mount define
+    - $nfs_server must now be specified as an IP address.  This change was
+      necessary for firewalld.
+    - In $options, changed the default mount type to 'soft' instead of 'hard'
+      Also removed deprecated 'intr' option, as it has no effect.
+    - Reworked the remote autodetect logic to detect a local mount based
+      on IP address instead of simply whether the node is also configured
+      to be an NFS server.
+    - Added support for direct autofs mounts and simplified specification of
+      indirect mounts.  When $autofs_indirect_map_key is not specified, a
+      direct mount is specified by $name.  When $autofs_indirect_map_key is
+      specified, an indirect mount is specified with $name as the mount point
+      and $autofs_indirect_map_key as the mount key.
+    - Renamed $autofs_map_to_user to $autofs_add_key_subst to better reflect
+      automount terminology. This parameter simply added key substitution
+      to the remote location, which although can be used for user home
+      directories is not restricted to that use case.
+    - Renamed $port to $nfsd_port to be consistent with the name of that
+      parameter throughout the entire module.
+    - Renamed $v4_remote_port to $stunnel_nfsd_port for clarity and to be
+      consistent with the name of that parameter throught the entire module.
+    - Exposed stunnel configuration that was scattered throughout the module
+      to this API.  User can now specify $stunnel_socket_options and
+      $stunnel_verify for each mount.  When unspecified, the defaults from
+      the nfs class are used.
+  - nfs::server::export define
+  - nfs::client
+    - Added support for pNFS.  Set $pnfs to true to enable the pNFS servic,
+      nfs-blkmap.service.
+  - nfs::server
+- Fixed bugs:
+  - rpc.rquotad service configuration is now written to the correct file for
+    EL7, /etc/sysconfig/rpc-rquotad.  Previously, it that configuration was
+    erroneously written to /etc/sysconfig/nfs.
+  - idmapd
+    - No longer erroneously only enabled when NFSv3 was allowed. idmapd is
+      a NFSv4 service.
+    - idmapd client is now appropriately configured to use nfsidmap. Use
+      of nfsidmap requires a nfsidmap entry in /etc/request-key.conf.
+  - NFSv3 lockd ports on the NFS client were not explicitly configured and thus
+    not allowed through the firewall.  This would have affected file locking
+    using NLM.
+  - In the mount options, the deprecated 'nfs4' fstype is now replaced with
+    the 'nfs' fstype and the version of NFS to use is now specified by the
+    'nfsvers' option.
+  - The 'proto' mount option is now specified to be 'tcp' when stunnel is being
+    used.
+
+
+- Updated the upper bound of simp-simplib to < 5.0.0
 
 * Fri Aug 02 2019 Robert Vincent <pillarsdotnet@gmail.com> - 7.0.0-0
 - Remove Puppet 4 support
