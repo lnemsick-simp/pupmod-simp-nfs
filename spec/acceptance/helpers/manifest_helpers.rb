@@ -97,6 +97,8 @@ module Acceptance
         custom_mount_options = build_custom_mount_options(opts)
 
         <<~EOM
+          include 'ssh'
+
           nfs::client::mount { '#{opts[:mount_dir]}':
             nfs_server  => '#{opts[:mount_server_ip]}',
             remote_path => '#{opts[:mount_remote_dir]}',
