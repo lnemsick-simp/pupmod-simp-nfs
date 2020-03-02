@@ -19,7 +19,7 @@ class nfs::server::config
     'nfsd'   => {
       'port'    => $nfs::server::nfsd_port,
       'vers2'   => false,
-      'vers3'   => $nfs::nfsv3,
+      'vers3'   => $nfs::server::nfsd_vers3,
       'vers4'   => $nfs::server::nfsd_vers4,
       'vers4.0' => $nfs::server::nfsd_vers4_0,
       'vers4.1' => $nfs::server::nfsd_vers4_1,

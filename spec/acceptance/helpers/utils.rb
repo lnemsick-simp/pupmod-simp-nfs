@@ -7,7 +7,8 @@ module Acceptance
       #
       # +config+: Hash of of mount options
       #  Hash keys:
-      #  * :nfsv3     - When true, nfs::client::mount::nfs_version is set to 3
+      #  * :nfsv3     - When true, nfs::client::mount::nfs_version is set to 3.
+      #                 Otherwise, the default will apply.
       #  * :nfs_sec   - Value of nfs::client::mount::sec
       #  * :nfsd_port - When set, value of nfs::client::mount::nfsd_port
       #                 Otherwise, the default will apply.

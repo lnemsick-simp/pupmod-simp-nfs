@@ -3,6 +3,16 @@
 # If using the `nfs::server::export` define, this will be automatically called
 # for you.
 #
+# @param nfsd_vers3
+#   Allow use of NFSv3
+#
+#   * Sets the `vers3` option in the `nfsd` section of `/etc/nfs.conf`
+#   * Set this to `false` when `$nfs::nfsv3` is `true`, `$nfs::is_client` is
+#     `true`, and you want the NFS client on this host to be able to create
+#     NFSv3 mounts from other hosts, but do **not** want other hosts to be able
+#     create NFSv3 mounts of filesystems exported by this host's NFS server.
+#     Otherwise, it should remain at the default value.
+#
 # @param nfsd_vers4
 #   Allow use of NFSv4
 #
@@ -117,6 +127,7 @@
 # @author https://github.com/simp/pupmod-simp-nfs/graphs/contributors
 #
 class nfs::server (
+  Boolean          $nfsd_vers3                    = $nfs::nfsv3,
   Boolean          $nfsd_vers4                    = true,
   Boolean          $nfsd_vers4_0                  = false,
   Boolean          $nfsd_vers4_1                  = true,

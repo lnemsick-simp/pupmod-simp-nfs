@@ -28,7 +28,7 @@ class nfs::server::tcpwrappers
     # Resource in common with nfs::client, which may be on this node.
     ensure_resource('tcpwrappers::allow', 'rpcbind', $_allow_options)
 
-    if $nfs::nfsv3 {
+    if $nfs::server::nfsd_vers3 {
       # Resource in common with nfs::client, which may be on this node.
       ensure_resource('tcpwrappers::allow', 'statd', $_allow_options)
 

@@ -23,6 +23,20 @@ describe 'nfs' do
             it { is_expected.to_not create_class('nfs::server::firewall::nfsv4') }
           end
 
+          context 'when nfsv3 only enabled for the NFS client' do
+            let(:hieradata) { 'nfs_nfsv3_and_not_nfs_server_nfsd_vers3' }
+            let(:params) { {
+              # nfs class params
+              :firewall  => true,
+              :stunnel   => true
+            }}
+
+            it { is_expected.to compile.with_all_deps }
+            it { is_expected.to create_class('nfs::server::firewall') }
+            it { is_expected.to_not create_class('nfs::server::firewall::nfsv3and4') }
+            it { is_expected.to_not create_class('nfs::server::firewall::nfsv4') }
+          end
+
           context 'when nfsv3 disabled' do
             let(:params) { {
               # nfs class params
@@ -48,9 +62,23 @@ describe 'nfs' do
               :firewall  => true,
               :stunnel   => false
             }}
+
             it { is_expected.to compile.with_all_deps }
             it { is_expected.to create_class('nfs::server::firewall::nfsv3and4') }
             it { is_expected.to_not create_class('nfs::server::firewall::nfsv4') }
+          end
+
+          context 'when nfsv3 only enabled for the NFS client' do
+            let(:hieradata) { 'nfs_nfsv3_and_not_nfs_server_nfsd_vers3' }
+            let(:params) { {
+              # nfs class params
+              :firewall  => true,
+              :stunnel   => false
+            }}
+
+            it { is_expected.to compile.with_all_deps }
+            it { is_expected.to_not create_class('nfs::server::firewall::nfsv3and4') }
+            it { is_expected.to create_class('nfs::server::firewall::nfsv4') }
           end
 
           context 'when nfsv3 disabled' do
@@ -61,6 +89,7 @@ describe 'nfs' do
               :firewall  => true,
               :stunnel   => false
             }}
+
             it { is_expected.to compile.with_all_deps }
             it { is_expected.to_not create_class('nfs::server::firewall::nfsv3and4') }
             it { is_expected.to create_class('nfs::server::firewall::nfsv4') }

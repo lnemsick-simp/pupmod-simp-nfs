@@ -106,6 +106,27 @@ describe 'nfs' do
 
         end
 
+        context 'when nfsv3 only enabled for the NFS client' do
+          let(:hieradata) { 'nfs_nfsv3_and_not_nfs_server_nfsd_vers3' }
+
+          it { is_expected.to compile.with_all_deps }
+          it { is_expected.to create_class('nfs::server::config') }
+          it { is_expected.to create_concat__fragment('nfs_conf_nfsd').with( {
+            :target  => '/etc/nfs.conf',
+            :content => <<~EOM
+
+              [nfsd]
+                port = 2049
+                vers2 = false
+                vers3 = false
+                vers4 = true
+                vers4.0 = false
+                vers4.1 = true
+                vers4.2 = true
+              EOM
+          } ) }
+        end
+
         context 'when stunnel enabled' do
           context 'when nfsd tcp and udp are not specified in custom config' do
             let(:params) {{
