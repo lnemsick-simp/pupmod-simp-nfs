@@ -18,51 +18,6 @@ module Acceptance
       end
 
       # Create a string that can be inserted into the body of a
-      # nfs::client::mount in a manifest and which contains mount option
-      #
-      # +config+: Hash of of mount options
-      #  Hash keys:
-      #  * :nfsv3     - When true, nfs::client::mount::nfs_version is set to 3.
-      #                 Otherwise, the default will apply.
-      #  * :nfs_sec   - Value of nfs::client::mount::sec
-      #  * :nfsd_port - When set, value of nfs::client::mount::nfsd_port
-      #                 Otherwise, the default will apply.
-      #  * :stunnel_nfsd_port - When set, value of
-      #                 nfs::client::mount::stunnel_nfsd_port. Otherwise,
-      #                 the default will apply
-      # * :mount_stunnel - When set, value of nfs::client::mount::stunnel.
-      #                  Otherwise, the default will apply.
-      #
-      def build_mount_options_old(config)
-        options = ''
-        if config[:nfsv3]
-          options += "  nfs_version => 3,\n"
-        end
-
-        if config[:nfs_sec]
-          options += "  sec         => #{config[:nfs_sec]},\n"
-        end
-
-        if config[:nfsd_port]
-          options += "  nfsd_port   => #{config[:nfsd_port]},\n"
-        end
-
-        if config[:stunnel_nfsd_port]
-          options += "  stunnel_nfsd_port => #{config[:stunnel_nfsd_port]},\n"
-        end
-
-        unless config[:mount_stunnel].nil?
-          if config[:mount_stunnel]
-            options += "  stunnel    => true,\n"
-          else
-            options += "  stunnel    => false,\n"
-          end
-        end
-
-        options
-      end
-
-      # Create a string that can be inserted into the body of a
       # nfs::client::mount in a manifest and which contains custom mount
       # options
       def build_custom_mount_options(opts)
