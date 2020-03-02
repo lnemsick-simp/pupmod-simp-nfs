@@ -91,7 +91,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
         end
 
         it 'should mount NFS share' do
-          on(client, %(grep -q '#{file_search_string}' #{opts[:mount_dir]}/#{file_basename}))
+          on(client, %(grep -q '#{file_search_string}' #{client_opts[:mount_dir]}/#{file_basename}))
         end
 
         if opts[:nfsv3]
@@ -117,7 +117,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
               lock_seconds = 1
               timeout_seconds = nfsd_grace_time + lock_seconds + 2
               Timeout::timeout(timeout_seconds) do
-                on(client, "date; flock  #{opts[:mount_dir]}/#{file_basename} -c 'sleep #{lock_seconds}'; date")
+                on(client, "date; flock  #{client_opts[:mount_dir]}/#{file_basename} -c 'sleep #{lock_seconds}'; date")
               end
             rescue Timeout::Error
               fail('Problem with NFSv3 connectivity during file lock')
@@ -146,7 +146,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
           end
 
           it 'mount should be re-established after client reboot' do
-            on(client, %(grep -q '#{file_search_string}' #{opts[:mount_dir]}/#{file_basename}))
+            on(client, %(grep -q '#{file_search_string}' #{client_opts[:mount_dir]}/#{file_basename}))
           end
 
           it 'server manifest should be idempotent after reboot' do
@@ -156,15 +156,15 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
           end
 
           it 'mount should be re-established after server reboot' do
-            on(client, %(grep -q '#{file_search_string}' #{opts[:mount_dir]}/#{file_basename}))
+            on(client, %(grep -q '#{file_search_string}' #{client_opts[:mount_dir]}/#{file_basename}))
           end
         end
 
         it 'should remove mount as prep for next test' do
           # use puppet resource instead of simple umount, in order to remove
           # persistent mount configuration
-          on(client, %{puppet resource mount #{opts[:mount_dir]} ensure=absent})
-          on(client, "rm -rf #{opts[:mount_dir]}")
+          on(client, %{puppet resource mount #{client_opts[:mount_dir]} ensure=absent})
+          on(client, "rm -rf #{client_opts[:mount_dir]}")
         end
       end
     end
