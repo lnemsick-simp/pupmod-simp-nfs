@@ -27,72 +27,23 @@
 
 shared_examples 'a multi-client NFS share' do |servers, client1, client2, opts|
   let(:exported_dir) { '/srv/nfs_share' }
-  let(:filename) { 'test_file' }
-  let(:file_content) { 'This is a test file' }
-  let(:server_manifest) {
-    <<~EOM
-      include 'ssh'
-
-      file { '#{exported_dir}':
-        ensure => 'directory',
-        owner  => 'root',
-        group  => 'root',
-        mode   => '0644'
-      }
-
-      file { '#{exported_dir}/#{filename}':
-
-        ensure  => 'file',
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0644',
-        content => '#{file_content}',
-      }
-
-      nfs::server::export { 'nfs_root':
-        clients     => ['*'],
-        export_path => '/srv/nfs_share',
-        sec         => ['#{opts[:server_config][:export_sec]}'],
-        insecure    => #{opts[:server_config][:export_insecure].to_s}
-      }
-
-      File['#{exported_dir}'] -> Nfs::Server::Export['nfs_root']
-    EOM
-  }
+  let(:file_basename) { 'test_file' }
+  let(:file_search_string) { 'This is a test file' }
 
   servers.each do |server|
     context "with NFS server #{server}" do
-      let(:mount_dir) { "/mnt/#{server}" }
-      let(:server_ip) {
-        info = internal_network_info(server)
-        expect(info[:ip]).to_not be_nil
-        info[:ip]
-      }
+      let(:server_opts) {{
+        :is_server             => true,
+        :is_client             => false,
+        :nfsv3                 => opts[:server_config][:nfsv3],
+        :exported_dir          => exported_dir,
+        :exported_file         => File.join(exported_dir, file_basename),
+        :exported_file_content => "#{file_search_string} from #{exported_dir}",
+        :export_sec            => opts[:server_config][:export_sec],
+        :export_insecure       => opts[:server_config][:export_insecure]
+      }}
 
-      let(:client_manifest_base) {
-        <<~EOM
-          include 'ssh'
-
-          $mount_dir = '#{mount_dir}'
-
-          nfs::client::mount { $mount_dir:
-            nfs_server  => '#{server_ip}',
-            remote_path => '#{exported_dir}',
-            autofs      => false,
-          #MOUNT_OPTIONS#
-          }
-
-          # mount directory must exist if not using autofs
-          file { $mount_dir:
-            ensure => 'directory',
-            owner  => 'root',
-            group  => 'root',
-            mode   => '0644'
-          }
-
-          File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
-        EOM
-      }
+      let(:server_manifest) { create_export_manifest(server_opts) }
 
       context "as the NFS server #{server}" do
         it 'should ensure vagrant connectivity' do
@@ -100,9 +51,7 @@ shared_examples 'a multi-client NFS share' do |servers, client1, client2, opts|
         end
 
         it 'should apply server manifest to export' do
-          server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-          server_hieradata['nfs::is_client'] = false
-          server_hieradata['nfs::is_server'] = true
+          server_hieradata = build_host_hiera(opts[:base_hiera], server_opts)
           set_hieradata_on(server, server_hieradata)
           print_test_config(server_hieradata, server_manifest)
           apply_manifest_on(server, server_manifest, :catch_failures => true)
@@ -123,16 +72,22 @@ shared_examples 'a multi-client NFS share' do |servers, client1, client2, opts|
       }.each do |client,config|
 
         context "as NFS client #{client}" do
-          let(:client_manifest) {
-            client_manifest = client_manifest_base.dup
-            client_manifest.gsub!('#MOUNT_OPTIONS#', build_mount_options_old(config))
-            client_manifest
-          }
+          let(:client_opts) {{
+            :is_server         => false,
+            :is_client         => true,
+            :nfsv3             => (config[:nfs_version] == 3),
+            :mount_dir         => "/mnt/#{server.to_s}-#{File.basename(exported_dir)}",
+            :mount_server_ip   => internal_network_info(server)[:ip],
+            :mount_remote_dir  => exported_dir,
+            :mount_nfs_version => config[:nfs_version],
+            :mount_sec         => config[:sec],
+            :mount_stunnel     => config[:stunnel]
+          }}
+
+          let(:client_manifest) { create_static_mount_manifest(client_opts) }
 
           it 'should apply client manifest to mount a dir from the server' do
-            client_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-            client_hieradata['nfs::is_client'] = true
-            client_hieradata['nfs::is_server'] = false
+            client_hieradata = build_host_hiera(opts[:base_hiera], client_opts)
             set_hieradata_on(client, client_hieradata)
             print_test_config(client_hieradata, client_manifest)
             apply_manifest_on(client, client_manifest, :catch_failures => true)
@@ -143,12 +98,13 @@ shared_examples 'a multi-client NFS share' do |servers, client1, client2, opts|
           end
 
           it "should mount NFS share from #{server}" do
-            on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+           on(client, %(grep -q '#{file_search_string}' #{client_opts[:mount_dir]}/#{file_basename}))
           end
         end
       end
 
       context 'test clean up' do
+        let(:mount_dir) { "/mnt/#{server.to_s}-#{File.basename(exported_dir)}" }
         it 'should remove mount as prep for next test' do
           # use puppet resource instead of simple umount, in order to remove
           # persistent mount configuration

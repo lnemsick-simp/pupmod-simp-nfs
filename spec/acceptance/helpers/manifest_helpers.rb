@@ -75,6 +75,14 @@ module Acceptance
           options += "  sec         => #{opts[:mount_sec]},\n"
         end
 
+        unless opts[:mount_autodetect_remote].nil?
+          if opts[:mount_autodetect_remote]
+            options += "  autodetect_remote => true,\n"
+          else
+            options += "  autodetect_remote => false,\n"
+          end
+        end
+
         if opts[:mount_nfsd_port]
           options += "  nfsd_port   => #{opts[:mount_nfsd_port]},\n"
         end
@@ -85,9 +93,9 @@ module Acceptance
 
         unless opts[:mount_stunnel].nil?
           if opts[:mount_stunnel]
-            options += "  stunnel    => true,\n"
+            options += "  stunnel     => true,\n"
           else
-            options += "  stunnel    => false,\n"
+            options += "  stunnel     => false,\n"
           end
         end
 

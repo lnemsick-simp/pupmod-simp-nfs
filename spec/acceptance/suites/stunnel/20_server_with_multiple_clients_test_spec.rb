@@ -80,8 +80,9 @@ describe 'nfs server with multiple clients' do
 
   context 'client mounting from 1 NFSv4 server via stunnel and 1 NFSv3 server directly' do
     opts = {
-      :base_hiera      => base_hiera.merge( { 'nfs::nfsv3' => true } ),
+      :base_hiera      => base_hiera,
       :server_config   => {
+        :nfsv3           => true,  # NFSv3 and NFSv4
         :export_insecure => true,  # server allows mount via NFSv4 stunnel
         :export_sec      => 'sys'  # server export NFS sec setting
       },
@@ -102,8 +103,9 @@ describe 'nfs server with multiple clients' do
 
   context 'client mounting from 2 NFSv3 servers directly' do
     opts = {
-      :base_hiera      => base_hiera.merge( { 'nfs::nfsv3' => true } ),
+      :base_hiera      => base_hiera,
       :server_config   => {
+        :nfsv3           => true,  # NFSv3 and NFSv4
         :export_insecure => true,  # server allows mount via NFSv4 stunnel
         :export_sec      => 'sys'  # server export NFS sec setting
       },

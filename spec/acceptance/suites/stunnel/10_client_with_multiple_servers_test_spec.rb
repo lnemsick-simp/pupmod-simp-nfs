@@ -61,8 +61,8 @@ describe 'nfs client with multiple servers' do
       :server1_config => {
         :server_ip         => internal_network_info(server1)[:ip],
         :nfsv3             => false, # NFSv4 only
-        :nfsd_port         => nil,   # use default of 2049
-        :stunnel_nfsd_port => nil,   # use default of 20490
+        :nfsd_port         => 2049,
+        :stunnel_nfsd_port => 20490,
         :exported_dir      => '/srv/home',
         :export_insecure   => true,
         :export_sec        => 'sys',
@@ -71,7 +71,7 @@ describe 'nfs client with multiple servers' do
         :server_ip         => internal_network_info(server2)[:ip],
         :nfsv3             => false, # NFSv4 only
         :nfsd_port         => 2150,  # avoid port conflict with server1
-        :stunnel_nfsd_port => 21500, #
+        :stunnel_nfsd_port => 21500,
         :exported_dir      => '/srv/apps',
         :export_insecure   => true,
         :export_sec        => 'sys',
@@ -95,8 +95,8 @@ describe 'nfs client with multiple servers' do
       :server1_config => {
         :server_ip         => internal_network_info(server1)[:ip],
         :nfsv3             => false, # NFSv4 only
-        :nfsd_port         => nil,   # use default of 2049
-        :stunnel_nfsd_port => nil,   # use default of 20490
+        :nfsd_port         => 2049,
+        :stunnel_nfsd_port => 20490,
         :exported_dir      => '/srv/home',
         :export_insecure   => true,
         :export_sec        => 'sys',
@@ -129,8 +129,8 @@ describe 'nfs client with multiple servers' do
       :server1_config => {
         :server_ip         => internal_network_info(server1)[:ip],
         :nfsv3             => true,  # NFSv3 and NFSv4
-        :nfsd_port         => nil,   # use default of 2049
-        :stunnel_nfsd_port => nil,   # use default of 20490
+        :nfsd_port         => 2049,
+        :stunnel_nfsd_port => 20490,
         :exported_dir      => '/srv/home',
         :export_insecure   => true,
         :export_sec        => 'sys',
@@ -139,7 +139,7 @@ describe 'nfs client with multiple servers' do
         :server_ip         => internal_network_info(server2)[:ip],
         :nfsv3             => true,  # NFSv3 and NFSv4
         :nfsd_port         => 2150,  # avoid port conflict with server1
-        :stunnel_nfsd_port => 21500, #
+        :stunnel_nfsd_port => 21500,
         :exported_dir      => '/srv/apps',
         :export_insecure   => true,
         :export_sec        => 'sys',

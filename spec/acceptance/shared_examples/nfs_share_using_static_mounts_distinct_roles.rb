@@ -14,88 +14,33 @@
 #                     after individually rebooting the client and server
 #                     in each test pair
 #
-# NOTE:  The following token substitutions are supported in the :client_custom
-#  manifest:
-#
-#  * #MOUNT_DIR#
-#  * #SERVER_IP#
-#
 shared_examples 'a NFS share using static mounts with distinct client/server roles' do |servers, clients, opts|
   let(:exported_dir) { '/srv/nfs_share' }
-  let(:filename) { 'test_file' }
-  let(:file_content) { 'This is a test file' }
-  let(:server_manifest) {
-    <<~EOM
-      include 'ssh'
-
-      file { '#{exported_dir}':
-        ensure => 'directory',
-        owner  => 'root',
-        group  => 'root',
-        mode   => '0644'
-      }
-
-      file { '#{exported_dir}/#{filename}':
-        ensure  => 'file',
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0644',
-        content => '#{file_content}',
-      }
-
-      nfs::server::export { 'nfs_root':
-        clients     => ['*'],
-        export_path => '#{exported_dir}',
-        sec         => ['#{opts[:nfs_sec]}'],
-        insecure    => #{opts[:export_insecure]}
-      }
-
-      File['#{exported_dir}'] -> Nfs::Server::Export['nfs_root']
-
-      #{opts[:server_custom]}
-    EOM
-  }
-
-  let(:nfs_version) { opts[:nfsv3] ? 3 : 4 }
-  let(:client_manifest_base) {
-    <<~EOM
-      include 'ssh'
-
-      $mount_dir = '#MOUNT_DIR#'
-
-      nfs::client::mount { $mount_dir:
-        nfs_server  => '#SERVER_IP#',
-        nfs_version => #{nfs_version},
-        remote_path => '#{exported_dir}',
-        sec         => '#{opts[:nfs_sec]}',
-        autofs      => false
-      }
-
-      # mount directory must exist if not using autofs
-      file { $mount_dir:
-        ensure => 'directory',
-        owner  => 'root',
-        group  => 'root',
-        mode   => '0644'
-      }
-
-      File[$mount_dir] -> Nfs::Client::Mount[$mount_dir]
-
-      #{opts[:client_custom]}
-    EOM
-  }
+  let(:file_basename) { 'test_file' }
+  let(:file_search_string) { 'This is a test file' }
 
   servers.each do |server|
     context "as just a NFS server #{server}" do
+      let(:server_opts) {{
+        :is_server             => true,
+        :is_client             => false,
+        :nfsv3                 => opts[:nfsv3],
+        :exported_dir          => exported_dir,
+        :exported_file         => File.join(exported_dir, file_basename),
+        :exported_file_content => "#{file_search_string} from #{exported_dir}",
+        :export_sec            => opts[:nfs_sec],
+        :export_insecure       => opts[:export_insecure],
+        :server_custom         => opts[:server_custom]
+      }}
+
+      let(:server_manifest) { create_export_manifest(server_opts) }
+
       it 'should ensure vagrant connectivity' do
         on(hosts, 'date')
       end
 
       it 'should apply server manifest to export' do
-        server_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-        server_hieradata['nfs::is_client'] = false
-        server_hieradata['nfs::is_server'] = true
-        server_hieradata['nfs::nfsv3'] = opts[:nfsv3]
+        server_hieradata = build_host_hiera(opts[:base_hiera], server_opts)
         set_hieradata_on(server, server_hieradata)
         print_test_config(server_hieradata, server_manifest)
         apply_manifest_on(server, server_manifest, :catch_failures => true)
@@ -115,25 +60,27 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
   clients.each do |client|
     servers.each do |server|
       context "as just a NFS client #{client} using NFS server #{server}" do
-        let(:server_ip) {
-          info = internal_network_info(server)
-          expect(info[:ip]).to_not be_nil
-          info[:ip]
-        }
+        let(:client_opts) {{
+          :is_server         => false,
+          :is_client         => true,
+          :nfsv3             => opts[:nfsv3],
+          :mount_dir         => "/mnt/#{server.to_s}-#{File.basename(exported_dir)}",
+          :mount_server_ip   => internal_network_info(server)[:ip],
+          :mount_remote_dir  => exported_dir,
+          :mount_nfs_version => (opts[:nfsv3] ? 3 : 4),
+          :mount_sec         => opts[:nfs_sec]
+        }}
 
-        let(:mount_dir) { "/mnt/#{server}" }
         let(:client_manifest) {
-          client_manifest = client_manifest_base.dup
-          client_manifest.gsub!('#MOUNT_DIR#', mount_dir)
-          client_manifest.gsub!('#SERVER_IP#', server_ip)
-          client_manifest
+          <<~EOM
+            #{create_static_mount_manifest(client_opts)}
+
+            #{opts[:client_custom]}
+          EOM
         }
 
         it "should apply client manifest to mount dir from #{server}" do
-          client_hieradata = Marshal.load(Marshal.dump(opts[:base_hiera]))
-          client_hieradata['nfs::is_client'] = true
-          client_hieradata['nfs::is_server'] = false
-          client_hieradata['nfs::nfsv3'] = opts[:nfsv3]
+          client_hieradata = build_host_hiera(opts[:base_hiera], client_opts)
           set_hieradata_on(client, client_hieradata)
           print_test_config(client_hieradata, client_manifest)
           apply_manifest_on(client, client_manifest, :catch_failures => true)
@@ -144,7 +91,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
         end
 
         it 'should mount NFS share' do
-          on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+          on(client, %(grep -q '#{file_search_string}' #{opts[:mount_dir]}/#{file_basename}))
         end
 
         if opts[:nfsv3]
@@ -170,7 +117,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
               lock_seconds = 1
               timeout_seconds = nfsd_grace_time + lock_seconds + 2
               Timeout::timeout(timeout_seconds) do
-                on(client, "date; flock  #{mount_dir}/#{filename} -c 'sleep #{lock_seconds}'; date")
+                on(client, "date; flock  #{opts[:mount_dir]}/#{file_basename} -c 'sleep #{lock_seconds}'; date")
               end
             rescue Timeout::Error
               fail('Problem with NFSv3 connectivity during file lock')
@@ -199,7 +146,7 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
           end
 
           it 'mount should be re-established after client reboot' do
-            on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+            on(client, %(grep -q '#{file_search_string}' #{opts[:mount_dir]}/#{file_basename}))
           end
 
           it 'server manifest should be idempotent after reboot' do
@@ -209,15 +156,15 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
           end
 
           it 'mount should be re-established after server reboot' do
-            on(client, %(grep -q '#{file_content}' #{mount_dir}/#{filename}))
+            on(client, %(grep -q '#{file_search_string}' #{opts[:mount_dir]}/#{file_basename}))
           end
         end
 
         it 'should remove mount as prep for next test' do
           # use puppet resource instead of simple umount, in order to remove
           # persistent mount configuration
-          on(client, %{puppet resource mount #{mount_dir} ensure=absent})
-          on(client, "rm -rf #{mount_dir}")
+          on(client, %{puppet resource mount #{opts[:mount_dir]} ensure=absent})
+          on(client, "rm -rf #{opts[:mount_dir]}")
         end
       end
     end
