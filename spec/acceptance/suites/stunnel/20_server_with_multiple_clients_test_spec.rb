@@ -88,12 +88,12 @@ describe 'nfs server with multiple clients' do
       :mount1_config   => {
         :nfs_version => 4,     # client1 mount with NFSv4
         :sec         => 'sys', # client1 mount NFS sec setting
-        :stunnel     => true   # client1 mount enable stunnel
+        :stunnel     => nil    # client1 mount, stunnel enabled by default
       },
       :mount2_config   => {
         :nfs_version => 3,     # client2 mount with NFSv3
         :sec         => 'sys', # client2 mount NFS sec setting
-        :stunnel     => false  # client2 mount disable stunnel (required for NFSv3)
+        :stunnel     => nil    # client2 mount, stunnel automatically disabled
       }
     }
 
@@ -110,12 +110,12 @@ describe 'nfs server with multiple clients' do
       :mount1_config   => {
         :nfs_version => 3,     # client1 mount with NFSv3
         :sec         => 'sys', # client1 mount NFS sec setting
-        :stunnel     => false  # client1 mount disable stunnel (required for NFSv3)
+        :stunnel     => false  # client2 mount disable stunnel
       },
       :mount2_config   => {
         :nfs_version => 3,     # client2 mount with NFSv3
         :sec         => 'sys', # client2 mount NFS sec setting
-        :stunnel     => false  # client2 mount disable stunnel (required for NFSv3)
+        :stunnel     => false  # client2 mount disable stunnel
       }
     }
 
