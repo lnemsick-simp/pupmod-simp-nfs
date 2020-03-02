@@ -58,22 +58,32 @@ describe 'nfs client with multiple servers' do
   context 'client mounting from 2 NFSv4 servers, both via stunnel' do
     opts = {
       :base_hiera => base_hiera,
-      :config1    => {
-        :export_insecure   => true,  # server allows mount via NFSv4 stunnel
-        :nfsv3             => false, # server NFSv4 only, client mount NFSv4
-        :nfs_sec           => 'sys', # NFS sec setting for server export & client mount
-        :nfsd_port         => nil,   # server config & client mount use default of 2049
-        :stunnel_nfsd_port => nil,   # server config & client mount use default of 20490
-        :mount_stunnel     => nil    # client mount use simp_options::stunnel default, true
+      :server1_config => {
+        :server_ip         => internal_network_info(server1)[:ip],
+        :nfsv3             => false, # NFSv4 only
+        :nfsd_port         => nil,   # use default of 2049
+        :stunnel_nfsd_port => nil,   # use default of 20490
+        :exported_dir      => '/srv/home',
+        :export_insecure   => true,
+        :export_sec        => 'sys',
       },
-      :config2    => {
-        :export_insecure   => true,  # server allows mount via NFSv4 stunnel
-        :nfsv3             => false, # server NFSv4, client mount NFSv4
-        :nfs_sec           => 'sys', # NFS sec setting for server export & client mount
-        :nfsd_port         => 2150,  # server config & client mount, avoid port conflict with server1
-        :stunnel_nfsd_port => 21500, # server config & client mount
-        :mount_stunnel     => nil    # client mount use simp_options::stunnel default, true
+      :server2_config => {
+        :server_ip         => internal_network_info(server2)[:ip],
+        :nfsv3             => false, # NFSv4 only
+        :nfsd_port         => 2150,  # avoid port conflict with server1
+        :stunnel_nfsd_port => 21500, #
+        :exported_dir      => '/srv/apps',
+        :export_insecure   => true,
+        :export_sec        => 'sys',
       },
+      # applies to all clients
+      :client_config => {
+        :nfsv3             => false, # NFSv4 only
+        # index 0 => server1 mount, index 1 => server 2 mount
+        :mount_nfs_version => [4, 4],
+        :mount_sec         => ['sys', 'sys'],
+        :mount_stunnel     => [nil, nil] # use default of true
+      }
     }
 
     it_behaves_like 'a multi-server NFS share', server1, server2, clients, opts
@@ -82,21 +92,31 @@ describe 'nfs client with multiple servers' do
   context 'client mounting from 1 NFSv4 server via stunnel and 1 NFSv3 server directly' do
     opts = {
       :base_hiera => base_hiera,
-      :config1    => {
-        :export_insecure   => true,  # server allows mount via NFSv4 stunnel
-        :nfsv3             => false, # server NFSv4, client mount NFSv4
-        :nfs_sec           => 'sys', # NFS sec setting for server export & client mount
-        :nfsd_port         => nil,   # server config & client mount use default=2049
-        :stunnel_nfsd_port => nil,   # server config & client mount use default of 20490
-        :mount_stunnel     => nil    # client mount use simp_options::stunnel default, true
+      :server1_config => {
+        :server_ip         => internal_network_info(server1)[:ip],
+        :nfsv3             => false, # NFSv4 only
+        :nfsd_port         => nil,   # use default of 2049
+        :stunnel_nfsd_port => nil,   # use default of 20490
+        :exported_dir      => '/srv/home',
+        :export_insecure   => true,
+        :export_sec        => 'sys',
       },
-      :config2    => {
-        :export_insecure   => true,  # server allows mount via NFSv4 stunnel
-        :nfsv3             => true,  # server NFSv3 and NFSv4, client mount NFSv3
-        :nfs_sec           => 'sys', # NFS sec setting for server export & client mount
-        :nfsd_port         => 2150,  # server config & client mount; avoid port conflict with server1
-        :stunnel_nfsd_port => 21500, # N/A in non-tunneled mount
-        :mount_stunnel     => false  # client mount stunnel override required for NFSv3
+      :server2_config => {
+        :server_ip         => internal_network_info(server2)[:ip],
+        :nfsv3             => true, # NFSv3 and NFSv4
+        :nfsd_port         => 2150,  # avoid port conflict with server1
+        :stunnel_nfsd_port => 21500, #
+        :exported_dir      => '/srv/apps',
+        :export_insecure   => true,
+        :export_sec        => 'sys',
+      },
+      # applies to all clients
+      :client_config => {
+        :nfsv3             => true, # NFSv3 and NFSv4
+        # index 0 => server1 mount, index 1 => server 2 mount
+        :mount_nfs_version => [4, 3],
+        :mount_sec         => ['sys', 'sys'],
+        :mount_stunnel     => [true, false]
       }
     }
 
@@ -106,23 +126,31 @@ describe 'nfs client with multiple servers' do
   context 'client mounting from 2 NFSv3 servers directly' do
     opts = {
       :base_hiera => base_hiera,
-      :config1    => {
-        :export_insecure   => true,  # server allows mount via NFSv4 stunnel
-        :nfsv3             => true,  # server NFSv3 and NFSv4, client mount NFSv3
-        :nfs_sec           => 'sys', # NFS sec setting for server export & client mount
-        :nfsd_port         => nil,   # server config & client mount, use default=2049
-        :stunnel_nfsd_port => nil,   # N/A in non-tunneled mount
-        :mount_stunnel     => false  # client mount stunnel override required for NFSv3
+      :server1_config => {
+        :server_ip         => internal_network_info(server1)[:ip],
+        :nfsv3             => true,  # NFSv3 and NFSv4
+        :nfsd_port         => nil,   # use default of 2049
+        :stunnel_nfsd_port => nil,   # use default of 20490
+        :exported_dir      => '/srv/home',
+        :export_insecure   => true,
+        :export_sec        => 'sys',
       },
-      :config2    => {
-        :export_insecure   => true,  # server allows mount via NFSv4 stunnel
-        :nfsv3             => true,  # server NFSv3 and NFSv4, client mount NFSv3
-        :nfs_sec           => 'sys', # NFS sec setting for server export & client mount
-        :nfsd_port         => nil,   # server config & client mount, use default=2049;
-                                     # ONLY use default port becaudes ONLY using NFSv3.
-                                     # Otherwise would conflict with server 1.
-        :stunnel_nfsd_port => nil,   # N/A in non-tunneled mount
-        :mount_stunnel     => false  # client mount stunnel override required for NFSv3
+      :server2_config => {
+        :server_ip         => internal_network_info(server2)[:ip],
+        :nfsv3             => true,  # NFSv3 and NFSv4
+        :nfsd_port         => 2150,  # avoid port conflict with server1
+        :stunnel_nfsd_port => 21500, #
+        :exported_dir      => '/srv/apps',
+        :export_insecure   => true,
+        :export_sec        => 'sys',
+      },
+      # applies to all clients
+      :client_config => {
+        :nfsv3             => true, # NFSv3 and NFSv4
+        # index 0 => server1 mount, index 1 => server 2 mount
+        :mount_nfs_version => [3, 3],
+        :mount_sec         => ['sys', 'sys'],
+        :mount_stunnel     => [false, false]
       }
     }
 

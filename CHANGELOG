@@ -25,7 +25,7 @@
     - Move simp-autofs, simp-krb5, simp-iptables, simp-stunnel, and
       simp-tcpwrappers to simp/optional_dependencies in the metadata.json.
   - nfs::client
-    - Added support for pNFS.  Set $blkmap to true to enable the pNFS service,
+    - Added support for pNFS:  Set $blkmap to true to enable the pNFS service,
       nfs-blkmap.service.
     - Added $nfs::stunnel_socket_options and $stunnel_wantedby parameters which
       provide the defaults for all nfs::client::mount instances.
@@ -43,9 +43,9 @@
       specified, an indirect mount is specified with $name as the mount point
       and $autofs_indirect_map_key as the mount key.
     - Renamed $autofs_map_to_user to $autofs_add_key_subst to better reflect
-      automount terminology. This parameter simply added key substitution
+      automount terminology. This parameter simply adds key substitution
       to the remote location, which although can be used for user home
-      directories is not restricted to that use case.
+      directories, is not restricted to that use case.
     - Renamed $port to $nfsd_port to be consistent with the name of that
       parameter throughout the entire module.
     - Renamed $v4_remote_port to $stunnel_nfsd_port for clarity and to be
@@ -59,12 +59,13 @@
       module to this API.  User can now specify $stunnel_accept_address,
       $stunnel_nfsd_acccept_port, $stunnel_socket_options, $stunnel_verify,
       and $stunnel_wantedby in this class.  When unspecified, the defaults
-      for all but $stunnel_accept_address and $stunnel_wantedby from the nfs
-      class are used.
+      for all but $stunnel_accept_address and $stunnel_wantedby are pulled
+      from the nfs class.
     - Added the following parameters: $nfsd_vers4, $nfsd_vers4_0,
       $nfsd_vers4_1, $nfsd_vers4_2, and $custom_rpcrquotad_opts.
+    - Renamed $nfsv3 to $nfsd_vers3 to reflect its use in /etc/nfs.conf.
     - Moved nfs::rpcquotad_port to this class and renamed $rpcrquotadopts
-      to $custom_rpcrquotad_opts for clarity
+      to $custom_rpcrquotad_opts for clarity.
     - Moved nfs::mountd_port to this class and removed $rpcmountdopts.
       Custom configuration for that daemon should now be made via
       $nfs::custom_nfs_conf_opts or $nfs::custom_daemon_args as appropriate.

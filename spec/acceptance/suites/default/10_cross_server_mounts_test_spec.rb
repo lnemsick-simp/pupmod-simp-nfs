@@ -2,6 +2,11 @@ require 'spec_helper_acceptance'
 
 test_name 'cross-mounted NFS servers plus clients'
 
+# Tests complex configuration of 2 servers and an array of clients:
+# * NFS server 1 mounts a directory from NFS server 2
+# * NFS server 2 mounts a directory from NFS server 1
+# * Each NFS client mounts directories from both NFS servers
+
 describe 'cross-mounted NFS servers plus clients' do
 
   servers = hosts_with_role( hosts, 'nfs_server' )
@@ -41,10 +46,7 @@ describe 'cross-mounted NFS servers plus clients' do
     opts = {
       :base_hiera => base_hiera,
       :server1_config => {
-        :server_name       => server1.to_s,
         :server_ip         => internal_network_info(server1)[:ip],
-        :nfsd_port         => nil, # used default of 2049
-        :stunnel_nfsd_port => nil, # N/A
         :exported_dir      => '/srv/home',
         :export_insecure   => false,
         :export_sec        => 'sys',
@@ -53,10 +55,7 @@ describe 'cross-mounted NFS servers plus clients' do
         :mount_stunnel     => false
       },
       :server2_config => {
-        :server_name       => server2.to_s,
         :server_ip         => internal_network_info(server2)[:ip],
-        :nfsd_port         => nil, # used default of 2049
-        :stunnel_nfsd_port => nil, # N/A
         :exported_dir      => '/srv/apps',
         :export_insecure   => false,
         :export_sec        => 'sys',
@@ -64,7 +63,9 @@ describe 'cross-mounted NFS servers plus clients' do
         :mount_sec         => 'sys',
         :mount_stunnel     => false
       },
+      # applies to all clients
       :client_config => {
+        # index 0 => server1 mount, index 1 => server 2 mount
         :mount_nfs_version => [4, 4],
         :mount_sec         => ['sys', 'sys'],
         :mount_stunnel     => [false, false]

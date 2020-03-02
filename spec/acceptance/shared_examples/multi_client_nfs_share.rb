@@ -125,7 +125,7 @@ shared_examples 'a multi-client NFS share' do |servers, client1, client2, opts|
         context "as NFS client #{client}" do
           let(:client_manifest) {
             client_manifest = client_manifest_base.dup
-            client_manifest.gsub!('#MOUNT_OPTIONS#', build_mount_options(config))
+            client_manifest.gsub!('#MOUNT_OPTIONS#', build_mount_options_old(config))
             client_manifest
           }
 
