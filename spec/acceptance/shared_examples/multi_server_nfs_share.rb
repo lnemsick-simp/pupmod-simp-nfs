@@ -37,35 +37,6 @@
 #   the default will apply.
 #
 
-def build_mount_port_options(config)
-  options = ''
-  if config[:nfsv3]
-    options += "  nfs_version => 3,\n"
-  end
-
-  if config[:nfs_sec]
-    options += "  sec         => #{config[:nfs_sec]},\n"
-  end
-
-  if config[:nfsd_port]
-    options += "  nfsd_port   => #{config[:nfsd_port]},\n"
-  end
-
-  if config[:stunnel_nfsd_port]
-    options += "  stunnel_nfsd_port => #{config[:stunnel_nfsd_port]},\n"
-  end
-
-  unless config[:mount_stunnel].nil?
-    if config[:mount_stunnel]
-      options += "  stunnel    => true,\n"
-    else
-      options += "  stunnel    => false,\n"
-    end
-  end
-
-  options
-end
-
 def build_server_hieradata(base_hiera, config)
   hiera = Marshal.load(Marshal.dump(base_hiera))
   hiera['nfs::is_client'] = false
@@ -120,8 +91,8 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
     EOM
   }
 
-  let(:mount_port_options1) { build_mount_port_options(opts[:config1]) }
-  let(:mount_port_options2) { build_mount_port_options(opts[:config2]) }
+  let(:mount_options1) { build_mount_options(opts[:config1]) }
+  let(:mount_options2) { build_mount_options(opts[:config2]) }
 
   let(:client_manifest_base) {
     <<~EOM
@@ -133,7 +104,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
         nfs_server  => '#SERVER1_IP#',
         remote_path => '#{exported_dir1}',
         autofs      => false,
-      #{mount_port_options1}
+      #{mount_options1}
       }
 
       # mount directory must exist if not using autofs
@@ -152,7 +123,7 @@ shared_examples 'a multi-server NFS share' do |server1, server2, clients, opts|
         nfs_server  => '#SERVER2_IP#',
         remote_path => '#{exported_dir2}',
         autofs      => false,
-      #{mount_port_options2}
+      #{mount_options2}
       }
 
       # mount directory must exist if not using autofs

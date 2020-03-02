@@ -76,7 +76,7 @@ describe 'nfs stunnel' do
       :export_insecure         => true,
       :nfs_sec                 => 'sys',
       :nfsv3                   => false,
-      :mount_autodetect_remote => [ false ],
+      :mount_autodetect_remote => [ false ], # this is immaterial when using stunnel
       :verify_reboot           => true
     }
 

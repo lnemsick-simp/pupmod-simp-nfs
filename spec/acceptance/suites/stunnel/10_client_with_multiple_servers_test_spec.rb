@@ -8,7 +8,7 @@ test_name 'nfs client with multiple servers'
 #################################################################
 
 # Tests stunneling between an individual NFS client and 2 NFS server.
-# Verifies client can support a mix of NFSv4 (stunneled) and NFSv3 (direct)
+# Verifies client can have a mix of NFSv4 (stunneled) and NFSv3 (direct)
 # mounts.
 
 describe 'nfs client with multiple servers' do
@@ -118,7 +118,9 @@ describe 'nfs client with multiple servers' do
         :export_insecure   => true,  # server allows mount via NFSv4 stunnel
         :nfsv3             => true,  # server NFSv3 and NFSv4, client mount NFSv3
         :nfs_sec           => 'sys', # NFS sec setting for server export & client mount
-        :nfsd_port         => 2150,  # server config & client mount, avoid port conflict with server1
+        :nfsd_port         => nil,   # server config & client mount, use default=2049;
+                                     # ONLY use default port becaudes ONLY using NFSv3.
+                                     # Otherwise would conflict with server 1.
         :stunnel_nfsd_port => nil,   # N/A in non-tunneled mount
         :mount_stunnel     => false  # client mount stunnel override required for NFSv3
       }

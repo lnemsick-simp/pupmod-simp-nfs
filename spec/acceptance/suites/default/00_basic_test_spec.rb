@@ -56,7 +56,7 @@ describe 'nfs basic' do
         :export_insecure         => false,
         :nfs_sec                 => 'sys',
         :nfsv3                   => true,
-        :mount_autodetect_remote => [ true, false ],
+        :mount_autodetect_remote => [ true, false ], # used in combined client/server test
         :verify_reboot           => true
       }
 

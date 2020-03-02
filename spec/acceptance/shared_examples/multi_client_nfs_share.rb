@@ -25,35 +25,6 @@
 #                     to a server
 #
 
-def build_mount_options(config)
-  options = ''
-  if config[:nfsv3]
-    options += "  nfs_version => 3,\n"
-  end
-
-  if config[:nfs_sec]
-    options += "  sec         => #{config[:nfs_sec]},\n"
-  end
-
-  if config[:nfsd_port]
-    options += "  nfsd_port   => #{config[:nfsd_port]},\n"
-  end
-
-  if config[:stunnel_nfsd_port]
-    options += "  stunnel_nfsd_port => #{config[:stunnel_nfsd_port]},\n"
-  end
-
-  unless config[:stunnel].nil?
-    if config[:stunnel]
-      options += "  stunnel    => true,\n"
-    else
-      options += "  stunnel    => false,\n"
-    end
-  end
-
-  options
-end
-
 shared_examples 'a multi-client NFS share' do |servers, client1, client2, opts|
   let(:exported_dir) { '/srv/nfs_share' }
   let(:filename) { 'test_file' }
@@ -150,7 +121,7 @@ shared_examples 'a multi-client NFS share' do |servers, client1, client2, opts|
         client1 => opts[:mount1_config],
         client2 => opts[:mount2_config]
       }.each do |client,config|
- 
+
         context "as NFS client #{client}" do
           let(:client_manifest) {
             client_manifest = client_manifest_base.dup
