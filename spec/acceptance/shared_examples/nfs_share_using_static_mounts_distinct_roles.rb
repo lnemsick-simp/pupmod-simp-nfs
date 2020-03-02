@@ -19,21 +19,22 @@ shared_examples 'a NFS share using static mounts with distinct client/server rol
   let(:file_basename) { 'test_file' }
   let(:file_search_string) { 'This is a test file' }
 
+  let(:server_opts) {{
+    :is_server             => true,
+    :is_client             => false,
+    :nfsv3                 => opts[:nfsv3],
+    :exported_dir          => exported_dir,
+    :exported_file         => File.join(exported_dir, file_basename),
+    :exported_file_content => "#{file_search_string} from #{exported_dir}",
+    :export_sec            => opts[:nfs_sec],
+    :export_insecure       => opts[:export_insecure],
+    :server_custom         => opts[:server_custom]
+  }}
+
+  let(:server_manifest) { create_export_manifest(server_opts) }
+
   servers.each do |server|
     context "as just a NFS server #{server}" do
-      let(:server_opts) {{
-        :is_server             => true,
-        :is_client             => false,
-        :nfsv3                 => opts[:nfsv3],
-        :exported_dir          => exported_dir,
-        :exported_file         => File.join(exported_dir, file_basename),
-        :exported_file_content => "#{file_search_string} from #{exported_dir}",
-        :export_sec            => opts[:nfs_sec],
-        :export_insecure       => opts[:export_insecure],
-        :server_custom         => opts[:server_custom]
-      }}
-
-      let(:server_manifest) { create_export_manifest(server_opts) }
 
       it 'should ensure vagrant connectivity' do
         on(hosts, 'date')
